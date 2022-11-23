@@ -86,15 +86,6 @@ Implementation to do:
 
 Software:
 
-   Change hierarchical name from a char[] to a char* (Otherwise will bleed embedded memory dry)
-      Software for now will simply malloc and forget, but eventually I should probably implement some form of string interning
-      NOTE: After adding perfect hashing, name information is no longer required. Might not need to change afterall, for now hold on.
-
-   Add true hierarchical naming for Flatten units
-      - Simply get the full hierarchical representation and store it as the name of the unit, with parent set to null
-      - Might need to change hierarchical name from array to char*
-      - Need to take care about where strings end up. Do not want to fill embedded with useless data if possible
-
    Support the output of a module not starting at zero. (Maybe weird thing to do for now)
       More complex, but take a pass at anything that depends on order of instancing/declarating (a lot of assumptions are being made right now)
    [Type] Change ouput memory map and functions alike to use type system and simple output structs directly (Simpler and less error prone)

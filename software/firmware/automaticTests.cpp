@@ -10,7 +10,7 @@
 
 extern "C"{
 #include "../test_vectors.h"
-//#include "crypto/sha2.h"
+#include "crypto/sha2.h"
 
 #include "iob-ila.h"
 int printf_(const char* format, ...);
@@ -34,41 +34,76 @@ const char* regIn[] = {"regIn0","regIn1","regIn2","regIn3","regIn4","regIn5","re
                        "regIn17","regIn18","regIn19","regIn20","regIn21","regIn22","regIn23","regIn24","regIn25","regIn26","regIn27","regIn28","regIn29","regIn30","regIn31","regIn32",};
 const char* regOut[] = {"regOut0","regOut1","regOut2","regOut3","regOut4","regOut5","regOut6","regOut7","regOut8","regOut9","regOut10","regOut11","regOut12","regOut13","regOut14","regOut15","regOut16","regOut17"};
 
-int* TestInstance(Versat* versat,Accelerator* accel,FUInstance* inst,unsigned int numberInputs,unsigned int numberOutputs,...){
-   static int out[99];
+struct TestInstanceData{
    FUInstance* inputs[99];
+   unsigned int numberInputs;
    FUInstance* outputs[99];
+   unsigned int numberOutputs;
+};
 
-   va_list args;
-   va_start(args,numberOutputs);
+TestInstanceData AddInputsAndOutputsToTestInstance(Versat* versat,Accelerator* accel,FUInstance* inst,unsigned int numberInputs,unsigned int numberOutputs){
+   TestInstanceData res = {};
 
-   for(unsigned int i = 0; i < numberInputs; i++){
+   res.numberInputs = numberInputs;
+   res.numberOutputs = numberOutputs;
+
+   for(unsigned int i = 0; i < res.numberInputs; i++){
       Assert(i < ARRAY_SIZE(regIn));
 
       SizedString name = MakeSizedString(regIn[i]);
-      inputs[i] = CreateFUInstance(accel,GetTypeByName(versat,MakeSizedString("Reg")),name);
-      ConnectUnits(inputs[i],0,inst,i);
-
-      int val = va_arg(args,int);
-      VersatUnitWrite(inputs[i],0,val);
+      res.inputs[i] = CreateFUInstance(accel,GetTypeByName(versat,MakeSizedString("Reg")),name);
+      ConnectUnits(res.inputs[i],0,inst,i);
    }
 
-   for(unsigned int i = 0; i < numberOutputs; i++){
+   for(unsigned int i = 0; i < res.numberOutputs; i++){
       Assert(i < ARRAY_SIZE(regOut));
 
       SizedString name = MakeSizedString(regOut[i]);
-      outputs[i] = CreateFUInstance(accel,GetTypeByName(versat,MakeSizedString("Reg")),name);
+      res.outputs[i] = CreateFUInstance(accel,GetTypeByName(versat,MakeSizedString("Reg")),name);
 
-      ConnectUnits(inst,i,outputs[i],0);
+      ConnectUnits(inst,i,res.outputs[i],0);
+   }
+
+   return res;
+}
+
+int* vTestInstance(Versat* versat,Accelerator* accel,FUInstance* inst,TestInstanceData data,va_list args){
+   static int out[99];
+
+   for(unsigned int i = 0; i < data.numberInputs; i++){
+      int val = va_arg(args,int);
+      VersatUnitWrite(data.inputs[i],0,val);
    }
 
    AcceleratorRun(accel);
 
    OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
 
-   for(unsigned int i = 0; i < numberOutputs; i++){
-      out[i] = outputs[i]->state[0];
+   for(unsigned int i = 0; i < data.numberOutputs; i++){
+      out[i] = data.outputs[i]->state[0];
    }
+
+   return out;
+}
+
+int* TestInstance(Versat* versat,Accelerator* accel,FUInstance* inst,unsigned int numberInputs,unsigned int numberOutputs,...){
+   va_list args;
+   va_start(args,numberOutputs);
+
+   TestInstanceData data = AddInputsAndOutputsToTestInstance(versat,accel,inst,numberInputs,numberOutputs);
+
+   int* out = vTestInstance(versat,accel,inst,data,args);
+
+   va_end(args);
+
+   return out;
+}
+
+int* TestInstance(Versat* versat,Accelerator* accel,FUInstance* inst,TestInstanceData data,...){
+   va_list args;
+   va_start(args,data);
+
+   int* out = vTestInstance(versat,accel,inst,data,args);
 
    va_end(args);
 
@@ -146,7 +181,7 @@ TEST(TestMStage){
    Accelerator* accel = CreateAccelerator(versat);
    FUInstance* top = CreateFUInstance(accel,type,MakeSizedString("Test"));
 
-   FUInstance* inst = GetInstanceByName(accel,"Test","sigma");
+   FUInstance* inst = GetInstanceByName(accel,"Test","comb","sigma");
 
    #if 1
    int constants[] = {7,18,3,17,19,10};
@@ -1249,9 +1284,6 @@ TEST(ComplexFlatten){
    AcceleratorRun(flatten);
    AcceleratorRun(flatten);
 
-   //CheckMemory(flatten,flatten);
-   //DisplayAcceleratorMemory(flatten);
-
    OutputVersatSource(versat,flatten,"versat_instance.v","versat_defs.vh","versat_data.inc");
 
    char buffer[1024];
@@ -1355,13 +1387,53 @@ TEST(SimpleMergeInputOutputCommon){
    return EXPECT("9 6","%d %d",resA,resB);
 }
 
+TEST(CombinatorialMerge){
+   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString("CH"));
+   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString("Maj"));
+
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString("CH_Maj"));
+
+   Accelerator* accel = CreateAccelerator(versat);
+   FUInstance* inst = CreateFUInstance(accel,merged,MakeSizedString("Test"));
+
+   TestInstanceData data = AddInputsAndOutputsToTestInstance(versat,accel,inst,3,1);
+
+   // Test CH(a,b,c)  - a & b ^ (~a & c) - a = b1100, b = b1010, c = b0101 - result 1000 ^ 0001 = 1001 = 9
+   ActivateMergedAccelerator(versat,accel,typeA);
+   int* out = TestInstance(versat,accel,inst,data,0xc,0xa,0x5);
+   TestInfo test = EXPECT("9","%x",*out);
+
+   // Test Maj(a,b,c) - (x & y) ^ (x & z) ^ (y & z) - x = b1111, y = b1010, z = b0101 / a1 = x & y = y, a2 = x & z = z, a3 = y & z = 0 / y ^ z = 0xf
+   ActivateMergedAccelerator(versat,accel,typeB);
+   out = TestInstance(versat,accel,inst,data,0xf,0xa,0x5);
+   test = EXPECT("f","%x",*out);
+
+   return test;
+}
+
 TEST(ComplexMerge){
    FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString("SHA"));
    FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString("ReadWriteAES"));
 
-   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString("SHA_AES"));
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString("SHA_AES"),0);
 
-   TEST_PASSED;
+   Accelerator* accel = CreateAccelerator(versat);
+   FUInstance* inst = CreateFUInstance(accel,merged,MakeSizedString("Test"));
+
+   ActivateMergedAccelerator(versat,accel,typeA);
+   SetSHAAccelerator(accel,inst);
+
+   InitVersatSHA(versat,true);
+
+   unsigned char digest[256];
+   for(int i = 0; i < 256; i++){
+      digest[i] = 0;
+   }
+
+   VersatSHA(digest,msg_64,64);
+
+   return EXPECT("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa","%s",GetHexadecimal(digest, HASH_SIZE));
+
 }
 
 TEST(SHA){
@@ -1383,11 +1455,9 @@ TEST(SHA){
 
    VersatSHA(digest,msg_64,64);
 
-   int samples = ila_number_samples();
-   int size = ila_output_data_size(samples);
+   //DisplayUnitConfiguration(accel);
 
-   char* buffer = (char*) malloc(size+1);
-   ila_output_data(buffer,samples);
+   //ila_output_everything();
 
    //printf("%s\n",buffer);
 
@@ -1403,21 +1473,19 @@ TEST(MultipleSHATests){
 
    InitVersatSHA(versat,true);
 
-   //unsigned char digestSW[256];
+   unsigned char digestSW[256];
    unsigned char digestHW[256];
    int passed = 0;
    for(int i = 0; i < NUM_MSGS; i++){
       for(int ii = 0; ii < 256; ii++){
-         //digestSW[ii] = 0;
+         digestSW[ii] = 0;
          digestHW[ii] = 0;
       }
 
-      //sha256(digestSW,msg_array[i],msg_len[i]);
+      sha256(digestSW,msg_array[i],msg_len[i]);
       VersatSHA(digestHW,msg_array[i],msg_len[i]);
 
-      printf("%s\n",GetHexadecimal(digestHW, HASH_SIZE));
-
-      #if 0
+      #if 1
       if(memcmp(digestSW,digestHW,256) == 0){
          passed += 1;
       } else {
@@ -1426,11 +1494,31 @@ TEST(MultipleSHATests){
       #endif
    }
 
-   return EXPECT("0","%d",passed);
+   return EXPECT("65","%d",passed);
 }
 
-// When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
-#define REVERSE_ENABLED 0
+TEST(SimpleIterative){
+   FUDeclaration* type = GetTypeByName(versat,MakeSizedString("Iterative_SHA_F"));
+   Accelerator* accel = CreateAccelerator(versat);
+   FUInstance* inst = CreateFUInstance(accel,type,MakeSizedString("Test"));
+
+   FUInstance* t = GetInstanceByName(accel,"Test","comb","t");
+
+   int constants[] = {6,11,25,2,13,22};
+   for(size_t i = 0; i < ARRAY_SIZE(constants); i++){
+      t->config[i] = constants[i];
+   }
+
+   int* out = TestInstance(versat,accel,inst,10,8,0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19,0x428a2f98,0x5a86b737);
+
+   char buffer[1024];
+   char* ptr = buffer;
+   for(int i = 0; i < 8; i++){
+      ptr += sprintf(ptr,"0x%08x ",out[i]);
+   }
+
+   return EXPECT("0x8be76039 0x831cdb95 0xe63d7a4c 0x8f407b7a 0xa6bf2acc 0x5a261c78 0xae76d450 0x2f03130a ","%s",buffer);
+}
 
 #define DISABLED (REVERSE_ENABLED)
 
@@ -1449,19 +1537,29 @@ TEST(MultipleSHATests){
    } \
    currentTest += 1; } while(0)
 
+// When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
+#define REVERSE_ENABLED 0
+
+//                 43210
+#define SEGMENTS 0b11111
+
+#define SEG0 (SEGMENTS & 0x1)
+#define SEG1 (SEGMENTS & 0x2)
+#define SEG2 (SEGMENTS & 0x4)
+#define SEG3 (SEGMENTS & 0x8)
+#define SEG4 (SEGMENTS & 0x10)
+
 void AutomaticTests(Versat* versat){
    TestInfo info = TestInfo(0,0);
    int hardwareTest = HARDWARE_TEST;
    int currentTest = 0;
 
 #if 1
-#if 1
-   TEST_INST( 0 ,TestMStage);
-   TEST_INST( 0 ,TestFStage);
+#if SEG0
+   TEST_INST( 1 ,TestMStage);
+   TEST_INST( 1 ,TestFStage);
    TEST_INST( 1 ,SHA);
    TEST_INST( 1 ,MultipleSHATests);
-#endif
-#if 0
    TEST_INST( 1 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
    TEST_INST( 1 ,Convolution);
@@ -1471,8 +1569,6 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,LookupTable);
    TEST_INST( 1 ,VersatSubBytes);
    TEST_INST( 1 ,VersatShiftRows);
-#endif
-#if 0
    TEST_INST( 1 ,VersatDoRows);
    TEST_INST( 1 ,VersatMixColumns);
    TEST_INST( 1 ,FirstLineKey);
@@ -1483,22 +1579,26 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,SimpleAdder);
    TEST_INST( 1 ,ComplexMultiplier);
 #endif
-#if 0
+#if SEG1 // Config sharing
    TEST_INST( 1 ,SimpleShareConfig);
    TEST_INST( 1 ,ComplexShareConfig);
 #endif
-#if 0
+#if SEG2 // Flattening
    TEST_INST( 1 ,SimpleFlatten);
-   TEST_INST( 0 ,FlattenShareConfig);
+   TEST_INST( 1 ,FlattenShareConfig);
    TEST_INST( 0 ,ComplexFlatten);
    TEST_INST( 0 ,FlattenSHA); // Problem on top level static buffers. Maybe do flattening of accelerators with buffers already fixed.
 #endif
-#if 0
-   TEST_INST( 0 ,SimpleMergeNoCommon);
-   TEST_INST( 0 ,SimpleMergeUnitCommonNoEdge);
-   TEST_INST( 0 ,SimpleMergeUnitAndEdgeCommon);
-   TEST_INST( 0 ,SimpleMergeInputOutputCommon);
-   TEST_INST( 0 ,ComplexMerge);
+#if SEG3 // Merging
+   TEST_INST( 1 ,SimpleMergeNoCommon);
+   TEST_INST( 1 ,SimpleMergeUnitCommonNoEdge);
+   TEST_INST( 1 ,SimpleMergeUnitAndEdgeCommon);
+   TEST_INST( 1 ,SimpleMergeInputOutputCommon);
+   TEST_INST( 1 ,CombinatorialMerge);
+   TEST_INST( 1 ,ComplexMerge);
+#endif
+#if SEG4 // Iterative units
+   TEST_INST( 1 ,SimpleIterative);
 #endif
 #endif
 
@@ -1517,7 +1617,6 @@ void AutomaticTests(Versat* versat){
 
 - Start working towards sim-run of merged accelerators with shared and static units.
    Might need to store a pointer to a string with the name of the declaration in order to resolve GetInstance("name:type") calls
-
 
 */
 

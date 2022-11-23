@@ -242,10 +242,10 @@ module Sigma(x){
    c1 -> out;
 }
 
-module CH(x,y,z){
+module CH(a,b,c){
 #
-   a1 = x & y;
-   a2 = ~x & z;
+   a1 = a & b;
+   a2 = ~a & c;
 
    b1 = a1 ^ a2;
 
@@ -276,9 +276,8 @@ module sigma_stage(x,y){
    sigma1 -> out:1;
 }
 
-module M_Stage(w0,w14,w9,w1){
+module Comb_M_Stage(w0,w14,w9,w1){
    static sigma_stage sigma(7,18,3,17,19,10);
-   PipelineRegister r;
 #
    w1 -> sigma:0;
    w14 -> sigma:1;
@@ -288,7 +287,19 @@ module M_Stage(w0,w14,w9,w1){
 
    b = a1 + a2;
 
-   b -> r;
+   b -> out;
+}
+
+module M_Stage(w0,w14,w9,w1){
+   Comb_M_Stage comb;
+   PipelineRegister r;
+#
+   w0 -> comb:0;
+   w14 -> comb:1;
+   w9 -> comb:2;
+   w1 -> comb:3;
+
+   comb -> r;
 
    r -> out;
 }
@@ -669,6 +680,32 @@ module Constants(){
    mem -> out:0;
 }
 
+iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
+   // Unidades
+   Comb_F_Stage comb;
+# 16 // Initial
+   a -> comb:0;
+   b -> comb:1;
+   c -> comb:2;
+   d -> comb:3;
+   e -> comb:4;
+   f -> comb:5;
+   g -> comb:6;
+   h -> comb:7;
+   k -> comb:8;
+   w -> comb:9;
+
+   comb:0..7 -> data:0..7;
+   data:0..7 -> out:0..7;
+# // For loop
+   data:0..7 -> comb:0..7; 
+   k -> comb:8;
+   w -> comb:9;
+
+   comb:0..7 -> data:0..7;
+   data:0..7 -> out:0..7;
+}
+
 //F : 16
 //specF : 1
 //xunitF : 1
@@ -676,13 +713,13 @@ module Constants(){
 module SHA(){
    VRead MemRead;
    SwapEndian Swap(1);
-   xunitF F0;
-   xunitF F1;
-   xunitF F2;
-   xunitF F3;
-   xunitM M0;
-   xunitM M1;
-   xunitM M2;
+   F F0;
+   F F1;
+   F F2;
+   F F3;
+   M M0;
+   M M1;
+   M M2;
    Constants cMem0;
    Constants cMem1;
    Constants cMem2;
@@ -1207,6 +1244,35 @@ module ReadWriteAES(){
    merge->results;
 }
 
+iterative Iterative_State(a){
+   Reg register;  
+# 1
+   a -> register;
+   register -> out;
+#
+   register -> data;
+   data -> register;
+   data -> out;
+}
+
+iterative Iterative_Config(){
+   Const configTest;
+# 1
+   configTest -> out;
+#
+   configTest -> data;
+   data -> out;
+}
+
+iterative Iterative_Databus(){
+   VRead read;
+# 1
+   read -> out;
+#
+   read -> data;
+   data -> out;
+}
+
 
 /*
    Two graphs:
@@ -1214,20 +1280,5 @@ module ReadWriteAES(){
       One graph for the initial phase
       Another graph for everything else?
          If allow only one unit, then it's very easy to perform the templating code
-
-   Initial
-      Statements can only be: input -> state
-
-      input -> comb presents a problem. Need to provide a mux 
-
-   For loop:
-      Statements can only be: input -> state
-                              input -> out
-                              input -> comb
-                              comb -> state
-                              comb -> out
-                              state -> comb
-                              state -> out
-   
 
 */

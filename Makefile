@@ -47,7 +47,7 @@ PC_DIR:=$(SW_DIR)/pc-emul
 pc-emul-build: ila-build
 	make -C $(PC_DIR) build
 
-pc-emul-run: pc-emul-build
+pc-emul-run: pc-emul-build 
 	make -C $(PC_DIR) run
 
 pc-emul-clean: fw-clean
