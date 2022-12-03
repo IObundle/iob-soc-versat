@@ -1273,7 +1273,6 @@ iterative Iterative_Databus(){
    data -> out;
 }
 
-
 /*
    Two graphs:
 
@@ -1282,3 +1281,269 @@ iterative Iterative_Databus(){
          If allow only one unit, then it's very easy to perform the templating code
 
 */
+
+module F2(a,b,c,d,e,f,g,h,k,w){
+   F_Stage f0;
+   F_Stage f1;
+#
+   a ->  f0:0;
+   b ->  f0:1;
+   c ->  f0:2;
+   d ->  f0:3;
+   e ->  f0:4;
+   f ->  f0:5;
+   g ->  f0:6;
+   h ->  f0:7;
+   k[0] -> f0:8;
+   w[0] -> f0:9;
+
+   f0:0..7 -> f1:0..7;
+   k[1] -> f1:8;
+   w[1] -> f1:9;
+
+   f1:0..7 -> out:0..7;
+}
+
+module M2(w){
+   M_Stage m0;
+   M_Stage m1;
+   Merge merge;
+#
+   w[0] -> m0:0;
+   w[14] -> m0:1;
+   w[9] -> m0:2;
+   w[1] -> m0:3;
+
+   w[1] -> m1:0;
+   w[15] -> m1:1;
+   w[10] -> m1:2;
+   w[2] -> m1:3;
+
+   m0 -> merge:0;
+   m1 -> merge:1;
+
+   merge -> out;
+}
+
+module Karatsuba(x1,x0,y1,y0){
+   Mul z0;
+   Mul mul;
+   Mul z2;
+#
+   x0 -> z0:0;
+   y0 -> z0:1;   
+
+   x1 -> z2:0;
+   y1 -> z2:1;
+
+   fullX = x1 + x0;
+   fullY = y1 + y0;
+
+   fullX -> mul:0;
+   fullY -> mul:1;   
+
+   a = mul - z2;
+   b = a - z0;
+
+   b -> out;
+}
+
+module M4(w){
+   M_Stage m0;
+   M_Stage m1;
+   M_Stage m2;
+   M_Stage m3;
+   Merge merge;
+#
+   w[0] -> m0:0;
+   w[14] -> m0:1;
+   w[9] -> m0:2;
+   w[1] -> m0:3;
+
+   w[1] -> m1:0;
+   w[15] -> m1:1;
+   w[10] -> m1:2;
+   w[2] -> m1:3;
+   
+   w[2] -> m2:0;
+   m0 -> m2:1;
+   w[11] -> m2:2;
+   w[3] -> m2:3;
+   
+   w[3] -> m3:0;
+   m1 -> m3:1;
+   w[12] -> m3:2;
+   w[4] -> m3:3;
+   
+   m0 -> merge:0;
+   m1 -> merge:1;
+   m2 -> merge:2;
+   m3 -> merge:3;
+
+   merge -> out;
+}
+
+module M8(w){
+   M_Stage m0;
+   M_Stage m1;
+   M_Stage m2;
+   M_Stage m3;
+   M_Stage m4;
+   M_Stage m5;
+   M_Stage m6;
+   M_Stage m7;
+   Merge merge;
+#
+   w[0] -> m0:0;
+   w[14] -> m0:1;
+   w[9] -> m0:2;
+   w[1] -> m0:3;
+
+   w[1] -> m1:0;
+   w[15] -> m1:1;
+   w[10] -> m1:2;
+   w[2] -> m1:3;
+   
+   w[2] -> m2:0;
+   m0 -> m2:1;
+   w[11] -> m2:2;
+   w[3] -> m2:3;
+   
+   w[3] -> m3:0;
+   m1 -> m3:1;
+   w[12] -> m3:2;
+   w[4] -> m3:3;
+   
+   w[4] -> m4:0;
+   m2 -> m4:1;
+   w[13] -> m4:2;
+   w[5] -> m4:3;
+   
+   w[5] -> m5:0;
+   m3 -> m5:1;
+   w[14] -> m5:2;
+   w[6] -> m5:3;
+   
+   w[6] -> m6:0;
+   m4 -> m6:1;
+   w[15] -> m6:2;
+   w[7] -> m6:3;
+   
+   w[7] -> m7:0;
+   m5 -> m7:1;
+   m0 -> m7:2;
+   w[8] -> m7:3;
+   
+   m0 -> merge:0;
+   m1 -> merge:1;
+   m2 -> merge:2;
+   m3 -> merge:3;
+   m4 -> merge:4;
+   m5 -> merge:5;
+   m6 -> merge:6;
+   m7 -> merge:7;
+
+   merge -> out;
+}
+
+module F8(a,b,c,d,e,f,g,h,k,w){
+   F_Stage f0;
+   F_Stage f1;
+   F_Stage f2;
+   F_Stage f3;
+   F_Stage f4;
+   F_Stage f5;
+   F_Stage f6;
+   F_Stage f7;
+#
+   a ->  f0:0;
+   b ->  f0:1;
+   c ->  f0:2;
+   d ->  f0:3;
+   e ->  f0:4;
+   f ->  f0:5;
+   g ->  f0:6;
+   h ->  f0:7;
+   k[0] -> f0:8;
+   w[0] -> f0:9;
+
+   f0:0..7 -> f1:0..7;
+   k[1] -> f1:8;
+   w[1] -> f1:9;
+
+   f1:0..7 -> f2:0..7;
+   k[2] -> f2:8;
+   w[2] -> f2:9;
+
+   f2:0..7 -> f3:0..7;
+   k[3] -> f3:8;
+   w[3] -> f3:9;
+
+   f3:0..7 -> f4:0..7;
+   k[4] -> f4:8;
+   w[4] -> f4:9;
+
+   f4:0..7 -> f5:0..7;
+   k[5] -> f5:8;
+   w[5] -> f5:9;
+
+   f5:0..7 -> f6:0..7;
+   k[6] -> f6:8;
+   w[6] -> f6:9;
+
+   f6:0..7 -> f7:0..7;
+   k[7] -> f7:8;
+   w[7] -> f7:9;
+
+   f7:0..7 -> out:0..7;
+}
+
+module F4(a,b,c,d,e,f,g,h,k,w){
+   F_Stage f0;
+   F_Stage f1;
+   F_Stage f2;
+   F_Stage f3;
+#
+   a ->  f0:0;
+   b ->  f0:1;
+   c ->  f0:2;
+   d ->  f0:3;
+   e ->  f0:4;
+   f ->  f0:5;
+   g ->  f0:6;
+   h ->  f0:7;
+   k[0] -> f0:8;
+   w[0] -> f0:9;
+
+   f0:0..7 -> f1:0..7;
+   k[1] -> f1:8;
+   w[1] -> f1:9;
+
+   f1:0..7 -> f2:0..7;
+   k[2] -> f2:8;
+   w[2] -> f2:9;
+
+   f2:0..7 -> f3:0..7;
+   k[3] -> f3:8;
+   w[3] -> f3:9;
+
+   f3:0..7 -> out:0..7;
+}
+
+module A(x,y,z){
+   Mul mul;
+#
+   x -> mul:0;
+   z -> mul:1;
+
+   add = mul + y;
+
+   add -> out;
+}
+
+module B(x,y){
+#
+   add = x + y;
+   add -> out;
+}
+

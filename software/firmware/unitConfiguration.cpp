@@ -2,7 +2,7 @@
 
 #include "verilogWrapper.inc"
 
-void IntSet(int* buffer,int value,int byteSize){
+void IntSet(volatile int* buffer,int value,int byteSize){
    int nInts = byteSize / 4;
 
    for(int i = 0; i < nInts; i++){

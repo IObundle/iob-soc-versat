@@ -1433,7 +1433,64 @@ TEST(ComplexMerge){
    VersatSHA(digest,msg_64,64);
 
    return EXPECT("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa","%s",GetHexadecimal(digest, HASH_SIZE));
+}
 
+static FUDeclaration* TestMerge(Versat* versat,const char* first, const char* second, const char* name,MergingStrategy strategy){
+   printf("%s %s\n",first,second);
+   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString(first));
+   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString(second));
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString(name),99,strategy);
+   printf("\n");
+   return merged;
+}
+
+TEST(TestMerge){
+   FUDeclaration* type = GetTypeByName(versat,MakeSizedString("CH"));
+
+   //MergingStrategy strategy = MergingStrategy::CONSOLIDATION_GRAPH;
+   MergingStrategy strategy = MergingStrategy::CONSOLIDATION_GRAPH;
+
+   #if 0
+   type = TestMerge(versat,"A","B","M1",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"CH","Maj","M1",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"M_Stage","F_Stage","M2",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"DoRow","AddRoundKey","M3",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"MixColumns","F2","M4",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"MainRound","F2","M4",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"StringHasher","Convolution","M4",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"M2","F2","M5",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"M","F","M6",strategy);
+   #endif
+
+   #if 0
+   type = TestMerge(versat,"M8","F8","M7",strategy);
+   #endif
+
+   TEST_PASSED;
 }
 
 TEST(SHA){
@@ -1520,6 +1577,48 @@ TEST(SimpleIterative){
    return EXPECT("0x8be76039 0x831cdb95 0xe63d7a4c 0x8f407b7a 0xa6bf2acc 0x5a261c78 0xae76d450 0x2f03130a ","%s",buffer);
 }
 
+TEST(FloatingPointAdd){
+   FUDeclaration* type = GetTypeByName(versat,MakeSizedString("FloatAdd"));
+   Accelerator* accel = CreateAccelerator(versat);
+   FUInstance* inst = CreateFUInstance(accel,type,MakeSizedString("Test"));
+
+   float* out = (float*) TestInstance(versat,accel,inst,2,1,PackInt(6.0f),PackInt(4.0f));
+
+   if(FloatEqual(*out,10.0f,0.01f)){
+      TEST_PASSED;
+   } else {
+      TEST_FAILED("Not equal");
+   }
+}
+
+TEST(FloatingPointSub){
+   FUDeclaration* type = GetTypeByName(versat,MakeSizedString("FloatSub"));
+   Accelerator* accel = CreateAccelerator(versat);
+   FUInstance* inst = CreateFUInstance(accel,type,MakeSizedString("Test"));
+
+   float* out = (float*) TestInstance(versat,accel,inst,2,1,PackInt(6.0f),PackInt(4.0f));
+
+   if(FloatEqual(*out,2.0f,0.01f)){
+      TEST_PASSED;
+   } else {
+      TEST_FAILED("Not equal");
+   }
+}
+
+TEST(FloatingPointMul){
+   FUDeclaration* type = GetTypeByName(versat,MakeSizedString("FloatMul"));
+   Accelerator* accel = CreateAccelerator(versat);
+   FUInstance* inst = CreateFUInstance(accel,type,MakeSizedString("Test"));
+
+   float* out = (float*) TestInstance(versat,accel,inst,2,1,PackInt(4.0f),PackInt(6.0f));
+
+   if(FloatEqual(*out,24.0f,0.01f)){
+      TEST_PASSED;
+   } else {
+      TEST_FAILED("Not equal");
+   }
+}
+
 #define DISABLED (REVERSE_ENABLED)
 
 #ifndef HARDWARE_TEST
@@ -1540,14 +1639,15 @@ TEST(SimpleIterative){
 // When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
 #define REVERSE_ENABLED 0
 
-//                 43210
-#define SEGMENTS 0b11111
+//                 543210
+#define SEGMENTS 0b100111
 
-#define SEG0 (SEGMENTS & 0x1)
-#define SEG1 (SEGMENTS & 0x2)
-#define SEG2 (SEGMENTS & 0x4)
-#define SEG3 (SEGMENTS & 0x8)
+#define SEG0 (SEGMENTS & 0x01)
+#define SEG1 (SEGMENTS & 0x02)
+#define SEG2 (SEGMENTS & 0x04)
+#define SEG3 (SEGMENTS & 0x08)
 #define SEG4 (SEGMENTS & 0x10)
+#define SEG5 (SEGMENTS & 0x20)
 
 void AutomaticTests(Versat* versat){
    TestInfo info = TestInfo(0,0);
@@ -1559,7 +1659,7 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,TestMStage);
    TEST_INST( 1 ,TestFStage);
    TEST_INST( 1 ,SHA);
-   TEST_INST( 1 ,MultipleSHATests);
+   TEST_INST( DISABLED ,MultipleSHATests);
    TEST_INST( 1 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
    TEST_INST( 1 ,Convolution);
@@ -1590,15 +1690,21 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 0 ,FlattenSHA); // Problem on top level static buffers. Maybe do flattening of accelerators with buffers already fixed.
 #endif
 #if SEG3 // Merging
-   TEST_INST( 1 ,SimpleMergeNoCommon);
-   TEST_INST( 1 ,SimpleMergeUnitCommonNoEdge);
-   TEST_INST( 1 ,SimpleMergeUnitAndEdgeCommon);
+   TEST_INST( 0 ,SimpleMergeNoCommon);
+   TEST_INST( 0 ,SimpleMergeUnitCommonNoEdge);
+   TEST_INST( 0 ,SimpleMergeUnitAndEdgeCommon);
    TEST_INST( 1 ,SimpleMergeInputOutputCommon);
-   TEST_INST( 1 ,CombinatorialMerge);
-   TEST_INST( 1 ,ComplexMerge);
+   TEST_INST( 0 ,CombinatorialMerge);
+   TEST_INST( 0 ,ComplexMerge);
+   TEST_INST( 0 ,TestMerge);
 #endif
 #if SEG4 // Iterative units
    TEST_INST( 1 ,SimpleIterative);
+#endif
+#if SEG5 // Floating point
+   TEST_INST( 1 ,FloatingPointAdd);
+   TEST_INST( 1 ,FloatingPointSub);
+   TEST_INST( 1 ,FloatingPointMul);
 #endif
 #endif
 
