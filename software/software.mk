@@ -44,18 +44,18 @@ periphs_tmp.h:
 	$(foreach p, $(PERIPHERALS), $(shell echo "#define $p_BASE (1<<$P) |($p<<($P-N_SLAVES_W))" >> $@) )
 
 gen_data:
-	make -C $(SW_TEST_DIR) gen_test_data TEST_VECTOR_RSP=$(TEST_VECTOR_RSP)
+	$(MAKE) -C $(SW_TEST_DIR) gen_test_data TEST_VECTOR_RSP=$(TEST_VECTOR_RSP)
 
 build-all:
-	make -C $(FIRM_DIR) build
-	make -C $(BOOT_DIR) build
+	$(MAKE) -C $(FIRM_DIR) build
+	$(MAKE) -C $(BOOT_DIR) build
 
 debug:
 	echo $(DEFINE)
 	echo $(INCLUDE)
 
 clean-all: gen-clean
-	make -C $(FIRM_DIR) clean
-	make -C $(BOOT_DIR) clean
+	$(MAKE) -C $(FIRM_DIR) clean
+	$(MAKE) -C $(BOOT_DIR) clean
 
 .PHONY: build-all debug clean-all

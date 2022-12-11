@@ -706,12 +706,9 @@ iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
    data:0..7 -> out:0..7;
 }
 
-//F : 16
-//specF : 1
-//xunitF : 1
-
 module SHA(){
    VRead MemRead;
+   Mem mem;
    SwapEndian Swap(1);
    F F0;
    F F1;
@@ -727,6 +724,7 @@ module SHA(){
    ShaState State;
 #
    MemRead -> Swap;
+   MemRead -> mem;
 
    State:0..7 -> F0:0..7;
    cMem0      -> F0:8;
@@ -1244,6 +1242,13 @@ module ReadWriteAES(){
    merge->results;
 }
 
+module TestGenerator(){
+   Generator gen;
+   Mem mem;
+#
+   gen -> mem;
+}
+
 iterative Iterative_State(a){
    Reg register;  
 # 1
@@ -1272,15 +1277,6 @@ iterative Iterative_Databus(){
    read -> data;
    data -> out;
 }
-
-/*
-   Two graphs:
-
-      One graph for the initial phase
-      Another graph for everything else?
-         If allow only one unit, then it's very easy to perform the templating code
-
-*/
 
 module F2(a,b,c,d,e,f,g,h,k,w){
    F_Stage f0;
@@ -1545,5 +1541,40 @@ module B(x,y){
 #
    add = x + y;
    add -> out;
+}
+
+module TestFPUDiv(x,y){
+   FloatDiv div;
+#
+   x -> div:0;
+   y -> div:1;
+
+   div -> out;
+}
+
+module TestInstanceLatency(x,y){
+   IntSqrt test;// Test instance
+   Generator gen;
+   Reg reg;
+#
+   // Code that exercises test instance. Set versat_latency to high value, then use VCD to find out when instance is producing valid data
+   x -> test:0;
+   //y -> div:1;
+
+   test -> out;
+
+   // When test instance produces correct value, latency can be measured by looking at output of gen inside VCD file
+   gen -> reg; // gen is only connected to something to force it to output data
+}
+
+module TestSpecificMerge(){
+   Mem input;
+   Mem output;
+   FloatSqrt sqrt1;
+   FloatSqrt sqrt2;
+#
+   input -> sqrt1;
+   sqrt1 -> sqrt2;
+   sqrt2 -> output;
 }
 

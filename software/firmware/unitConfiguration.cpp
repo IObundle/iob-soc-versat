@@ -92,6 +92,20 @@ void ConfigureRightSideMatrix(FUInstance* inst, int iterations){
    config->incr2A = 0;
 }
 
+void ConfigureGenerator(FUInstance* inst, int start,int end,int increment){
+   IntSet(inst->config,0,sizeof(GeneratorConfig));
+   volatile GeneratorConfig* config = (volatile GeneratorConfig*) inst->config;
+
+   int range = end - start;
+
+   config->iterations = 1;
+   config->period = range;
+   config->duty = range;
+   config->start = start;
+   config->shift = 1;
+   config->incr = increment;
+}
+
 void ConfigureMemoryLinear(FUInstance* inst, int amountOfData){
    IntSet(inst->config,0,sizeof(MemConfig));
    volatile MemConfig* config = (volatile MemConfig*) inst->config;

@@ -7,6 +7,7 @@ void ConfigureSimpleVRead(FUInstance* inst, int numberItems,int* memory);
 void ConfigureSimpleVWrite(FUInstance* inst, int numberItems,int* memory);
 void ConfigureLeftSideMatrix(FUInstance* inst,int iterations);
 void ConfigureRightSideMatrix(FUInstance* inst, int iterations);
+void ConfigureGenerator(FUInstance* inst, int start,int end,int increment);
 void ConfigureMemoryLinear(FUInstance* inst, int amountOfData);
 void ConfigureMemoryReceive(FUInstance* inst, int amountOfData,int interdataDelay);
 void ConfigureLeftSideMatrixVRead(FUInstance* inst, int iterations);

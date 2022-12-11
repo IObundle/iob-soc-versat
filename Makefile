@@ -19,6 +19,7 @@ ila-generate-vcd: ilaFormat.txt ilaData.txt
 
 ila-clean:
 	@rm -f $(HW_DIR)/include/signal_inst.vh $(FIRM_DIR)/ila.c $(PC_DIR)/ila.c ila.c
+	$(MAKE) -C $(ILA_DIR) clean-all
 
 #
 # BUILD EMBEDDED SOFTWARE
@@ -45,16 +46,16 @@ fw-debug:
 
 PC_DIR:=$(SW_DIR)/pc-emul
 pc-emul-build: ila-build
-	make -C $(PC_DIR) build
+	$(MAKE) -C $(PC_DIR) build
 
 pc-emul-run: pc-emul-build 
-	make -C $(PC_DIR) run
+	$(MAKE) -C $(PC_DIR) run
 
 pc-emul-clean: fw-clean
-	make -C $(PC_DIR) clean
+	$(MAKE) -C $(PC_DIR) clean
 
 pc-emul-test: pc-emul-clean
-	make -C $(PC_DIR) test
+	$(MAKE) -C $(PC_DIR) test
 
 
 HW_DIR=./hardware

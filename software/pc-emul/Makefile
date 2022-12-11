@@ -55,17 +55,14 @@ CONSOLE_CMD=$(ROOT_DIR)/software/console/eth_console -L
 #RULES
 
 build: gen_data fw_emul
-	mkdir -p debug
-	mkdir -p src
-	mkdir -p trace_out
-
-fw_emul: $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ)
-	gcc -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) $(SRC) ./build/*.o -lstdc++ -lm -lgcc -lc -lncurses
-	
-run: build
 	@mkdir -p $(HW_DIR)/src/GeneratedUnits/
 	@mkdir -p debug
 	@mkdir -p src
+
+fw_emul: $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ)
+	gcc -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) $(SRC) ./build/*.o -lstdc++ -lm -lgcc -lc #-lncurses
+	
+run: build
 	./fw_emul $(TEST_LOG)
 	cp versat_instance.v $(HW_DIR)/src/
 	cp versat_defs.vh $(HW_DIR)/include/
@@ -77,8 +74,8 @@ clean:
 	@rm -rf fw_emul periphs.h *swreg*.h *swreg*.c test.log soc2cnsl cnsl2soc \
 		$(ETH_LOG) $(SOC_LOG) eth_frame_struct.h $(EMUL_PROFILE_LOG)
 	@rm -f versat_data.inc versat_defs.vh versat_instance.v
-	@make -C $(SW_DIR)/python clean
-	@make -C $(SW_TEST_DIR) clean
+	@$(MAKE) -C $(SW_DIR)/python clean
+	@$(MAKE) -C $(SW_TEST_DIR) clean
 	@rm -f -r ./build
 	@rm -f -r ./debug
 	@rm -f -r ./src
@@ -86,11 +83,11 @@ clean:
 	@rm -f -r $(HW_DIR)/src/GeneratedUnits
 
 test: 
-	make run
-	make validate
+	$(MAKE) run
+	$(MAKE) validate
 
 validate:
-	make -C $(SW_TEST_DIR) validate SOC_OUT_BIN=$(SOC_OUT_BIN) TEST_VECTOR_RSP=$(TEST_VECTOR_RSP)
+	$(MAKE) -C $(SW_TEST_DIR) validate SOC_OUT_BIN=$(SOC_OUT_BIN) TEST_VECTOR_RSP=$(TEST_VECTOR_RSP)
 
 profile: clean $(EMUL_PROFILE_LOG)
 	@printf "\n=== PROFILE LOG ===\n"
@@ -98,7 +95,7 @@ profile: clean $(EMUL_PROFILE_LOG)
 	@printf "=== PROFILE LOG ===\n"
 
 $(SOC_LOG): 
-	make run PROFILE=1 TEST_LOG="> $(SOC_LOG)"
+	$(MAKE) run PROFILE=1 TEST_LOG="> $(SOC_LOG)"
 
 $(EMUL_PROFILE_LOG): $(SOC_LOG)
 	@grep "PROFILE:" $< > $(EMUL_PROFILE_LOG)
@@ -108,7 +105,7 @@ $(EMUL_PROFILE_LOG): $(SOC_LOG)
 
 ./build/V%.h: $(HW_DIR)/src/units/%.v
 	verilator -CFLAGS "$(VERILATE_FLAGS)" -I$(VERSAT_HW_DIR)/include --trace --cc -Mdir ./obj $<;
-	cd ./obj && VM_DEFAULT_RULES=0 make -f V$*.mk;
+	VM_DEFAULT_RULES=0 $(MAKE) -C ./obj -f V$*.mk;
 	mkdir -p ./build; mv ./obj/*.o ./build/;
 	mv ./obj/*.h ./build/
 	rm -r -f ./obj
