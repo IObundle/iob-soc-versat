@@ -48,8 +48,13 @@ struct OneUnitTestData{
 OneUnitTestData InstantiateSimple(Versat* versat,unsigned int numberInputs,unsigned int numberOutputs,const char* declarationName){
    OneUnitTestData res = {};
 
-   res.versat = versat;
    res.type = GetTypeByName(versat,MakeSizedString(declarationName));
+
+   #ifdef PC
+   Assert(CheckInputAndOutputNumber(res.type,numberInputs,numberOutputs));
+   #endif // PC
+
+   res.versat = versat;
    res.accel = CreateAccelerator(versat);
    res.inst = CreateFUInstance(res.accel,res.type,MakeSizedString("Test"));
 
@@ -1158,7 +1163,7 @@ TEST(ComplexShareConfig){
 }
 
 TEST(SimpleFlatten){
-   OneUnitTestData test = InstantiateSimple(versat,2,1,"SimpleAdder");
+   OneUnitTestData test = InstantiateSimple(versat,0,0,"SimpleAdder");
 
    Accelerator* flatten = Flatten(versat,test.accel,1);
 
@@ -1346,10 +1351,12 @@ TEST(SimpleMergeInputOutputCommon){
 
    //ClearConfigurations(accel);
    resA = ComplexAdderInstance(accel,4,5);
+   DisplayUnitConfiguration(accel);
 
    //ClearConfigurations(accel);
    ActivateMergedAccelerator(versat,accel,typeB);
    resB = ComplexMultiplierInstance(accel,2,3);
+   DisplayUnitConfiguration(accel);
 
    OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
 
@@ -1816,7 +1823,7 @@ TEST(TestInstanceLatency){
 #define REVERSE_ENABLED 0
 
 //                 6543210
-#define SEGMENTS 0b0101000
+#define SEGMENTS 0b0000001
 
 #define SEG0 (SEGMENTS & 0x01)
 #define SEG1 (SEGMENTS & 0x02)
@@ -1863,7 +1870,7 @@ void AutomaticTests(Versat* versat){
 #if SEG2 // Flattening
    TEST_INST( 1 ,SimpleFlatten);
    TEST_INST( 1 ,FlattenShareConfig);
-   TEST_INST( 0 ,ComplexFlatten);
+   TEST_INST( 1 ,ComplexFlatten);
    TEST_INST( 0 ,FlattenSHA); // Problem on top level static buffers. Maybe do flattening of accelerators with buffers already fixed.
 #endif
 #if SEG3 // Merging
@@ -1871,9 +1878,9 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 0 ,SimpleMergeUnitCommonNoEdge);
    TEST_INST( 0 ,SimpleMergeUnitAndEdgeCommon);
    TEST_INST( 0 ,SimpleMergeInputOutputCommon);
-   TEST_INST( 0 ,CombinatorialMerge);
+   TEST_INST( 1 ,CombinatorialMerge);
    TEST_INST( 0 ,ComplexMerge);
-   TEST_INST( 1 ,TestSpecificMerge);
+   TEST_INST( 0 ,TestSpecificMerge);
    TEST_INST( 0 ,TestMerge);
 #endif
 #if SEG4 // Iterative units
