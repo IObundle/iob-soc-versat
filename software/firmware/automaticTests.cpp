@@ -1429,49 +1429,48 @@ static FUDeclaration* TestMerge(Versat* versat,const char* first, const char* se
 }
 
 TEST(TestMerge){
-   FUDeclaration* type = GetTypeByName(versat,MakeSizedString("CH"));
-
    //MergingStrategy strategy = MergingStrategy::CONSOLIDATION_GRAPH;
-   MergingStrategy strategy = MergingStrategy::CONSOLIDATION_GRAPH;
+   MergingStrategy strategy = MergingStrategy::FIRST_FIT;
 
-   #if 0
-   type = TestMerge(versat,"A","B","M1",strategy);
+
+   #if 01
+   TestMerge(versat,"A","B","M1",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"CH","Maj","M1",strategy);
+   #if 01
+   TestMerge(versat,"CH","Maj","M1",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"M_Stage","F_Stage","M2",strategy);
+   #if 01
+   TestMerge(versat,"M_Stage","F_Stage","M2",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"DoRow","AddRoundKey","M3",strategy);
+   #if 01
+   TestMerge(versat,"DoRow","AddRoundKey","M3",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"MixColumns","F2","M4",strategy);
+   #if 01
+   TestMerge(versat,"MixColumns","F2","M4",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"MainRound","F2","M4",strategy);
+   #if 01
+   TestMerge(versat,"MainRound","F2","M4",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"StringHasher","Convolution","M4",strategy);
+   #if 01
+   TestMerge(versat,"StringHasher","Convolution","M4",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"M2","F2","M5",strategy);
+   #if 01
+   TestMerge(versat,"M2","F2","M5",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"M","F","M6",strategy);
+   #if 01
+   TestMerge(versat,"M","F","M6",strategy);
    #endif
 
-   #if 0
-   type = TestMerge(versat,"M8","F8","M7",strategy);
+   #if 01
+   TestMerge(versat,"M8","F8","M7",strategy);
    #endif
 
    TEST_PASSED;
@@ -1764,8 +1763,8 @@ TEST(Float2UInt){
    OneUnitTestData test = InstantiateSimple(versat,1,1,"Float2UInt");
 
    // TODO: find a better test for this one
-   uint* out = (uint*) TestInstance(test,PackInt(10.1f));
-   uint correct = 10;
+   unsigned int* out = (unsigned int*) TestInstance(test,PackInt(10.1f));
+   unsigned int correct = 10;
 
    if(*out == correct){
       TEST_PASSED;
@@ -1802,6 +1801,14 @@ TEST(TestInstanceLatency){
    TEST_PASSED;
 }
 
+TEST(ComplexCalculateDelay){
+   OneUnitTestData test = InstantiateSimple(versat,0,0,"ComplexCalculateDelay");
+
+   TestInstance(test);
+
+   TEST_PASSED; // Need to look at .dot file to check
+}
+
 #define DISABLED (REVERSE_ENABLED)
 
 #ifndef HARDWARE_TEST
@@ -1823,7 +1830,7 @@ TEST(TestInstanceLatency){
 #define REVERSE_ENABLED 0
 
 //                 6543210
-#define SEGMENTS 0b0000001
+#define SEGMENTS 0b1000001
 
 #define SEG0 (SEGMENTS & 0x01)
 #define SEG1 (SEGMENTS & 0x02)
@@ -1840,11 +1847,11 @@ void AutomaticTests(Versat* versat){
 
 #if 1
 #if SEG0
-   TEST_INST( 1 ,TestMStage);
-   TEST_INST( 1 ,TestFStage);
-   TEST_INST( 1 ,SHA);
+   TEST_INST( 0 ,TestMStage);
+   TEST_INST( 0 ,TestFStage);
+   TEST_INST( 0 ,SHA);
    TEST_INST( DISABLED ,MultipleSHATests);
-   TEST_INST( 1 ,VReadToVWrite);
+   TEST_INST( 0 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
    TEST_INST( 1 ,Convolution);
    TEST_INST( 1 ,MatrixMultiplication);
@@ -1858,10 +1865,10 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,FirstLineKey);
    TEST_INST( 1 ,KeySchedule);
    TEST_INST( 1 ,AESRound);
-   TEST_INST( 1 ,AES);
-   TEST_INST( 1 ,ReadWriteAES);
-   TEST_INST( 1 ,SimpleAdder);
-   TEST_INST( 1 ,ComplexMultiplier);
+   TEST_INST( 0 ,AES);
+   TEST_INST( 0 ,ReadWriteAES);
+   TEST_INST( 0 ,SimpleAdder);
+   TEST_INST( 0 ,ComplexMultiplier);
 #endif
 #if SEG1 // Config sharing
    TEST_INST( 1 ,SimpleShareConfig);
@@ -1874,14 +1881,14 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 0 ,FlattenSHA); // Problem on top level static buffers. Maybe do flattening of accelerators with buffers already fixed.
 #endif
 #if SEG3 // Merging
-   TEST_INST( 0 ,SimpleMergeNoCommon);
-   TEST_INST( 0 ,SimpleMergeUnitCommonNoEdge);
-   TEST_INST( 0 ,SimpleMergeUnitAndEdgeCommon);
-   TEST_INST( 0 ,SimpleMergeInputOutputCommon);
+   TEST_INST( 1 ,SimpleMergeNoCommon);
+   TEST_INST( 1 ,SimpleMergeUnitCommonNoEdge);
+   TEST_INST( 1 ,SimpleMergeUnitAndEdgeCommon);
+   TEST_INST( 1 ,SimpleMergeInputOutputCommon);
    TEST_INST( 1 ,CombinatorialMerge);
-   TEST_INST( 0 ,ComplexMerge);
-   TEST_INST( 0 ,TestSpecificMerge);
-   TEST_INST( 0 ,TestMerge);
+   TEST_INST( 1 ,ComplexMerge);
+   TEST_INST( 1 ,TestSpecificMerge);
+   TEST_INST( 1 ,TestMerge);
 #endif
 #if SEG4 // Iterative units
    TEST_INST( 1 ,SimpleIterative);
@@ -1901,7 +1908,8 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,Int2Float);
 #endif
 #if SEG6 // Individual units
-   TEST_INST( 1 ,TestInstanceLatency);
+   TEST_INST( 0 ,TestInstanceLatency);
+   TEST_INST( 1 ,ComplexCalculateDelay);
    TEST_INST( 0 ,Generator);
 #endif
 #endif

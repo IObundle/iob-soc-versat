@@ -1578,3 +1578,16 @@ module TestSpecificMerge(){
    sqrt2 -> output;
 }
 
+module ComplexCalculateDelay(){
+   VRead v;
+   Mem output;
+   Mem anotherOut;
+   FloatSqrt sqrt;
+#
+   a = v + sqrt;
+
+   v -> sqrt;
+
+   a -> output;
+   v -> anotherOut;
+}

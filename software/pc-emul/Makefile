@@ -1,6 +1,7 @@
 ROOT_DIR:=../..
 
-GLOBAL_CFLAGS:=-m32 -Wall -g #-fsanitize=address
+GLOBAL_CFLAGS:=-m32 -Wall -g -DVERSAT_DEBUG #-fsanitize=address
+LIBS := -lstdc++ -lm -lgcc -lc 
 
 include ../software.mk
 
@@ -60,7 +61,7 @@ build: gen_data fw_emul
 	@mkdir -p src
 
 fw_emul: $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ)
-	gcc -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) $(SRC) ./build/*.o -lstdc++ -lm -lgcc -lc #-lncurses
+	gcc -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) $(SRC) ./build/*.o $(LIBS)
 	
 run: build
 	./fw_emul $(TEST_LOG)

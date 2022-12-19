@@ -47,15 +47,17 @@ int main(int argc,const char* argv[])
 
    Versat* versat = InitVersat(VERSAT_BASE,1);
 
-   SetDebug(versat,VersatDebugFlags::OUTPUT_ACCELERATORS_CODE,1);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,1);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_ACCELERATORS_CODE,0);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,0);
    SetDebug(versat,VersatDebugFlags::USE_FIXED_BUFFERS,0);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_GRAPH_DOT,1);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_GRAPH_DOT,0);
    SetDebug(versat,VersatDebugFlags::OUTPUT_VCD,0);
 
    ParseCommandLineOptions(versat,argc,argv);
 
    ParseVersatSpecification(versat,"testVersatSpecification.txt");
+
+   //EnterDebugTerminal(versat);
 
    AutomaticTests(versat);
 
