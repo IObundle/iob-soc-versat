@@ -1,6 +1,6 @@
 ROOT_DIR:=../..
 
-GLOBAL_CFLAGS:=-m32 -Wall -g -DVERSAT_DEBUG #-fsanitize=address
+GLOBAL_CFLAGS:=-m32 -Wall -g -DVERSAT_DEBUG -fno-omit-frame-pointer #-fsanitize=address
 LIBS := -lstdc++ -lm -lgcc -lc 
 
 include ../software.mk

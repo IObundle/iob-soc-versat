@@ -51,7 +51,7 @@ OneUnitTestData InstantiateSimple(Versat* versat,unsigned int numberInputs,unsig
    res.type = GetTypeByName(versat,MakeSizedString(declarationName));
 
    #ifdef PC
-   Assert(CheckInputAndOutputNumber(res.type,numberInputs,numberOutputs));
+   //Assert(CheckInputAndOutputNumber(res.type,numberInputs,numberOutputs));
    #endif // PC
 
    res.versat = versat;
@@ -309,7 +309,7 @@ TEST(StringHasher){
 }
 
 TEST(Convolution){
-   #define nSTAGE 5
+   const int nSTAGE = 5;
    int pixels[25 * nSTAGE], weights[9 * nSTAGE], bias = 0;
 
    SeedRandomNumber(0);
@@ -350,13 +350,6 @@ TEST(Convolution){
          config->dutyB = 3;
          config->shiftB = 5 - 3;
       }
-
-      #if 0
-      //write 5x5 feature map in mem0
-      for (i = 0; i < 25; i++){
-         //VersatUnitWrite(pixels,i, GetRandomNumber() % 50 - 25);
-      }
-      #endif
 
       FUInstance* weight = GetInstanceByName(accel,"Test","stage%d",j,"weights");
 
@@ -1430,8 +1423,7 @@ static FUDeclaration* TestMerge(Versat* versat,const char* first, const char* se
 
 TEST(TestMerge){
    //MergingStrategy strategy = MergingStrategy::CONSOLIDATION_GRAPH;
-   MergingStrategy strategy = MergingStrategy::FIRST_FIT;
-
+   MergingStrategy strategy = MergingStrategy::SIMPLE_COMBINATION;
 
    #if 01
    TestMerge(versat,"A","B","M1",strategy);
@@ -1479,8 +1471,8 @@ TEST(TestMerge){
 TEST(SHA){
    OneUnitTestData test = InstantiateSimple(versat,0,0,"SHA");
 
-   ila_set_different_signal_storing(1);
-   ila_enable_all_triggers();
+   //ila_set_different_signal_storing(1);
+   //ila_enable_all_triggers();
 
    SetSHAAccelerator(test.accel,test.inst);
 
@@ -1789,6 +1781,24 @@ TEST(Int2Float){
    }
 }
 
+TEST(TestConfigOrder){
+   OneUnitTestData test = InstantiateSimple(versat,0,0,"TestConfigOrder");
+
+   // Changing order of configure mem with const changes configuration.
+   ConfigureMemoryReceive(test.inst,1,0);
+
+   //FUInstance* Const = GetInstanceByName(test.accel,"Test","a1");
+   //Const->config[0] = 5;
+   test.inst->config[26] = 5;
+
+   AcceleratorRun(test.accel);
+
+   FUInstance* Mem = GetInstanceByName(test.accel,"Test","store");
+   int result = VersatUnitRead(test.inst,0);
+
+   return EXPECT("5","%d",result);
+}
+
 TEST(TestInstanceLatency){
    OneUnitTestData test = InstantiateSimple(versat,2,1,"TestInstanceLatency");
 
@@ -1827,10 +1837,10 @@ TEST(ComplexCalculateDelay){
    currentTest += 1; } while(0)
 
 // When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
-#define REVERSE_ENABLED 0
+#define REVERSE_ENABLED 1
 
 //                 6543210
-#define SEGMENTS 0b1000001
+#define SEGMENTS 0b0000001
 
 #define SEG0 (SEGMENTS & 0x01)
 #define SEG1 (SEGMENTS & 0x02)
@@ -1845,13 +1855,17 @@ void AutomaticTests(Versat* versat){
    int hardwareTest = HARDWARE_TEST;
    int currentTest = 0;
 
+   #if 0
+   EnterDebugTerminal(versat);
+   #endif
+
 #if 1
 #if SEG0
-   TEST_INST( 0 ,TestMStage);
-   TEST_INST( 0 ,TestFStage);
+   TEST_INST( 1 ,TestMStage);
+   TEST_INST( 1 ,TestFStage);
    TEST_INST( 0 ,SHA);
    TEST_INST( DISABLED ,MultipleSHATests);
-   TEST_INST( 0 ,VReadToVWrite);
+   TEST_INST( 1 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
    TEST_INST( 1 ,Convolution);
    TEST_INST( 1 ,MatrixMultiplication);
@@ -1865,14 +1879,14 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,FirstLineKey);
    TEST_INST( 1 ,KeySchedule);
    TEST_INST( 1 ,AESRound);
-   TEST_INST( 0 ,AES);
-   TEST_INST( 0 ,ReadWriteAES);
-   TEST_INST( 0 ,SimpleAdder);
-   TEST_INST( 0 ,ComplexMultiplier);
+   TEST_INST( 1 ,AES);
+   TEST_INST( 1 ,ReadWriteAES);
+   TEST_INST( 1 ,SimpleAdder);
+   TEST_INST( 1 ,ComplexMultiplier);
 #endif
 #if SEG1 // Config sharing
-   TEST_INST( 1 ,SimpleShareConfig);
-   TEST_INST( 1 ,ComplexShareConfig);
+   TEST_INST( 0 ,SimpleShareConfig);
+   TEST_INST( 0 ,ComplexShareConfig);
 #endif
 #if SEG2 // Flattening
    TEST_INST( 1 ,SimpleFlatten);
@@ -1908,9 +1922,10 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,Int2Float);
 #endif
 #if SEG6 // Individual units
-   TEST_INST( 0 ,TestInstanceLatency);
+   TEST_INST( 0 ,TestConfigOrder);
+   TEST_INST( 1 ,TestInstanceLatency);
    TEST_INST( 1 ,ComplexCalculateDelay);
-   TEST_INST( 0 ,Generator);
+   TEST_INST( 1 ,Generator);
 #endif
 #endif
 

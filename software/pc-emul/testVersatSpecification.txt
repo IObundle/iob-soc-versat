@@ -64,7 +64,7 @@ module VReadToVWrite(){
    read -> write;
 }
 
-module SimpleShareConfig(){ // 2
+module SimpleShareConfig(){ // 3
    share config Const {
       a1;
       a2;
@@ -95,14 +95,14 @@ module StaticConst(){
    var -> out:0;
 }
 
-module ComplexShareConfig(){ // 4 config, 1 static - flatten should have 5 configs
-   share config SimpleShareConfig { // 2
+module ComplexShareConfig(){ // 6 config, 1 static - flatten should have 5 configs
+   share config SimpleShareConfig { // 3
       a1;
       a2;
    }
    StaticConst var1; // 1 static
    StaticConst var2; // Same static
-   share config SimpleShareConfig { // 2
+   share config SimpleShareConfig { // 3
       shared1;
       shared2;
    }
@@ -185,13 +185,13 @@ module ConvolutionStage(previous){
 }
 
 module Convolution(){
-   ConvolutionStage stage0;
-   ConvolutionStage stage1;
-   ConvolutionStage stage2;
-   ConvolutionStage stage3;
-   ConvolutionStage stage4;
-   Mem res;
-   Const bias;
+   ConvolutionStage stage0; // 0 <- 1
+   ConvolutionStage stage1; // 1 <- 2
+   ConvolutionStage stage2; // 2 <- 3
+   ConvolutionStage stage3; // 3 <- 4 
+   ConvolutionStage stage4; // 4 <- 5
+   Mem res; // 5 <- 6
+   Const bias; // 6 <- 0
 #
    bias   -> stage0;
    stage0 -> stage1;
@@ -708,7 +708,6 @@ iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
 
 module SHA(){
    VRead MemRead;
-   Mem mem;
    SwapEndian Swap(1);
    F F0;
    F F1;
@@ -724,8 +723,7 @@ module SHA(){
    ShaState State;
 #
    MemRead -> Swap;
-   MemRead -> mem;
-
+   
    State:0..7 -> F0:0..7;
    cMem0      -> F0:8;
    Swap       -> F0:9;
@@ -1590,4 +1588,11 @@ module ComplexCalculateDelay(){
 
    a -> output;
    v -> anotherOut;
+}
+
+module TestConfigOrder(){
+   Mem store;
+   Const a1;
+# 
+   a1 -> store;
 }
