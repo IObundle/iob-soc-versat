@@ -1,7 +1,7 @@
 ROOT_DIR:=../..
 
 GLOBAL_CFLAGS:=-m32 -Wall -g -DVERSAT_DEBUG -fno-omit-frame-pointer #-fsanitize=address
-LIBS := -lstdc++ -lm -lgcc -lc 
+LIBS := -lstdc++ -lm -lgcc -lc -lssl -lcrypto
 
 include ../software.mk
 
@@ -24,12 +24,14 @@ HDR+=$(FIRM_DIR)/unitConfiguration.hpp
 
 #SOURCES
 SRC+= $(UART_DIR)/software/printf.c
-SRC+= $(FIRM_DIR)/crypto/*.c
+SRC+= $(wildcard  $(FIRM_DIR)/crypto/*.c)
 SRC+= $(FIRM_DIR)/automaticTests.cpp
 SRC+= $(FIRM_DIR)/unitConfiguration.cpp
 SRC+= $(FIRM_DIR)/versatSHA.cpp
-
+SRC+= $(FIRM_DIR)/versatMcEliece.cpp
 SRC+= ./ila.c
+SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c)
+SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c)
 
 INCLUDE+=$(incdir)./build
 
@@ -42,6 +44,8 @@ SRC+= $(FIRM_DIR)/profile.c
 DEFINE+=$(defmacro)PROFILE
 INCLUDE+=$(incdir)$(FIRM_DIR)
 endif
+
+DEFINE+=$(defmacro)"CRYPTO_NAMESPACE(x)=x"
 
 #UNITS TO VERILATE
 VERILATE_UNIT := xunitF xunitM

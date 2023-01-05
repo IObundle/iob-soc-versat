@@ -13,20 +13,9 @@ extern "C"{
 #include "iob-ila.h"
 
 #include "crypto/sha2.h"
-#include "crypto/aes.h"
 
 int printf_(const char* format, ...);
 }
-
-// Automatically times a block in number of counts
-struct TimeIt{
-   int line;
-   char fileId;
-
-   TimeIt(int line,char fileId){this->line = line;this->fileId = fileId;timer_reset();};
-   ~TimeIt(){unsigned long long end = timer_get_count();printf("%c:%d %llu\n",fileId,line,end);}
-};
-#define TIME_IT(ID) TimeIt timer_##__LINE__(__LINE__,ID)
 
 #ifdef PC
 #define uart_finish(...) ((void)0)
@@ -34,6 +23,8 @@ struct TimeIt{
 #else
 #define printf printf_
 #endif
+
+Versat* versat;
 
 void AutomaticTests(Versat* versat);
 
@@ -45,11 +36,11 @@ int main(int argc,const char* argv[])
 
    printf("Init base modules\n");
 
-   Versat* versat = InitVersat(VERSAT_BASE,1);
+   versat = InitVersat(VERSAT_BASE,1);
 
    SetDebug(versat,VersatDebugFlags::OUTPUT_ACCELERATORS_CODE,0);
    SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,0);
-   SetDebug(versat,VersatDebugFlags::USE_FIXED_BUFFERS,1);
+   SetDebug(versat,VersatDebugFlags::USE_FIXED_BUFFERS,0);
    SetDebug(versat,VersatDebugFlags::OUTPUT_GRAPH_DOT,1);
    SetDebug(versat,VersatDebugFlags::OUTPUT_VCD,1);
 

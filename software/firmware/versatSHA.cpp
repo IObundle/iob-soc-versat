@@ -2,6 +2,7 @@
 
 #include "versat.hpp"
 #include "unitConfiguration.hpp"
+#include "basicWrapper.inc"
 #include "verilogWrapper.inc"
 
 static unsigned int initialStateValues[] = {0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19};
@@ -26,24 +27,24 @@ void SetSHAAccelerator(Accelerator* accel_,FUInstance* shaInstance_){
 
 static void InstantiateSHA(Versat* versat){
    if(shaInstance){
-      FUInstance* read = GetInstanceByName(shaInstance,"MemRead");
+      FUInstance* read = GetSubInstanceByName(accel,shaInstance,"MemRead");
       readConfig = (volatile VReadConfig*) read->config;
 
       ConfigureSimpleVRead(read,16,nullptr); // read address is configured before accelerator run
 
       for(int i = 0; i < 8; i++){
-         registers[i] = GetInstanceByName(shaInstance,"State","s%d",i,"reg");
+         registers[i] = GetSubInstanceByName(accel,shaInstance,"State","s%d",i,"reg");
       }
 
       for(int i = 0; i < 4; i++){
-         FUInstance* mem = GetInstanceByName(shaInstance,"cMem%d",i,"mem");
+         FUInstance* mem = GetSubInstanceByName(accel,shaInstance,"cMem%d",i,"mem");
 
          for(int ii = 0; ii < 16; ii++){
             VersatUnitWrite(mem,ii,kConstants[i][ii]);
          }
       }
 
-      FUInstance* swap = GetInstanceByName(shaInstance,"Swap");
+      FUInstance* swap = GetSubInstanceByName(accel,shaInstance,"Swap");
       swap->config[0] = 1;
    } else { // Assume that accel is a flatten instance of SHA
       FUInstance* read = GetInstanceByName(accel,"Test","MemRead");
@@ -87,6 +88,7 @@ static size_t versat_crypto_hashblocks_sha256(const uint8_t *in, size_t inlen) {
 
       if(!initVersat){
          for(int i = 0; i < 8; i++){
+            registers[i] = GetInstanceByName(accel,"Test","State","s%d",i,"reg");  // Small hack
             VersatUnitWrite(registers[i],0,initialStateValues[i]);
          }
          initVersat = true;
@@ -144,6 +146,7 @@ void VersatSHA(uint8_t *out, const uint8_t *in, size_t inlen) {
    AcceleratorRun(accel);
 
    for (size_t i = 0; i < 8; ++i) {
+      registers[i] = GetInstanceByName(accel,"Test","State","s%d",i,"reg"); // Small hack
       uint val = *registers[i]->state;
 
       store_bigendian_32(&out[i*4],val);

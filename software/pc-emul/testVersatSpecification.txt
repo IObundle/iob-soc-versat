@@ -1596,3 +1596,15 @@ module TestConfigOrder(){
 # 
    a1 -> store;
 }
+
+module VectorLikeOperation(){
+   Mem mat; // mat[row]
+   VRead row; // mat[k]
+   Mem output; 
+   Const mask;
+#
+   a = row & mask;
+   b = mat ^ a;
+
+   b -> output;
+}

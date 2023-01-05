@@ -4,15 +4,14 @@
 #SOFTWARE
 software/periphs.h
 
-software/*/*
-!software/*/makefile
-!software/*/Makefile
-!software/*/*.expected
-!software/*/*.py
-!software/*/*.rsp
-!software/*/*.c
-!software/*/*.cpp
-!software/*/*.hpp
+*.c
+
+software/pc-emul/*
+!software/pc-emul/Makefile
+!software/pc-emul/test.expected
+!software/pc-emul/testVersatSpecification.txt
+
+software/test/*.bin
 
 !software/bootloader/boot.c
 !software/bootloader/boot.S
@@ -23,6 +22,9 @@ software/*/*
 
 #HARDWARE
 #sources
+
+hardware/include/signal_inst.vh
+
 hardware/src/system.v
 hardware/src/versat_instance.v
 hardware/src/GeneratedUnits/*

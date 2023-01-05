@@ -1,6 +1,6 @@
 #include "unitConfiguration.hpp"
 
-#include "verilogWrapper.inc"
+#include "basicWrapper.inc"
 
 void IntSet(volatile int* buffer,int value,int byteSize){
    int nInts = byteSize / 4;

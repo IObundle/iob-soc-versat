@@ -5,12 +5,16 @@
 #include "versat.hpp"
 #include "utils.hpp"
 #include "unitConfiguration.hpp"
+#include "basicWrapper.inc"
 #include "verilogWrapper.inc"
 #include "versatSHA.hpp"
+
+#include "memory.hpp"
 
 extern "C"{
 #include "../test_vectors.h"
 #include "crypto/sha2.h"
+#include "crypto/mceliece/mceliece348864/api.h"
 
 #include "iob-ila.h"
 int printf_(const char* format, ...);
@@ -181,7 +185,7 @@ static TestInfo Expect_(const char* functionName,int testNumber, const char* exp
    }
 }
 
-#define TEST(TEST_NAME) static TestInfo TEST_NAME(Versat* versat,int testNumber)
+#define TEST(TEST_NAME) static TestInfo TEST_NAME(Versat* versat,Arena* temp,int testNumber)
 
 TEST(TestMStage){
    OneUnitTestData test = InstantiateSimple(versat,4,1,"M_Stage");
@@ -604,9 +608,9 @@ static void FillSBox(FUInstance* inst){
    }
 }
 
-static void FillSubBytes(FUInstance* inst){
+static void FillSubBytes(Accelerator* topLevel,FUInstance* inst){
    for(int i = 0; i < 8; i++){
-      FillSBox(GetInstanceByName(inst,"s%d",i));
+      FillSBox(GetSubInstanceByName(topLevel,inst,"s%d",i));
    }
 }
 
@@ -626,7 +630,7 @@ TEST(VersatSubBytes){
    OneUnitTestData test = InstantiateSimple(versat,16,16,"SBox");
 
    #if 1
-   FillSubBytes(test.inst);
+   FillSubBytes(test.accel,test.inst);
    #endif
 
    int* out = TestInstance(test,0x19,0xa0,0x9a,0xe9,0x3d,0xf4,0xc6,0xf8,0xe3,0xe2,0x8d,0x48,0xbe,0x2b,0x2a,0x08);
@@ -703,11 +707,11 @@ static const uint8_t mul3[] = {
    0x0b,0x08,0x0d,0x0e,0x07,0x04,0x01,0x02,0x13,0x10,0x15,0x16,0x1f,0x1c,0x19,0x1a
 };
 
-static void FillRow(FUInstance* row){
-   FUInstance* mul2_0 = GetInstanceByName(row,"mul2_0");
-   FUInstance* mul2_1 = GetInstanceByName(row,"mul2_1");
-   FUInstance* mul3_0 = GetInstanceByName(row,"mul3_0");
-   FUInstance* mul3_1 = GetInstanceByName(row,"mul3_1");
+static void FillRow(Accelerator* topLevel,FUInstance* row){
+   FUInstance* mul2_0 = GetSubInstanceByName(topLevel,row,"mul2_0");
+   FUInstance* mul2_1 = GetSubInstanceByName(topLevel,row,"mul2_1");
+   FUInstance* mul3_0 = GetSubInstanceByName(topLevel,row,"mul3_0");
+   FUInstance* mul3_1 = GetSubInstanceByName(topLevel,row,"mul3_1");
 
    for(int i = 0; i < 256; i++){
       VersatUnitWrite(mul2_0,i,mul2[i]);
@@ -720,7 +724,7 @@ static void FillRow(FUInstance* row){
 TEST(VersatDoRows){
    OneUnitTestData test = InstantiateSimple(versat,4,4,"DoRow");
 
-   FillRow(test.inst);
+   FillRow(test.accel,test.inst);
 
    int* out = TestInstance(test,0xdb,0x13,0x53,0x45);
 
@@ -749,7 +753,7 @@ TEST(VersatMixColumns){
    OneUnitTestData test = InstantiateSimple(versat,16,16,"MixColumns");
 
    for(int i = 0; i < 4; i++){
-      FillRow(GetInstanceByName(test.accel,"Test","d%d",i));
+      FillRow(test.accel,GetInstanceByName(test.accel,"Test","d%d",i));
    }
 
    int* out = TestInstance(test,0xd4,0xe0,0xb8,0x1e,0xbf,0xb4,0x41,0x27,0x5d,0x52,0x11,0x98,0x30,0xae,0xf1,0xe5);
@@ -789,9 +793,9 @@ TEST(FirstLineKey){
    return EXPECT("0xa0 0xfa 0xfe 0x17 ","%s",buffer);
 }
 
-static void FillKeySchedule(FUInstance* inst){
+static void FillKeySchedule(Accelerator* topLevel,FUInstance* inst){
    for(int i = 0; i < 2; i++){
-      FUInstance* table = GetInstanceByName(inst,"s","b%d",i);
+      FUInstance* table = GetSubInstanceByName(topLevel,inst,"s","b%d",i);
 
       FillSBox(table);
    }
@@ -808,7 +812,7 @@ TEST(KeySchedule){
 
    OneUnitTestData test = InstantiateSimple(versat,17,16,"KeySchedule");
 
-   FillKeySchedule(test.inst);
+   FillKeySchedule(test.accel,test.inst);
 
    int* out = TestInstance(test,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c,0x01);
 
@@ -821,13 +825,13 @@ TEST(KeySchedule){
    return EXPECT("0xa0 0x88 0x23 0x2a 0xfa 0x54 0xa3 0x6c 0xfe 0x2c 0x39 0x76 0x17 0xb1 0x39 0x05 ","%s",buffer);
 }
 
-void FillRound(FUInstance* round){
+void FillRound(Accelerator* topLevel,FUInstance* round){
    for(int i = 0; i < 8; i++){
-      FillSBox(GetInstanceByName(round,"subBytes","s%d",i));
+      FillSBox(GetSubInstanceByName(topLevel,round,"subBytes","s%d",i));
    }
 
    for(int i = 0; i < 4; i++){
-      FillRow(GetInstanceByName(round,"mixColumns","d%d",i));
+      FillRow(topLevel,GetSubInstanceByName(topLevel,round,"mixColumns","d%d",i));
    }
 }
 
@@ -845,7 +849,7 @@ TEST(AESRound){
 
    OneUnitTestData test = InstantiateSimple(versat,32,16,"MainRound");
 
-   FillRound(test.inst);
+   FillRound(test.accel,test.inst);
 
    int* out = TestInstance(test,0x19,0xa0,0x9a,0xe9,0x3d,0xf4,0xc6,0xf8,0xe3,0xe2,0x8d,0x48,0xbe,0x2b,0x2a,0x08,0xa0,0x88,0x23,0x2a,0xfa,0x54,0xa3,0x6c,0xfe,0x2c,0x39,0x76,0x17,0xb1,0x39,0x05);
 
@@ -858,18 +862,18 @@ TEST(AESRound){
    return EXPECT("0xa4 0x68 0x6b 0x02 0x9c 0x9f 0x5b 0x6a 0x7f 0x35 0xea 0x50 0xf2 0x2b 0x43 0x49 ","%s",buffer);
 }
 
-static void FillAES(FUInstance* inst){
+static void FillAES(Accelerator* topLevel,FUInstance* inst){
    int rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36};
    for(int i = 0; i < 10; i++){
-      FUInstance* constRcon = GetInstanceByName(inst,"rcon%d",i);
+      FUInstance* constRcon = GetSubInstanceByName(topLevel,inst,"rcon%d",i);
       constRcon->config[0] = rcon[i];
 
-      FillKeySchedule(GetInstanceByName(inst,"key%d",i));
+      FillKeySchedule(topLevel,GetSubInstanceByName(topLevel,inst,"key%d",i));
    }
-   FillSubBytes(GetInstanceByName(inst,"subBytes"));
+   FillSubBytes(topLevel,GetSubInstanceByName(topLevel,inst,"subBytes"));
 
    for(int i = 0; i < 9; i++){
-      FillRound(GetInstanceByName(inst,"round%d",i));
+      FillRound(topLevel,GetSubInstanceByName(topLevel,inst,"round%d",i));
    }
 }
 
@@ -924,7 +928,7 @@ TEST(AES){
 
    OneUnitTestData test = InstantiateSimple(versat,32,16,"AES");
 
-   FillAES(test.inst);
+   FillAES(test.accel,test.inst);
 
    int* out = TestInstance(test,0x32,0x88,0x31,0xe0,0x43,0x5a,0x31,0x37,0xf6,0x30,0x98,0x07,0xa8,0x8d,0xa2,0x34,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c);
 
@@ -957,7 +961,7 @@ TEST(ReadWriteAES){
    ConfigureSimpleVRead(GetInstanceByName(accel,"Test","key"),16,key);
    ConfigureSimpleVWrite(GetInstanceByName(accel,"Test","results"),16,result);
 
-   FillAES(GetInstanceByName(accel,"Test","aes"));
+   FillAES(accel,GetInstanceByName(accel,"Test","aes"));
 
    AcceleratorRun(accel);
    AcceleratorRun(accel);
@@ -1059,8 +1063,8 @@ TEST(ComplexMultiplier){
 TEST(Generator){
    OneUnitTestData test = InstantiateSimple(versat,0,0,"TestGenerator");
 
-   FUInstance* gen = GetInstanceByName(test.inst,"gen");
-   FUInstance* mem = GetInstanceByName(test.inst,"mem");
+   FUInstance* gen = GetSubInstanceByName(test.accel,test.inst,"gen");
+   FUInstance* mem = GetSubInstanceByName(test.accel,test.inst,"mem");
 
    ConfigureGenerator(gen,5,10,1);
    ConfigureMemoryReceive(mem,5,1);
@@ -1483,6 +1487,7 @@ TEST(SHA){
       digest[i] = 0;
    }
 
+   sha256(digest,msg_64,64);
    VersatSHA(digest,msg_64,64);
 
    return EXPECT("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa","%s",GetHexadecimal(digest, HASH_SIZE));
@@ -1802,7 +1807,7 @@ TEST(TestConfigOrder){
 TEST(TestInstanceLatency){
    OneUnitTestData test = InstantiateSimple(versat,2,1,"TestInstanceLatency");
 
-   FUInstance* gen = GetInstanceByName(test.inst,"gen");
+   FUInstance* gen = GetSubInstanceByName(test.accel,test.inst,"gen");
 
    ConfigureGenerator(gen,0,255,1);
 
@@ -1819,6 +1824,68 @@ TEST(ComplexCalculateDelay){
    TEST_PASSED; // Need to look at .dot file to check
 }
 
+extern "C"{
+#include "crypto/mceliece/rng.h"
+#include "crypto/mceliece/mceliece348864/crypto_kem_mceliece348864.h"
+}
+
+#include "debug.hpp"
+
+TEST(McEliece){
+   unsigned char pk[CRYPTO_PUBLICKEYBYTES];
+   unsigned char sk[CRYPTO_SECRETKEYBYTES];
+   unsigned char ct[CRYPTO_CIPHERTEXTBYTES];
+   unsigned char ss[CRYPTO_BYTES];
+   unsigned char ss1[CRYPTO_BYTES];
+   unsigned char entropy_input[48];
+   unsigned char seed[48];
+
+   for (int i = 0; i < 48; i++)
+      entropy_input[i] = i;
+   randombytes_init(entropy_input, NULL, 256);
+
+   randombytes(seed, 48);
+
+   randombytes_init(seed,NULL,256);
+
+   {
+   TIME_IT("1");
+   int res = crypto_kem_mceliece348864_keypair(pk,sk);
+   }
+   {
+   TIME_IT("2");
+   int res2 = crypto_kem_mceliece348864_enc(ct, ss, pk);
+   }
+   {
+   TIME_IT("3");
+   int res3 = crypto_kem_mceliece348864_dec(ss1, ct, sk);
+   }
+
+   #if 0
+   OutputMemoryHex(seed,48);
+   printf("\n");
+   OutputMemoryHex(pk,CRYPTO_PUBLICKEYBYTES);
+   printf("\n");
+   OutputMemoryHex(sk,CRYPTO_SECRETKEYBYTES);
+   printf("\n");
+   OutputMemoryHex(ct,CRYPTO_CIPHERTEXTBYTES);
+   printf("\n");
+   #endif
+   #if 0
+   OutputMemoryHex(ss,CRYPTO_BYTES);
+   printf("\n");
+   OutputMemoryHex(ss1,CRYPTO_BYTES);
+   #endif
+
+   SizedString first = PushMemoryHex(temp,ss,CRYPTO_BYTES);
+
+   if(memcmp(ss,ss1,CRYPTO_BYTES) != 0){
+      TEST_FAILED("Not equal");
+   }
+
+   return EXPECT("b4 f9 ff 1e 43 90 e3 be 0b bc eb ff 9a 52 5a e8 3b 19 12 11 89 6a a8 78 6c e8 bc 51 1c 9f 78 c3 ","%.*s",UNPACK_SS(first));
+}
+
 #define DISABLED (REVERSE_ENABLED)
 
 #ifndef HARDWARE_TEST
@@ -1829,7 +1896,8 @@ TEST(ComplexCalculateDelay){
 #endif
 
 #define TEST_INST(ENABLED,TEST_NAME) do { if(ENABLE_TEST( ENABLED )){ \
-      TestInfo test = TEST_NAME(versat,currentTest); \
+      ArenaMarker marker(&temp); \
+      TestInfo test = TEST_NAME(versat,&temp,currentTest); \
       if(test.testsPassed == test.numberTests) printf("%32s [%02d] - OK\n",#TEST_NAME,currentTest); \
       info += test; \
      \
@@ -1837,10 +1905,10 @@ TEST(ComplexCalculateDelay){
    currentTest += 1; } while(0)
 
 // When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
-#define REVERSE_ENABLED 1
+#define REVERSE_ENABLED 0
 
-//                 6543210
-#define SEGMENTS 0b0000001
+//                 76543210
+#define SEGMENTS 0b10000000
 
 #define SEG0 (SEGMENTS & 0x01)
 #define SEG1 (SEGMENTS & 0x02)
@@ -1849,8 +1917,12 @@ TEST(ComplexCalculateDelay){
 #define SEG4 (SEGMENTS & 0x10)
 #define SEG5 (SEGMENTS & 0x20)
 #define SEG6 (SEGMENTS & 0x40)
+#define SEG7 (SEGMENTS & 0x80)
 
 void AutomaticTests(Versat* versat){
+   Arena temp = {};
+   InitArena(&temp,Megabyte(1));
+
    TestInfo info = TestInfo(0,0);
    int hardwareTest = HARDWARE_TEST;
    int currentTest = 0;
@@ -1859,11 +1931,15 @@ void AutomaticTests(Versat* versat){
    EnterDebugTerminal(versat);
    #endif
 
-#if 1
+/*
+   SHA currently only working due to a small hack in the SHA function
+   The only thing left is to complete the CreateFUInstance and GetInstanceByName implementation with working resizable configuration accelerators
+*/
+
 #if SEG0
    TEST_INST( 1 ,TestMStage);
    TEST_INST( 1 ,TestFStage);
-   TEST_INST( 0 ,SHA);
+   TEST_INST( 1 ,SHA);
    TEST_INST( DISABLED ,MultipleSHATests);
    TEST_INST( 1 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
@@ -1927,6 +2003,8 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,ComplexCalculateDelay);
    TEST_INST( 1 ,Generator);
 #endif
+#if SEG7
+   TEST_INST( 1 ,McEliece);
 #endif
 
    //Free(versat);
