@@ -1886,6 +1886,72 @@ TEST(McEliece){
    return EXPECT("b4 f9 ff 1e 43 90 e3 be 0b bc eb ff 9a 52 5a e8 3b 19 12 11 89 6a a8 78 6c e8 bc 51 1c 9f 78 c3 ","%.*s",UNPACK_SS(first));
 }
 
+#include "memory.hpp"
+#include "parser.hpp"
+
+#define FFT_SIZE 1024
+void VersatStradedFFT(double real[FFT_SIZE], double img[FFT_SIZE], double real_twid[FFT_SIZE/2], double img_twid[FFT_SIZE/2]);
+
+TEST(FFT){
+   FILE* inputData = fopen("../firmware/benchmarks/MachSuite/fft/strided/input.data","r");
+
+   double data_x[FFT_SIZE];
+   double data_y[FFT_SIZE];
+   double img[FFT_SIZE/2];
+   double real[FFT_SIZE/2];
+   double data_x_expected[FFT_SIZE];
+   double data_y_expected[FFT_SIZE];
+
+   {
+   SizedString content = PushFile(temp,"../firmware/benchmarks/MachSuite/fft/strided/input.data");
+   Tokenizer tok(content,"",{"%%"});
+
+   tok.AssertNextToken("%%");
+   for(int i = 0; i < FFT_SIZE; i++){
+      data_x[i] = ParseDouble(tok.NextToken());
+   }
+   tok.AssertNextToken("%%");
+   for(int i = 0; i < FFT_SIZE; i++){
+      data_y[i] = ParseDouble(tok.NextToken());
+   }
+   tok.AssertNextToken("%%");
+   for(int i = 0; i < FFT_SIZE/2; i++){
+      img[i] = ParseDouble(tok.NextToken());
+   }
+   tok.AssertNextToken("%%");
+   for(int i = 0; i < FFT_SIZE/2; i++){
+      real[i] = ParseDouble(tok.NextToken());
+   }
+   }
+
+   {
+   SizedString content = PushFile(temp,"../firmware/benchmarks/MachSuite/fft/strided/check.data");
+   Tokenizer tok(content,"",{"%%"});
+
+   tok.AssertNextToken("%%");
+   for(int i = 0; i < FFT_SIZE; i++){
+      data_x_expected[i] = ParseDouble(tok.NextToken());
+   }
+   tok.AssertNextToken("%%");
+   for(int i = 0; i < FFT_SIZE; i++){
+      data_y_expected[i] = ParseDouble(tok.NextToken());
+   }
+   }
+
+   VersatStradedFFT(data_x,data_y,img,real);
+
+   for(int i = 0; i < FFT_SIZE; i++){
+      if(!FloatEqual(data_x[i],data_x_expected[i])){
+         TEST_FAILED("Different values [%d] %lf : %lf",i,data_x[i],data_x_expected[i]);
+      }
+      if(!FloatEqual(data_y[i],data_y_expected[i])){
+         TEST_FAILED("Different values [%d] %lf : %lf",i,data_y[i],data_y_expected[i]);
+      }
+   }
+
+   TEST_PASSED;
+}
+
 #define DISABLED (REVERSE_ENABLED)
 
 #ifndef HARDWARE_TEST
@@ -2004,7 +2070,8 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,Generator);
 #endif
 #if SEG7
-   TEST_INST( 1 ,McEliece);
+   TEST_INST( DISABLED ,McEliece);
+   TEST_INST( 1 ,FFT);
 #endif
 
    //Free(versat);

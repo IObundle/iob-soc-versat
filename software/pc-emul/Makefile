@@ -29,6 +29,7 @@ SRC+= $(FIRM_DIR)/automaticTests.cpp
 SRC+= $(FIRM_DIR)/unitConfiguration.cpp
 SRC+= $(FIRM_DIR)/versatSHA.cpp
 SRC+= $(FIRM_DIR)/versatMcEliece.cpp
+SRC+= $(FIRM_DIR)/VersatMachSuite.cpp
 SRC+= ./ila.c
 SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c)
 SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c)
