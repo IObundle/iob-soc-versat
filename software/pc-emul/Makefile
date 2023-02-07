@@ -1,7 +1,9 @@
+SHELL := /bin/bash
+
 ROOT_DIR:=../..
 
-GLOBAL_CFLAGS:=-m32 -Wall -g -DVERSAT_DEBUG -fno-omit-frame-pointer #-fsanitize=address
-LIBS := -lstdc++ -lm -lgcc -lc -lssl -lcrypto
+GLOBAL_CFLAGS:=-Wall -g -march=native -msse2 -DVERSAT_DEBUG #-m32 #-fsanitize=address
+LIBS := -lstdc++ -lm -lgcc -lc -lssl -lcrypto -pthread
 
 include ../software.mk
 
@@ -24,15 +26,52 @@ HDR+=$(FIRM_DIR)/unitConfiguration.hpp
 
 #SOURCES
 SRC+= $(UART_DIR)/software/printf.c
-SRC+= $(wildcard  $(FIRM_DIR)/crypto/*.c)
-SRC+= $(FIRM_DIR)/automaticTests.cpp
-SRC+= $(FIRM_DIR)/unitConfiguration.cpp
-SRC+= $(FIRM_DIR)/versatSHA.cpp
-SRC+= $(FIRM_DIR)/versatMcEliece.cpp
-SRC+= $(FIRM_DIR)/VersatMachSuite.cpp
-SRC+= ./ila.c
-SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c)
-SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c)
+
+OBJ += $(foreach name,$(basename $(notdir $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c))),./build/$(name).o)
+OBJ += $(foreach name,$(basename $(notdir $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c))),./build/$(name).o)
+OBJ += $(foreach name,$(basename $(notdir $(wildcard $(FIRM_DIR)/crypto/blake2/*.c))),./build/$(name).o)
+OBJ += $(foreach name,$(basename $(notdir $(wildcard $(FIRM_DIR)/crypto/*.c))),./build/$(name).o)
+
+OBJ += ./build/iob-uart.o
+OBJ += ./build/iob_uart_swreg_pc_emul.o
+OBJ += ./build/iob-timer.o
+OBJ += ./build/iob_timer_swreg_pc_emul.o
+OBJ += ./build/iob-ila.o
+OBJ += ./build/iob_ila_swreg_emb.o
+OBJ += ./build/printf.o
+
+./build/iob-uart.o : ../../submodules/UART/software/iob-uart.c 
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/iob-uart.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/iob_uart_swreg_pc_emul.o : ../../submodules/UART/software/pc-emul/iob_uart_swreg_pc_emul.c 
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/iob_uart_swreg_pc_emul.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/iob-timer.o : ../../submodules/TIMER/software/iob-timer.c 
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/iob-timer.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/iob_timer_swreg_pc_emul.o : ../../submodules/TIMER/software/pc-emul/iob_timer_swreg_pc_emul.c 
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/iob_timer_swreg_pc_emul.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/iob-ila.o : ../../submodules/ILA/software/pc-emul/iob-ila.c 
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/iob-ila.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/iob_ila_swreg_emb.o : iob_ila_swreg_emb.c 
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/iob_ila_swreg_emb.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/printf.o : ../../submodules/UART/software/printf.c 
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/printf.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/%.o: $(FIRM_DIR)/crypto/mceliece/mceliece348864/%.c
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/%.o: $(FIRM_DIR)/crypto/mceliece/%.c
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/%.o: $(FIRM_DIR)/crypto/blake2/%.c
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
+./build/%.o: $(FIRM_DIR)/crypto/%.c
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 
 INCLUDE+=$(incdir)./build
 
@@ -54,6 +93,12 @@ UNIT_VERILOG += $(foreach unit,$(VERILATE_UNIT),$(HW_DIR)/src/units/$(unit).v)
 
 UNIT_HDR+=$(foreach obj,$(VERILATE_UNIT),./build/V$(obj).h)
 OBJ+=./build/firmware.o
+OBJ+= ./build/unitConfiguration.o
+OBJ+= ./build/versatSHA.o
+OBJ+= ./build/versatMcEliece.o
+OBJ+= ./build/VersatMachSuite.o
+OBJ+= ./build/VersatBlake2.o
+OBJ+= ./build/automaticTests.o
 
 #CONSOLE
 CONSOLE_CMD=$(ROOT_DIR)/software/console/eth_console -L
@@ -66,15 +111,15 @@ build: gen_data fw_emul
 	@mkdir -p src
 
 fw_emul: $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ)
-	gcc -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) $(SRC) ./build/*.o $(LIBS)
+	gcc -w -fuse-ld=lld -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o $(LIBS)
 	
 run: build
 	./fw_emul $(TEST_LOG)
-	cp versat_instance.v $(HW_DIR)/src/
-	cp versat_defs.vh $(HW_DIR)/include/
-	cp versat_data.inc $(FIRM_DIR)/
-	cp ./build/verilogWrapper.inc $(FIRM_DIR)/
-	cp src/* $(HW_DIR)/src/GeneratedUnits/
+	-cp versat_instance.v $(HW_DIR)/src/
+	-cp versat_defs.vh $(HW_DIR)/include/
+	-cp versat_data.inc $(FIRM_DIR)/
+	-cp ./build/verilogWrapper.inc $(FIRM_DIR)/
+	-cp src/* $(HW_DIR)/src/GeneratedUnits/
 
 clean:
 	@rm -rf fw_emul periphs.h *swreg*.h *swreg*.c test.log soc2cnsl cnsl2soc \

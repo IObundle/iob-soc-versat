@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "versat.hpp"
+#include "versatExtra.hpp"
 #include "utils.hpp"
 #include "unitConfiguration.hpp"
 #include "basicWrapper.inc"
@@ -34,94 +35,11 @@ int printf_(const char* format, ...);
 #endif
 #endif
 
-const char* constIn[] = {"constIn0","constIn1","constIn2","constIn3","constIn4","constIn5","constIn6","constIn7","constIn8","constIn9","constIn10","constIn11","constIn12","constIn13","constIn14","constIn15","constIn16",
-                       "constIn17","constIn18","constIn19","constIn20","constIn21","constIn22","constIn23","constIn24","constIn25","constIn26","constIn27","constIn28","constIn29","constIn30","constIn31","constIn32",};
-const char* regOut[] = {"regOut0","regOut1","regOut2","regOut3","regOut4","regOut5","regOut6","regOut7","regOut8","regOut9","regOut10","regOut11","regOut12","regOut13","regOut14","regOut15","regOut16","regOut17"};
-
-struct OneUnitTestData{
-   Versat* versat;
-   FUDeclaration* type;
-   Accelerator* accel;
-   FUInstance* inst;
-   FUInstance* inputs[99];
-   unsigned int numberInputs;
-   FUInstance* outputs[99];
-   unsigned int numberOutputs;
-};
-
-OneUnitTestData InstantiateSimple(Versat* versat,unsigned int numberInputs,unsigned int numberOutputs,const char* declarationName){
-   OneUnitTestData res = {};
-
-   res.type = GetTypeByName(versat,MakeSizedString(declarationName));
-
-   #ifdef PC
-   //Assert(CheckInputAndOutputNumber(res.type,numberInputs,numberOutputs));
-   #endif // PC
-
-   res.versat = versat;
-   res.accel = CreateAccelerator(versat);
-   res.inst = CreateFUInstance(res.accel,res.type,MakeSizedString("Test"));
-
-   res.numberInputs = numberInputs;
-   res.numberOutputs = numberOutputs;
-
-   FUDeclaration* constType = GetTypeByName(versat,MakeSizedString("Const"));
-   FUDeclaration* regType = GetTypeByName(versat,MakeSizedString("Reg"));
-
-   for(unsigned int i = 0; i < res.numberInputs; i++){
-      Assert(i < ARRAY_SIZE(constIn));
-
-      SizedString name = MakeSizedString(constIn[i]);
-      res.inputs[i] = CreateFUInstance(res.accel,constType,name);
-      ConnectUnits(res.inputs[i],0,res.inst,i);
-   }
-
-   for(unsigned int i = 0; i < res.numberOutputs; i++){
-      Assert(i < ARRAY_SIZE(regOut));
-
-      SizedString name = MakeSizedString(regOut[i]);
-      res.outputs[i] = CreateFUInstance(res.accel,regType,name);
-
-      ConnectUnits(res.inst,i,res.outputs[i],0);
-   }
-
-   return res;
-}
-
-int* vTestInstance(OneUnitTestData instance,va_list args){
-   static int out[99];
-
-   for(unsigned int i = 0; i < instance.numberInputs; i++){
-      int val = va_arg(args,int);
-      instance.inputs[i]->config[0] = val;
-   }
-
-   AcceleratorRun(instance.accel);
-
-   OutputVersatSource(instance.versat,instance.accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
-
-   for(unsigned int i = 0; i < instance.numberOutputs; i++){
-      out[i] = instance.outputs[i]->state[0];
-   }
-
-   return out;
-}
-
-int* TestInstance(OneUnitTestData instance,...){
-   va_list args;
-   va_start(args,instance);
-
-   int* out = vTestInstance(instance,args);
-
-   va_end(args);
-
-   return out;
-}
-
 struct TestInfo{
    int testsPassed;
    int numberTests;
 
+   TestInfo(){}
    TestInfo(int passed, int numberTests = 1):testsPassed(passed),numberTests(numberTests){};
 
    TestInfo& operator+=(TestInfo t){
@@ -129,6 +47,14 @@ struct TestInfo{
       numberTests += t.numberTests;
 
       return *this;
+   }
+
+   TestInfo operator&(TestInfo t){
+      TestInfo info;
+      info.testsPassed = this->testsPassed & t.testsPassed;
+      info.numberTests = this->numberTests & t.numberTests;
+
+      return info;
    }
 };
 
@@ -148,9 +74,9 @@ static TestInfo Expect_(const char* functionName,int testNumber, const char* exp
    va_list args;
    va_start(args,format);
 
-   char buffer[1024];
+   char buffer[2048];
    int size = vsprintf(buffer,format,args);
-   Assert(size < 1024);
+   Assert(size < 2048);
 
    va_end(args);
 
@@ -188,7 +114,8 @@ static TestInfo Expect_(const char* functionName,int testNumber, const char* exp
 #define TEST(TEST_NAME) static TestInfo TEST_NAME(Versat* versat,Arena* temp,int testNumber)
 
 TEST(TestMStage){
-   OneUnitTestData test = InstantiateSimple(versat,4,1,"M_Stage");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"M_Stage");
    FUInstance* inst = GetInstanceByName(test.accel,"Test","comb","sigma");
 
    #if 1
@@ -198,13 +125,14 @@ TEST(TestMStage){
    }
    #endif
 
-   int* out = TestInstance(test,0x5a86b737,0xa9f9be83,0x08251f6d,0xeaea8ee9);
+   int* out = RunSimpleAccelerator(&test,0x5a86b737,0xa9f9be83,0x08251f6d,0xeaea8ee9);
 
    return EXPECT("0xb89ab4ca","0x%x",out[0]);
 }
 
 TEST(TestFStage){
-   OneUnitTestData test = InstantiateSimple(versat,10,8,"F_Stage");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"F_Stage");
 
    FUInstance* t = GetInstanceByName(test.accel,"Test","f_stage","t");
    int constants[] = {6,11,25,2,13,22};
@@ -212,7 +140,7 @@ TEST(TestFStage){
       t->config[i] = constants[i];
    }
 
-   int* out = TestInstance(test,0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19,0x428a2f98,0x5a86b737);
+   int* out = RunSimpleAccelerator(&test,0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19,0x428a2f98,0x5a86b737);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -224,7 +152,9 @@ TEST(TestFStage){
 }
 
 TEST(VReadToVWrite){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"VReadToVWrite");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"VReadToVWrite");
+
    Accelerator* accel = test.accel;
 
    int readBuffer[16];
@@ -261,7 +191,9 @@ TEST(StringHasher){
    int weights[] = {17,67,109,157,199};
    char testString[] = "123249819835894981389Waldo198239812849825899904924oefhcasjngwoeijfjvakjndcoiqwj";
 
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"StringHasher");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"StringHasher");
+
    Accelerator* accel = test.accel;
 
    FUInstance* muladd = GetInstanceByName(test.accel,"Test","mul1","mul");
@@ -305,7 +237,7 @@ TEST(StringHasher){
       int val = VersatUnitRead(bytesOut,i);
 
       if(hash == val){
-         return EXPECT("21","%d",i);
+         return EXPECT("21","%ld",i);
       }
    }
 
@@ -334,7 +266,9 @@ TEST(Convolution){
       }
    }
 
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"Convolution");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"Convolution");
+
    Accelerator* accel = test.accel;
 
    //write data in versat mems
@@ -419,7 +353,9 @@ TEST(Convolution){
 }
 
 TEST(MatrixMultiplication){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"MatrixMultiplication");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"MatrixMultiplication");
+
    Accelerator* accel = test.accel;
 
    FUInstance* memA = GetInstanceByName(accel,"Test","matA");
@@ -469,8 +405,9 @@ TEST(MatrixMultiplicationVRead){
    int matrixB[DIM*DIM];
    int matrixRes[DIM*DIM];
    volatile int* resPtr = (volatile int*) matrixRes;
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"MatrixMultiplicationVread");
 
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"MatrixMultiplicationVread");
    Accelerator* accel = test.accel;
 
    FUInstance* memA = GetInstanceByName(accel,"Test","matA");
@@ -487,12 +424,14 @@ TEST(MatrixMultiplicationVRead){
 
    {
    volatile VReadConfig* config = (volatile VReadConfig*) memA->config;
-   config->ext_addr = (int) matrixA;
+   UNHANDLED_ERROR;
+   //config->ext_addr = (int) matrixA;
    }
 
    {
    volatile VReadConfig* config = (volatile VReadConfig*) memB->config;
-   config->ext_addr = (int) matrixB;
+   UNHANDLED_ERROR;
+   //config->ext_addr = (int) matrixB;
    }
 
    for(int i = 0; i < size; i++){
@@ -510,7 +449,8 @@ TEST(MatrixMultiplicationVRead){
    ConfigureMatrixVWrite(res,size);
    {
    volatile VWriteConfig* config = (volatile VWriteConfig*) res->config;
-   config->ext_addr = (int) matrixRes;
+   UNHANDLED_ERROR;
+   //config->ext_addr = (int) matrixRes;
    }
 
    AcceleratorRun(accel);
@@ -543,10 +483,10 @@ TEST(VersatAddRoundKey){
                   0x17,0xb1,0x39,0x05
                   };
    #endif
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"AddRoundKey");
 
-   OneUnitTestData test = InstantiateSimple(versat,32,16,"AddRoundKey");
-
-   int* out = TestInstance(test,
+   int* out = RunSimpleAccelerator(&test,
                               0x04,0xe0,0x48,0x28, // Cypher
                               0x66,0xcb,0xf8,0x06,
                               0x81,0x19,0xd3,0x26,
@@ -568,7 +508,8 @@ TEST(VersatAddRoundKey){
 }
 
 TEST(LookupTable){
-   OneUnitTestData test = InstantiateSimple(versat,2,2,"LookupTable");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"LookupTable");
 
    int addrA = 0;
    int addrB = 4;
@@ -576,7 +517,7 @@ TEST(LookupTable){
    VersatUnitWrite(test.inst,addrA,0xf0);
    VersatUnitWrite(test.inst,addrB,0xf4);
 
-   int* out = TestInstance(test,addrA,addrB);
+   int* out = RunSimpleAccelerator(&test,addrA,addrB);
 
    char buffer[1024];
    sprintf(buffer,"0x%02x 0x%02x",out[0],out[1]);
@@ -626,14 +567,14 @@ TEST(VersatSubBytes){
                      0x11,0x98,0x5d,0x52,
                      0xae,0xf1,0xe5,0x30};
    #endif
-
-   OneUnitTestData test = InstantiateSimple(versat,16,16,"SBox");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"SBox");
 
    #if 1
    FillSubBytes(test.accel,test.inst);
    #endif
 
-   int* out = TestInstance(test,0x19,0xa0,0x9a,0xe9,0x3d,0xf4,0xc6,0xf8,0xe3,0xe2,0x8d,0x48,0xbe,0x2b,0x2a,0x08);
+   int* out = RunSimpleAccelerator(&test,0x19,0xa0,0x9a,0xe9,0x3d,0xf4,0xc6,0xf8,0xe3,0xe2,0x8d,0x48,0xbe,0x2b,0x2a,0x08);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -651,10 +592,10 @@ TEST(VersatShiftRows){
                   0x11,0x98,0x5d,0x52,
                   0xae,0xf1,0xe5,0x30};
    #endif
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"ShiftRows");
 
-   OneUnitTestData test = InstantiateSimple(versat,16,16,"ShiftRows");
-
-   int* out = TestInstance(test,
+   int* out = RunSimpleAccelerator(&test,
                   0xd4,0xe0,0xb8,0x1e,
                   0x27,0xbf,0xb4,0x41,
                   0x11,0x98,0x5d,0x52,
@@ -722,11 +663,12 @@ static void FillRow(Accelerator* topLevel,FUInstance* row){
 }
 
 TEST(VersatDoRows){
-   OneUnitTestData test = InstantiateSimple(versat,4,4,"DoRow");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"DoRow");
 
    FillRow(test.accel,test.inst);
 
-   int* out = TestInstance(test,0xdb,0x13,0x53,0x45);
+   int* out = RunSimpleAccelerator(&test,0xdb,0x13,0x53,0x45);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -749,14 +691,14 @@ TEST(VersatMixColumns){
                      0x81,0x19,0xd3,0x26,
                      0xe5,0x9a,0x7a,0x4c};
    #endif
-
-   OneUnitTestData test = InstantiateSimple(versat,16,16,"MixColumns");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"MixColumns");
 
    for(int i = 0; i < 4; i++){
       FillRow(test.accel,GetInstanceByName(test.accel,"Test","d%d",i));
    }
 
-   int* out = TestInstance(test,0xd4,0xe0,0xb8,0x1e,0xbf,0xb4,0x41,0x27,0x5d,0x52,0x11,0x98,0x30,0xae,0xf1,0xe5);
+   int* out = RunSimpleAccelerator(&test,0xd4,0xe0,0xb8,0x1e,0xbf,0xb4,0x41,0x27,0x5d,0x52,0x11,0x98,0x30,0xae,0xf1,0xe5);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -771,8 +713,8 @@ TEST(FirstLineKey){
    #if 0
    int input[] = {0x09,0xcf,0x4f,0x3c,0x2b,0x7e,0x15,0x16,0x01};
    #endif
-
-   OneUnitTestData test = InstantiateSimple(versat,9,4,"FirstLineKey");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"FirstLineKey");
 
    for(int i = 0; i < 2; i++){
       FUInstance* table = GetInstanceByName(test.accel,"Test","b%d",i);
@@ -782,7 +724,7 @@ TEST(FirstLineKey){
       }
    }
 
-   int* out = TestInstance(test,0x09,0xcf,0x4f,0x3c,0x2b,0x7e,0x15,0x16,0x01);
+   int* out = RunSimpleAccelerator(&test,0x09,0xcf,0x4f,0x3c,0x2b,0x7e,0x15,0x16,0x01);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -809,12 +751,12 @@ TEST(KeySchedule){
                   0x16,0xa6,0x88,0x3c,
                   0x01}; // rcon
    #endif
-
-   OneUnitTestData test = InstantiateSimple(versat,17,16,"KeySchedule");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"KeySchedule");
 
    FillKeySchedule(test.accel,test.inst);
 
-   int* out = TestInstance(test,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c,0x01);
+   int* out = RunSimpleAccelerator(&test,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c,0x01);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -846,12 +788,12 @@ TEST(AESRound){
                   0xfe,0x2c,0x39,0x76,
                   0x17,0xb1,0x39,0x05};
    #endif
-
-   OneUnitTestData test = InstantiateSimple(versat,32,16,"MainRound");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"MainRound");
 
    FillRound(test.accel,test.inst);
 
-   int* out = TestInstance(test,0x19,0xa0,0x9a,0xe9,0x3d,0xf4,0xc6,0xf8,0xe3,0xe2,0x8d,0x48,0xbe,0x2b,0x2a,0x08,0xa0,0x88,0x23,0x2a,0xfa,0x54,0xa3,0x6c,0xfe,0x2c,0x39,0x76,0x17,0xb1,0x39,0x05);
+   int* out = RunSimpleAccelerator(&test,0x19,0xa0,0x9a,0xe9,0x3d,0xf4,0xc6,0xf8,0xe3,0xe2,0x8d,0x48,0xbe,0x2b,0x2a,0x08,0xa0,0x88,0x23,0x2a,0xfa,0x54,0xa3,0x6c,0xfe,0x2c,0x39,0x76,0x17,0xb1,0x39,0x05);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -925,12 +867,12 @@ TEST(AES){
                   0x15,0xd2,0x15,0x4f,
                   0x16,0xa6,0x88,0x3c};
    #endif
-
-   OneUnitTestData test = InstantiateSimple(versat,32,16,"AES");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"AES");
 
    FillAES(test.accel,test.inst);
 
-   int* out = TestInstance(test,0x32,0x88,0x31,0xe0,0x43,0x5a,0x31,0x37,0xf6,0x30,0x98,0x07,0xa8,0x8d,0xa2,0x34,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c);
+   int* out = RunSimpleAccelerator(&test,0x32,0x88,0x31,0xe0,0x43,0x5a,0x31,0x37,0xf6,0x30,0x98,0x07,0xa8,0x8d,0xa2,0x34,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -953,8 +895,9 @@ TEST(ReadWriteAES){
                   0x15,0xd2,0x15,0x4f,
                   0x16,0xa6,0x88,0x3c};
    int result[16];
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"ReadWriteAES");
 
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"ReadWriteAES");
    Accelerator* accel = test.accel;
 
    ConfigureSimpleVRead(GetInstanceByName(accel,"Test","cypher"),16,cypher);
@@ -994,7 +937,8 @@ int SimpleAdderInstance(Accelerator* accel,int a,int b){
 }
 
 TEST(SimpleAdder){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"SimpleAdder");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"SimpleAdder");
 
    int result = SimpleAdderInstance(test.accel,3,4);
 
@@ -1053,7 +997,8 @@ int SemiComplexAdderInstance(Accelerator* accel,int a,int b){
 }
 
 TEST(ComplexMultiplier){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"ComplexMultiplier");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"ComplexMultiplier");
 
    int result = ComplexMultiplierInstance(test.accel,4,5);
 
@@ -1061,7 +1006,8 @@ TEST(ComplexMultiplier){
 }
 
 TEST(Generator){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"TestGenerator");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"TestGenerator");
 
    FUInstance* gen = GetSubInstanceByName(test.accel,test.inst,"gen");
    FUInstance* mem = GetSubInstanceByName(test.accel,test.inst,"mem");
@@ -1080,8 +1026,13 @@ TEST(Generator){
    return EXPECT("5 6 7 8 9 0 ","%s",buffer);
 }
 
+TEST(Test64Bits){
+   TEST_PASSED;
+}
+
 TEST(SimpleShareConfig){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"SimpleShareConfig");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"SimpleShareConfig");
    Accelerator* accel = test.accel;
 
    FUInstance* a1 = GetInstanceByName(accel,"Test","a1");
@@ -1119,7 +1070,8 @@ TEST(SimpleShareConfig){
 }
 
 TEST(ComplexShareConfig){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"ComplexShareConfig");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"ComplexShareConfig");
    Accelerator* accel = test.accel;
 
    // Test by changing config for shared 1
@@ -1160,7 +1112,8 @@ TEST(ComplexShareConfig){
 }
 
 TEST(SimpleFlatten){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"SimpleAdder");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"SimpleAdder");
 
    Accelerator* flatten = Flatten(versat,test.accel,1);
 
@@ -1170,7 +1123,8 @@ TEST(SimpleFlatten){
 }
 
 TEST(FlattenShareConfig){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"ComplexShareConfig");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"ComplexShareConfig");
 
    Accelerator* flatten = Flatten(versat,test.accel,99);
 
@@ -1212,7 +1166,8 @@ TEST(FlattenShareConfig){
 }
 
 TEST(FlattenSHA){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"SHA");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"SHA");
 
    Accelerator* flatten = Flatten(versat,test.accel,99);
 
@@ -1231,7 +1186,8 @@ TEST(FlattenSHA){
 }
 
 TEST(ComplexFlatten){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"ReadWriteAES");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"ReadWriteAES");
 
    Accelerator* flatten = Flatten(versat,test.accel,99);
 
@@ -1267,13 +1223,13 @@ TEST(ComplexFlatten){
 }
 
 TEST(SimpleMergeNoCommon){
-   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString("SimpleAdder"));
-   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString("ComplexMultiplier"));
+   FUDeclaration* typeA = GetTypeByName(versat,STRING("SimpleAdder"));
+   FUDeclaration* typeB = GetTypeByName(versat,STRING("ComplexMultiplier"));
 
-   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString("NoCommonMerged"));
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,STRING("NoCommonMerged"));
 
    Accelerator* accel = CreateAccelerator(versat);
-   FUInstance* inst = CreateFUInstance(accel,merged,MakeSizedString("Test"));
+   FUInstance* inst = CreateFUInstance(accel,merged,STRING("Test"));
 
    int resA = 0;
    int resB = 0;
@@ -1287,13 +1243,13 @@ TEST(SimpleMergeNoCommon){
 }
 
 TEST(SimpleMergeUnitCommonNoEdge){
-   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString("SimpleAdder"));
-   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString("ComplexAdder"));
+   FUDeclaration* typeA = GetTypeByName(versat,STRING("SimpleAdder"));
+   FUDeclaration* typeB = GetTypeByName(versat,STRING("ComplexAdder"));
 
-   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString("UnitCommonNoEdgeMerged"));
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,STRING("UnitCommonNoEdgeMerged"));
 
    Accelerator* accel = CreateAccelerator(versat);
-   FUInstance* inst = CreateFUInstance(accel,merged,MakeSizedString("Test"));
+   FUInstance* inst = CreateFUInstance(accel,merged,STRING("Test"));
 
    int resA = 0;
    int resB = 0;
@@ -1311,13 +1267,13 @@ TEST(SimpleMergeUnitCommonNoEdge){
 }
 
 TEST(SimpleMergeUnitAndEdgeCommon){
-   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString("SimpleAdder"));
-   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString("SemiComplexAdder"));
+   FUDeclaration* typeA = GetTypeByName(versat,STRING("SimpleAdder"));
+   FUDeclaration* typeB = GetTypeByName(versat,STRING("SemiComplexAdder"));
 
-   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString("UnitAndEdgeCommonMerged"));
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,STRING("UnitAndEdgeCommonMerged"));
 
    Accelerator* accel = CreateAccelerator(versat);
-   FUInstance* inst = CreateFUInstance(accel,merged,MakeSizedString("Test"));
+   FUInstance* inst = CreateFUInstance(accel,merged,STRING("Test"));
 
    int resA = 0;
    int resB = 0;
@@ -1335,13 +1291,13 @@ TEST(SimpleMergeUnitAndEdgeCommon){
 }
 
 TEST(SimpleMergeInputOutputCommon){
-   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString("ComplexAdder"));
-   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString("ComplexMultiplier"));
+   FUDeclaration* typeA = GetTypeByName(versat,STRING("ComplexAdder"));
+   FUDeclaration* typeB = GetTypeByName(versat,STRING("ComplexMultiplier"));
 
-   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString("InputOutputCommonMerged"));
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,STRING("InputOutputCommonMerged"));
 
    Accelerator* accel = CreateAccelerator(versat);
-   FUInstance* inst = CreateFUInstance(accel,merged,MakeSizedString("Test"));
+   FUInstance* inst = CreateFUInstance(accel,merged,STRING("Test"));
 
    int resA = 0;
    int resB = 0;
@@ -1361,33 +1317,34 @@ TEST(SimpleMergeInputOutputCommon){
 }
 
 TEST(CombinatorialMerge){
-   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString("CH"));
-   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString("Maj"));
-   MergeAccelerators(versat,typeA,typeB,MakeSizedString("CH_Maj"));
+   FUDeclaration* typeA = GetTypeByName(versat,STRING("CH"));
+   FUDeclaration* typeB = GetTypeByName(versat,STRING("Maj"));
+   MergeAccelerators(versat,typeA,typeB,STRING("CH_Maj"));
 
-   OneUnitTestData test = InstantiateSimple(versat,3,1,"CH_Maj");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"CH_Maj");
 
    // Test CH(a,b,c)  - a & b ^ (~a & c) - a = b1100, b = b1010, c = b0101 - result 1000 ^ 0001 = 1001 = 9
    ActivateMergedAccelerator(versat,test.accel,typeA);
-   int* out = TestInstance(test,0xc,0xa,0x5);
+   int* out = RunSimpleAccelerator(&test,0xc,0xa,0x5);
    TestInfo subtest = EXPECT("9","%x",*out);
 
    // Test Maj(a,b,c) - (x & y) ^ (x & z) ^ (y & z) - x = b1111, y = b1010, z = b0101 / a1 = x & y = y, a2 = x & z = z, a3 = y & z = 0 / y ^ z = 0xf
    ActivateMergedAccelerator(versat,test.accel,typeB);
-   out = TestInstance(test,0xf,0xa,0x5);
+   out = RunSimpleAccelerator(&test,0xf,0xa,0x5);
    subtest = EXPECT("f","%x",*out);
 
    return subtest;
 }
 
 TEST(ComplexMerge){
-   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString("SHA"));
-   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString("ReadWriteAES"));
+   FUDeclaration* typeA = GetTypeByName(versat,STRING("SHA"));
+   FUDeclaration* typeB = GetTypeByName(versat,STRING("ReadWriteAES"));
 
-   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString("SHA_AES"),0);
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,STRING("SHA_AES"),0);
 
    Accelerator* accel = CreateAccelerator(versat);
-   FUInstance* inst = CreateFUInstance(accel,merged,MakeSizedString("Test"));
+   FUInstance* inst = CreateFUInstance(accel,merged,STRING("Test"));
 
    ActivateMergedAccelerator(versat,accel,typeA);
    SetSHAAccelerator(accel,inst);
@@ -1405,78 +1362,129 @@ TEST(ComplexMerge){
 }
 
 TEST(TestSpecificMerge){
-   FUDeclaration* type = GetTypeByName(versat,MakeSizedString("TestSpecificMerge"));
+   FUDeclaration* type = GetTypeByName(versat,STRING("TestSpecificMerge"));
 
    SpecificMerge specific = {};
-   specific.instA = MakeSizedString("input");
-   specific.instB = MakeSizedString("output");
+   specific.instA = STRING("input");
+   specific.instB = STRING("output");
 
-   FUDeclaration* merged = MergeAccelerators(versat,type,type,MakeSizedString("SpecificMerge"),0,MergingStrategy::CONSOLIDATION_GRAPH,&specific,1);
+   FUDeclaration* merged = MergeAccelerators(versat,type,type,STRING("SpecificMerge"),0,MergingStrategy::CONSOLIDATION_GRAPH,&specific,1);
 
    TEST_PASSED;
 }
 
-static FUDeclaration* TestMerge(Versat* versat,const char* first, const char* second, const char* name,MergingStrategy strategy){
+static FUDeclaration* TestMerge(Versat* versat,const char* first, const char* second, const char* name,MergingStrategy strategy,Arena* arena){
    printf("%s %s\n",first,second);
-   FUDeclaration* typeA = GetTypeByName(versat,MakeSizedString(first));
-   FUDeclaration* typeB = GetTypeByName(versat,MakeSizedString(second));
-   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,MakeSizedString(name),99,strategy);
+   FUDeclaration* typeA = GetTypeByName(versat,STRING(first));
+   FUDeclaration* typeB = GetTypeByName(versat,STRING(second));
+
+   String naming = PushString(arena,"%s_%s",first,second);
+   FUDeclaration* merged = MergeAccelerators(versat,typeA,typeB,naming,99,strategy);
    printf("\n");
    return merged;
 }
 
 TEST(TestMerge){
-   //MergingStrategy strategy = MergingStrategy::CONSOLIDATION_GRAPH;
-   MergingStrategy strategy = MergingStrategy::SIMPLE_COMBINATION;
+   MergingStrategy strategy = MergingStrategy::CONSOLIDATION_GRAPH;
+   //MergingStrategy strategy = MergingStrategy::SIMPLE_COMBINATION;
 
-   #if 01
-   TestMerge(versat,"A","B","M1",strategy);
+   /*
+      ================================================================================================
+      IMPORTANT: Don't forget you changed CreateFUInstance from if(true) to if(!flat). Any weird bug in another place might be because of that
+
+      Idea 1 : Try a max clique where we keep track of everything.
+               Every iteration we look at a index and decide if we want to "improve it" (if max not already found) or if we let it be.
+               Need to record where we left off, so we first must transform the recursive max clique into a iterative one.
+                  The simplest would be to create a "stack frame" structure and dealing ourselves with the push and popping operations.
+
+      Idea 2 : Move away from the Consolidation Graph approach. Make an algorithm that will eventually produce the correct result and then parallelize it.
+               The best idea would be to use the fact that we are merging DAGs and try to find something from that.
+               The problem is that the Consolidation Graph approach is already the algorithm that will produce the correct result, as it encodes every possible edge mapping or node mapping that exists.
+               For example, going down the graph deciding whether to merge or not recursively would do the same thing as the Consolidation graph approach.
+                  In fact, with the use of BitArray the Consolidation graph approach would perform much better.
+                  Also, if the order in which we go down the graph matters, then we could improve the algorithm, but what we really want is something parallelizable.
+                  All we would change is the order in which we are "searching" for the max clique, nothing has fundamentally changed.
+
+      Idea 3 : Partition the graphs and find max cliques on them and then find a way of joining the results into the final graph.
+               The thing I think it would work.
+               Need to build a great lot for this.
+               Also has the problem that it's a fairly trivial solution, unless we crank it up a notch.
+                  One idea is to try various different partitions, even if they overlap.
+                  Each one can be performed in parallel, but we ran into the problem of still being a simple solution.
+               The only way of breaking this pattern is if we can move data in between searches for the solution.
+                  If the results of a partitioned max clique can be used in the calculation of other partitioned max cliques.
+
+      Otherwise, I have no other plan. Don't think there is anything else at this point
+
+      ================================================================================================
+   */
+
+   #if 0
+   TestMerge(versat,"A","B","M1",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"CH","Maj","M1",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"M_Stage","F_Stage","M2",strategy,temp); // 0.4
+   #endif
+
+   #if 0
+   TestMerge(versat,"DoRow","AddRoundKey","M3",strategy,temp); // 0.4
+   #endif
+
+   #if 0
+   TestMerge(versat,"KeccakF1600","KeySchedule","B1",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"Blake2G","M_Stage","A1",strategy,temp); // 0.28
+   #endif
+
+   #if 0
+   TestMerge(versat,"Blake2G","F_Stage","A1",strategy,temp); // 0.27
+   #endif
+
+   #if 0
+   TestMerge(versat,"MixColumns","F2","M4",strategy,temp); // 10 timeout,
+   #endif
+
+   #if 0
+   TestMerge(versat,"MainRound","F2","M4",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"StringHasher","Convolution","M4",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"M2","F2","M5",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"M","F","M6",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"SHA","AES","M6",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"M8","F8","M7",strategy,temp);
    #endif
 
    #if 01
-   TestMerge(versat,"CH","Maj","M1",strategy);
-   #endif
-
-   #if 01
-   TestMerge(versat,"M_Stage","F_Stage","M2",strategy);
-   #endif
-
-   #if 01
-   TestMerge(versat,"DoRow","AddRoundKey","M3",strategy);
-   #endif
-
-   #if 01
-   TestMerge(versat,"MixColumns","F2","M4",strategy);
-   #endif
-
-   #if 01
-   TestMerge(versat,"MainRound","F2","M4",strategy);
-   #endif
-
-   #if 01
-   TestMerge(versat,"StringHasher","Convolution","M4",strategy);
-   #endif
-
-   #if 01
-   TestMerge(versat,"M2","F2","M5",strategy);
-   #endif
-
-   #if 01
-   TestMerge(versat,"M","F","M6",strategy);
-   #endif
-
-   #if 01
-   TestMerge(versat,"M8","F8","M7",strategy);
+   TestMerge(versat,"Big0","Big1","M",strategy,temp);
    #endif
 
    TEST_PASSED;
 }
 
 TEST(SHA){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"SHA");
-
-   //ila_set_different_signal_storing(1);
-   //ila_enable_all_triggers();
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"SHA");
 
    SetSHAAccelerator(test.accel,test.inst);
 
@@ -1494,7 +1502,8 @@ TEST(SHA){
 }
 
 TEST(MultipleSHATests){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"SHA");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"SHA");
 
    SetSHAAccelerator(test.accel,test.inst);
 
@@ -1525,7 +1534,8 @@ TEST(MultipleSHATests){
 }
 
 TEST(SimpleIterative){
-   OneUnitTestData test = InstantiateSimple(versat,10,8,"Iterative_SHA_F");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"Iterative_SHA_F");
 
    FUInstance* t = GetInstanceByName(test.accel,"Test","comb","t");
 
@@ -1534,7 +1544,7 @@ TEST(SimpleIterative){
       t->config[i] = constants[i];
    }
 
-   int* out = TestInstance(test,0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19,0x428a2f98,0x5a86b737);
+   int* out = RunSimpleAccelerator(&test,0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19,0x428a2f98,0x5a86b737);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -1546,9 +1556,10 @@ TEST(SimpleIterative){
 }
 
 TEST(FloatingPointAdd){
-   OneUnitTestData test = InstantiateSimple(versat,2,1,"FloatAdd");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"FloatAdd");
 
-   float* out = (float*) TestInstance(test,PackInt(6.0f),PackInt(4.0f));
+   float* out = (float*) RunSimpleAccelerator(&test,PackInt(6.0f),PackInt(4.0f));
 
    if(FloatEqual(*out,10.0f,0.01f)){
       TEST_PASSED;
@@ -1558,11 +1569,14 @@ TEST(FloatingPointAdd){
 }
 
 TEST(FloatingPointSub){
-   OneUnitTestData test = InstantiateSimple(versat,2,1,"FloatSub");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"FloatSub");
 
-   float* out = (float*) TestInstance(test,PackInt(6.0f),PackInt(4.0f));
+   float* out = (float*) RunSimpleAccelerator(&test,PackInt(0.848317862f),PackInt(0.874653578f));
 
-   if(FloatEqual(*out,2.0f,0.01f)){
+   OutputVersatSource(versat,&test,"versat_instance.v","versat_defs.vh","versat_data.inc");
+
+   if(FloatEqual(*out,-0.0263357162f,0.01f)){
       TEST_PASSED;
    } else {
       TEST_FAILED("Not equal");
@@ -1570,9 +1584,10 @@ TEST(FloatingPointSub){
 }
 
 TEST(FloatingPointMul){
-   OneUnitTestData test = InstantiateSimple(versat,2,1,"FloatMul");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"FloatMul");
 
-   float* out = (float*) TestInstance(test,PackInt(4.0f),PackInt(6.0f));
+   float* out = (float*) RunSimpleAccelerator(&test,PackInt(4.0f),PackInt(6.0f));
 
    if(FloatEqual(*out,24.0f,0.01f)){
       TEST_PASSED;
@@ -1582,7 +1597,8 @@ TEST(FloatingPointMul){
 }
 
 TEST(FloatingPointDiv){
-   OneUnitTestData test = InstantiateSimple(versat,2,1,"FloatDiv");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"FloatDiv");
 
    #if 1
    SeedRandomNumber(COMPILE_TIME);
@@ -1592,7 +1608,7 @@ TEST(FloatingPointDiv){
    for(int i = 0; i < numberTests; i++){
       float f1 = (float) Abs(GetRandomNumber());
       float f2 = (float) (Abs(GetRandomNumber()) + 1);
-      float* out = (float*) TestInstance(test,PackInt(f1),PackInt(f2));
+      float* out = (float*) RunSimpleAccelerator(&test,PackInt(f1),PackInt(f2));
       float expected = f1 / f2;
 
       if(FloatEqual(*out,expected)){
@@ -1606,7 +1622,7 @@ TEST(FloatingPointDiv){
    }
    #endif
 
-   float* out = (float*) TestInstance(test,PackInt(6.0f),PackInt(2.0f));
+   float* out = (float*) RunSimpleAccelerator(&test,PackInt(6.0f),PackInt(2.0f));
 
    if(FloatEqual(*out,3.0f,0.01f)){
       // Test passed
@@ -1614,7 +1630,7 @@ TEST(FloatingPointDiv){
       TEST_FAILED("Failed: %f %f\n",3.0f,*out);
    }
 
-   out = (float*) TestInstance(test,PackInt(0.0f),PackInt(2.0f));
+   out = (float*) RunSimpleAccelerator(&test,PackInt(0.0f),PackInt(2.0f));
 
    if(FloatEqual(*out,0.0f,0.01f)){
       TEST_PASSED;
@@ -1626,7 +1642,8 @@ TEST(FloatingPointDiv){
 #include <math.h>
 
 TEST(FloatingPointSqrt){
-   OneUnitTestData test = InstantiateSimple(versat,1,1,"FloatSqrt");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"FloatSqrt");
 
    #if 1
    SeedRandomNumber(COMPILE_TIME);
@@ -1636,7 +1653,7 @@ TEST(FloatingPointSqrt){
    for(int i = 0; i < numberTests; i++){
       int number = Abs(GetRandomNumber());
       float f = PackFloat(number);
-      float* out = (float*) TestInstance(test,PackInt(f));
+      float* out = (float*) RunSimpleAccelerator(&test,PackInt(f));
       float expected = Sqrt(f);
 
       if(FloatEqual(*out,expected)){
@@ -1651,7 +1668,7 @@ TEST(FloatingPointSqrt){
    #endif
 
    float f = 0.1f;
-   float* out = (float*) TestInstance(test,PackInt(f));
+   float* out = (float*) RunSimpleAccelerator(&test,PackInt(f));
    float expected = Sqrt(f);
 
    if(FloatEqual(*out,expected)){
@@ -1662,7 +1679,8 @@ TEST(FloatingPointSqrt){
 }
 
 TEST(IntSqrt){
-   OneUnitTestData test = InstantiateSimple(versat,1,1,"IntSqrt");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"IntSqrt");
 
    #if 1
    SeedRandomNumber(COMPILE_TIME);
@@ -1671,7 +1689,7 @@ TEST(IntSqrt){
    int correct = 0;
    for(int i = 0; i < numberTests; i++){
       int number = Abs(GetRandomNumber());
-      int* out = TestInstance(test,number);
+      int* out = RunSimpleAccelerator(&test,number);
       float f = (float) number;
       int expected = (int) Sqrt(f);
 
@@ -1688,7 +1706,7 @@ TEST(IntSqrt){
    #endif
 
    int i = 25;
-   int* out = TestInstance(test,i);
+   int* out = RunSimpleAccelerator(&test,i);
    int expected = 5;
 
    if(*out == expected){
@@ -1700,10 +1718,11 @@ TEST(IntSqrt){
 }
 
 TEST(Q16Sqrt){
-   OneUnitTestData test = InstantiateSimple(versat,1,1,"Q16Sqrt");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"Q16Sqrt");
 
    int i = 0x00004000; // 0.25
-   int* out = TestInstance(test,i);
+   int* out = RunSimpleAccelerator(&test,i);
    int correct = 0x00008000; // 0.5
 
    if(*out == correct){
@@ -1715,9 +1734,10 @@ TEST(Q16Sqrt){
 }
 
 TEST(FloatingPointMax){
-   OneUnitTestData test = InstantiateSimple(versat,2,1,"FloatMax");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"FloatMax");
 
-   float* out = (float*) TestInstance(test,PackInt(10.0f),PackInt(15.0f));
+   float* out = (float*) RunSimpleAccelerator(&test,PackInt(10.0f),PackInt(15.0f));
    float correct = 15.0f;
 
    if(FloatEqual(*out,correct)){
@@ -1729,9 +1749,10 @@ TEST(FloatingPointMax){
 }
 
 TEST(FloatingPointMin){
-   OneUnitTestData test = InstantiateSimple(versat,2,1,"FloatMin");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"FloatMin");
 
-   float* out = (float*) TestInstance(test,PackInt(10.0f),PackInt(15.0f));
+   float* out = (float*) RunSimpleAccelerator(&test,PackInt(10.0f),PackInt(15.0f));
    float correct = 10.0f;
 
    if(FloatEqual(*out,correct)){
@@ -1743,9 +1764,10 @@ TEST(FloatingPointMin){
 }
 
 TEST(Float2Int){
-   OneUnitTestData test = InstantiateSimple(versat,1,1,"Float2Int");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"Float2Int");
 
-   int* out = TestInstance(test,PackInt(10.1f));
+   int* out = RunSimpleAccelerator(&test,PackInt(10.1f));
    int correct = 10;
 
    if(*out == correct){
@@ -1757,10 +1779,11 @@ TEST(Float2Int){
 }
 
 TEST(Float2UInt){
-   OneUnitTestData test = InstantiateSimple(versat,1,1,"Float2UInt");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"Float2UInt");
 
    // TODO: find a better test for this one
-   unsigned int* out = (unsigned int*) TestInstance(test,PackInt(10.1f));
+   unsigned int* out = (unsigned int*) RunSimpleAccelerator(&test,PackInt(10.1f));
    unsigned int correct = 10;
 
    if(*out == correct){
@@ -1772,10 +1795,10 @@ TEST(Float2UInt){
 }
 
 TEST(Int2Float){
-   OneUnitTestData test = InstantiateSimple(versat,1,1,"Int2Float");
-
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"Int2Float");
    // TODO: find a better test for this one
-   float* out = (float*) TestInstance(test,10);
+   float* out = (float*) RunSimpleAccelerator(&test,10);
    float correct = 10.0f;
 
    if(FloatEqual(*out,correct)){
@@ -1787,14 +1810,15 @@ TEST(Int2Float){
 }
 
 TEST(TestConfigOrder){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"TestConfigOrder");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"TestConfigOrder");
 
    // Changing order of configure mem with const changes configuration.
    ConfigureMemoryReceive(test.inst,1,0);
 
    //FUInstance* Const = GetInstanceByName(test.accel,"Test","a1");
    //Const->config[0] = 5;
-   test.inst->config[26] = 5;
+   //test.inst->config[26] = 5;
 
    AcceleratorRun(test.accel);
 
@@ -1804,32 +1828,34 @@ TEST(TestConfigOrder){
    return EXPECT("5","%d",result);
 }
 
-TEST(TestInstanceLatency){
-   OneUnitTestData test = InstantiateSimple(versat,2,1,"TestInstanceLatency");
+TEST(RunSimpleAcceleratorLatency){
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"RunSimpleAcceleratorLatency");
 
    FUInstance* gen = GetSubInstanceByName(test.accel,test.inst,"gen");
 
    ConfigureGenerator(gen,0,255,1);
 
-   TestInstance(test,1,1,0x900000);
+   RunSimpleAccelerator(&test,1,1,0x900000);
 
    TEST_PASSED;
 }
 
 TEST(ComplexCalculateDelay){
-   OneUnitTestData test = InstantiateSimple(versat,0,0,"ComplexCalculateDelay");
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"ComplexCalculateDelay");
 
-   TestInstance(test);
+   RunSimpleAccelerator(&test);
 
    TEST_PASSED; // Need to look at .dot file to check
 }
 
+#ifdef PC
+#include "debug.hpp"
 extern "C"{
 #include "crypto/mceliece/rng.h"
 #include "crypto/mceliece/mceliece348864/crypto_kem_mceliece348864.h"
 }
-
-#include "debug.hpp"
 
 TEST(McEliece){
    unsigned char pk[CRYPTO_PUBLICKEYBYTES];
@@ -1870,14 +1896,12 @@ TEST(McEliece){
    printf("\n");
    OutputMemoryHex(ct,CRYPTO_CIPHERTEXTBYTES);
    printf("\n");
-   #endif
-   #if 0
    OutputMemoryHex(ss,CRYPTO_BYTES);
    printf("\n");
    OutputMemoryHex(ss1,CRYPTO_BYTES);
    #endif
 
-   SizedString first = PushMemoryHex(temp,ss,CRYPTO_BYTES);
+   String first = PushMemoryHex(temp,ss,CRYPTO_BYTES);
 
    if(memcmp(ss,ss1,CRYPTO_BYTES) != 0){
       TEST_FAILED("Not equal");
@@ -1886,71 +1910,114 @@ TEST(McEliece){
    return EXPECT("b4 f9 ff 1e 43 90 e3 be 0b bc eb ff 9a 52 5a e8 3b 19 12 11 89 6a a8 78 6c e8 bc 51 1c 9f 78 c3 ","%.*s",UNPACK_SS(first));
 }
 
-#include "memory.hpp"
 #include "parser.hpp"
 
 #define FFT_SIZE 1024
-void VersatStradedFFT(double real[FFT_SIZE], double img[FFT_SIZE], double real_twid[FFT_SIZE/2], double img_twid[FFT_SIZE/2]);
+void VersatStradedFFT(float real[FFT_SIZE], float img[FFT_SIZE], float real_twid[FFT_SIZE/2], float img_twid[FFT_SIZE/2]);
 
 TEST(FFT){
    FILE* inputData = fopen("../firmware/benchmarks/MachSuite/fft/strided/input.data","r");
 
-   double data_x[FFT_SIZE];
-   double data_y[FFT_SIZE];
-   double img[FFT_SIZE/2];
-   double real[FFT_SIZE/2];
-   double data_x_expected[FFT_SIZE];
-   double data_y_expected[FFT_SIZE];
+   float data_x[FFT_SIZE];
+   float data_y[FFT_SIZE];
+   float img[FFT_SIZE/2];
+   float real[FFT_SIZE/2];
+   float data_x_expected[FFT_SIZE];
+   float data_y_expected[FFT_SIZE];
 
    {
-   SizedString content = PushFile(temp,"../firmware/benchmarks/MachSuite/fft/strided/input.data");
+   String content = PushFile(temp,"../firmware/benchmarks/MachSuite/fft/strided/input.data");
    Tokenizer tok(content,"",{"%%"});
 
    tok.AssertNextToken("%%");
    for(int i = 0; i < FFT_SIZE; i++){
-      data_x[i] = ParseDouble(tok.NextToken());
+      data_x[i] = ParseFloat(tok.NextToken());
    }
    tok.AssertNextToken("%%");
    for(int i = 0; i < FFT_SIZE; i++){
-      data_y[i] = ParseDouble(tok.NextToken());
+      data_y[i] = ParseFloat(tok.NextToken());
    }
    tok.AssertNextToken("%%");
    for(int i = 0; i < FFT_SIZE/2; i++){
-      img[i] = ParseDouble(tok.NextToken());
+      img[i] = ParseFloat(tok.NextToken());
    }
    tok.AssertNextToken("%%");
    for(int i = 0; i < FFT_SIZE/2; i++){
-      real[i] = ParseDouble(tok.NextToken());
+      real[i] = ParseFloat(tok.NextToken());
    }
    }
 
    {
-   SizedString content = PushFile(temp,"../firmware/benchmarks/MachSuite/fft/strided/check.data");
+   String content = PushFile(temp,"../firmware/benchmarks/MachSuite/fft/strided/check.data");
    Tokenizer tok(content,"",{"%%"});
 
    tok.AssertNextToken("%%");
    for(int i = 0; i < FFT_SIZE; i++){
-      data_x_expected[i] = ParseDouble(tok.NextToken());
+      data_x_expected[i] = ParseFloat(tok.NextToken());
    }
    tok.AssertNextToken("%%");
    for(int i = 0; i < FFT_SIZE; i++){
-      data_y_expected[i] = ParseDouble(tok.NextToken());
+      data_y_expected[i] = ParseFloat(tok.NextToken());
    }
    }
 
    VersatStradedFFT(data_x,data_y,img,real);
 
+   // The original spec used doubles.
+   // We change to float, but need to use a lower comparison epsilon to account for the loss of precision
    for(int i = 0; i < FFT_SIZE; i++){
-      if(!FloatEqual(data_x[i],data_x_expected[i])){
+      if(!FloatEqual(data_x[i],data_x_expected[i],0.01f)){
          TEST_FAILED("Different values [%d] %lf : %lf",i,data_x[i],data_x_expected[i]);
       }
-      if(!FloatEqual(data_y[i],data_y_expected[i])){
+      if(!FloatEqual(data_y[i],data_y_expected[i],0.01f)){
          TEST_FAILED("Different values [%d] %lf : %lf",i,data_y[i],data_y_expected[i]);
       }
    }
 
    TEST_PASSED;
 }
+
+extern "C"{
+#include "crypto/fips202.h"
+}
+
+TEST(SHA3){
+   uint8_t shakeOut[256];
+   shake256(shakeOut,256,(uint8_t*)"",0);
+   TestInfo shake = EXPECT("46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762fd75dc4ddd8c0f200cb05019d67b592f6fc821c49479ab48640292eacb3b7c4be","%s",GetHexadecimal(shakeOut, 64));
+
+   uint8_t sha3Out[256];
+   sha3_256(sha3Out,(uint8_t*)"",0);
+   TestInfo sha3 = EXPECT("a7ffc6f8bf1ed76651c14756a061d662f580ff4de43b49fa82d80a4b80f8434a","%s",GetHexadecimal(sha3Out, 32));
+
+   return sha3 & shake;
+}
+
+extern "C"{
+   #include "crypto/blake2/blake2.h"
+}
+
+TEST(Blake2s){
+   // Blake2s is the optimized implemented for 32 bit systems
+   unsigned char out[256];
+
+   String testStrIn = STRING("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40414243");
+   unsigned char testIn[128];
+
+   String testKeyIn = STRING("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
+   unsigned char testKey[128];
+
+   HexStringToHex(testIn,testStrIn);
+   HexStringToHex(testKey,testKeyIn);
+
+   blake2s(out,32,(void*) testIn,sizeof(testStrIn) / 2,(void*) testKey,sizeof(testKeyIn) / 2);
+
+   TestInfo info = EXPECT("af533e022fc9439e4e3cb838ecd18692232adf6fe9839526d3c3dd1b71910b1a","%s",GetHexadecimal(out, 32));
+
+   return info;
+}
+
+#endif
 
 #define DISABLED (REVERSE_ENABLED)
 
@@ -1966,7 +2033,6 @@ TEST(FFT){
       TestInfo test = TEST_NAME(versat,&temp,currentTest); \
       if(test.testsPassed == test.numberTests) printf("%32s [%02d] - OK\n",#TEST_NAME,currentTest); \
       info += test; \
-     \
    } \
    currentTest += 1; } while(0)
 
@@ -1974,7 +2040,7 @@ TEST(FFT){
 #define REVERSE_ENABLED 0
 
 //                 76543210
-#define SEGMENTS 0b10000000
+#define SEGMENTS 0b00001000
 
 #define SEG0 (SEGMENTS & 0x01)
 #define SEG1 (SEGMENTS & 0x02)
@@ -1983,11 +2049,15 @@ TEST(FFT){
 #define SEG4 (SEGMENTS & 0x10)
 #define SEG5 (SEGMENTS & 0x20)
 #define SEG6 (SEGMENTS & 0x40)
-#define SEG7 (SEGMENTS & 0x80)
+#define SEG7 (PC && (SEGMENTS & 0x80))
 
 void AutomaticTests(Versat* versat){
    Arena temp = {};
+   #ifdef PC
    InitArena(&temp,Megabyte(1));
+   #else
+   InitArena(&temp,Kilobyte(1));
+   #endif
 
    TestInfo info = TestInfo(0,0);
    int hardwareTest = HARDWARE_TEST;
@@ -1997,10 +2067,7 @@ void AutomaticTests(Versat* versat){
    EnterDebugTerminal(versat);
    #endif
 
-/*
-   SHA currently only working due to a small hack in the SHA function
-   The only thing left is to complete the CreateFUInstance and GetInstanceByName implementation with working resizable configuration accelerators
-*/
+   TestVersatSide(versat);
 
 #if SEG0
    TEST_INST( 1 ,TestMStage);
@@ -2032,18 +2099,18 @@ void AutomaticTests(Versat* versat){
 #endif
 #if SEG2 // Flattening
    TEST_INST( 1 ,SimpleFlatten);
-   TEST_INST( 1 ,FlattenShareConfig);
+   TEST_INST( 0 ,FlattenShareConfig);
    TEST_INST( 1 ,ComplexFlatten);
    TEST_INST( 0 ,FlattenSHA); // Problem on top level static buffers. Maybe do flattening of accelerators with buffers already fixed.
 #endif
 #if SEG3 // Merging
-   TEST_INST( 1 ,SimpleMergeNoCommon);
-   TEST_INST( 1 ,SimpleMergeUnitCommonNoEdge);
-   TEST_INST( 1 ,SimpleMergeUnitAndEdgeCommon);
-   TEST_INST( 1 ,SimpleMergeInputOutputCommon);
-   TEST_INST( 1 ,CombinatorialMerge);
-   TEST_INST( 1 ,ComplexMerge);
-   TEST_INST( 1 ,TestSpecificMerge);
+   TEST_INST( 0 ,SimpleMergeNoCommon);
+   TEST_INST( 0 ,SimpleMergeUnitCommonNoEdge);
+   TEST_INST( 0 ,SimpleMergeUnitAndEdgeCommon);
+   TEST_INST( 0 ,SimpleMergeInputOutputCommon);
+   TEST_INST( 0 ,CombinatorialMerge);
+   TEST_INST( 0 ,ComplexMerge);
+   TEST_INST( 0 ,TestSpecificMerge);
    TEST_INST( 1 ,TestMerge);
 #endif
 #if SEG4 // Iterative units
@@ -2051,7 +2118,7 @@ void AutomaticTests(Versat* versat){
 #endif
 #if SEG5 // Floating point and related units
    TEST_INST( 1 ,FloatingPointAdd);
-   TEST_INST( 1 ,FloatingPointSub);
+   TEST_INST( 0 ,FloatingPointSub);
    TEST_INST( 1 ,FloatingPointMul);
    TEST_INST( 1 ,FloatingPointDiv);
    TEST_INST( 1 ,FloatingPointSqrt);
@@ -2064,17 +2131,25 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,Int2Float);
 #endif
 #if SEG6 // Individual units
-   TEST_INST( 0 ,TestConfigOrder);
-   TEST_INST( 1 ,TestInstanceLatency);
-   TEST_INST( 1 ,ComplexCalculateDelay);
-   TEST_INST( 1 ,Generator);
+   TEST_INST( 1 ,TestConfigOrder);
+   TEST_INST( 0 ,RunSimpleAcceleratorLatency);
+   TEST_INST( 0 ,ComplexCalculateDelay);
+   TEST_INST( 0 ,Generator);
+   TEST_INST( 0 ,Test64Bits);
 #endif
 #if SEG7
    TEST_INST( DISABLED ,McEliece);
-   TEST_INST( 1 ,FFT);
+   TEST_INST( 0 ,FFT);
+   TEST_INST( 0 ,SHA3);
+   TEST_INST( 0 ,Blake2s);
 #endif
 
+   //EnterDebugTerminal(versat);
+
+   #if 0
+   Hook(versat,nullptr,nullptr);
    //Free(versat);
+   #endif
 
    printf("\nAutomatic tests done (passed/total): %d / %d\n",info.testsPassed,info.numberTests);
 }

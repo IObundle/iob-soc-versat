@@ -45,7 +45,7 @@ fw-debug:
 #
 
 PC_DIR:=$(SW_DIR)/pc-emul
-pc-emul-build: ila-build
+pc-emul-build:
 	$(MAKE) -C $(PC_DIR) build
 
 pc-emul-run: pc-emul-build 
@@ -194,7 +194,7 @@ debug:
 	@echo $(UART_DIR)
 	@echo $(CACHE_DIR)
 
-.PHONY: fw-build fw-clean fw-debug\
+.PHONY: fw-build fw-clean fw-debug \
 	pc-emul-build pc-emul-run pc-emul-clean pc-emul-test \
 	sim-build sim-run sim-clean sim-test \
 	fpga-build fpga-run fpga-clean fpga-test \
@@ -207,3 +207,8 @@ debug:
 	test test-clean \
 	debug
 	#ila-build ila-generate-vcd ila-clean
+
+Makefile: ;
+
+.SUFFIXES:
+

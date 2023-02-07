@@ -31,8 +31,10 @@ SRC+= $(FIRM_DIR)/automaticTests.cpp
 SRC+= $(FIRM_DIR)/unitConfiguration.cpp
 SRC+= $(FIRM_DIR)/versatSHA.cpp
 SRC+= $(FIRM_DIR)/ila.c
-SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c)
-SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c)
+
+INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
+#SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c)
+#SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c)
 
 #PROFILE
 ifeq ($(PROFILE),1)

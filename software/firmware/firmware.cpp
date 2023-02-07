@@ -24,12 +24,18 @@ int printf_(const char* format, ...);
 #define printf printf_
 #endif
 
+/*
+
+   Try to get SHA-3 working, also with shake128. See if the larger implementations use larger amount of nodes/stages, something to increase the size of the DFGs.
+   Take a look at blake2.
+
+*/
+
 Versat* versat;
 
 void AutomaticTests(Versat* versat);
 
-int main(int argc,const char* argv[])
-{
+int main(int argc,const char* argv[]){
    uart_init(UART_BASE,FREQ/BAUD);
    timer_init(TIMER_BASE);
    ila_init(ILA_BASE);
@@ -41,8 +47,8 @@ int main(int argc,const char* argv[])
    SetDebug(versat,VersatDebugFlags::OUTPUT_ACCELERATORS_CODE,0);
    SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,0);
    SetDebug(versat,VersatDebugFlags::USE_FIXED_BUFFERS,0);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_GRAPH_DOT,1);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_VCD,1);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_GRAPH_DOT,0);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_VCD,0);
 
    ParseCommandLineOptions(versat,argc,argv);
 
@@ -54,3 +60,12 @@ int main(int argc,const char* argv[])
 
    return 0;
 }
+
+
+
+
+
+
+
+
+

@@ -30,7 +30,8 @@ void ConfigureSimpleVRead(FUInstance* inst, int numberItems,int* memory){
    c->incrB = 1;
    c->perB = 1;
    c->dutyB = 1;
-   c->ext_addr = (int) memory;
+   UNHANDLED_ERROR;
+   //c->ext_addr = (int) memory;
    c->length = numberItems - 1; // AXI requires length of len - 1
 }
 
@@ -49,7 +50,8 @@ void ConfigureSimpleVWrite(FUInstance* inst, int numberItems,int* memory){
    c->int_addr = 0;
    c->pingPong = 0;
    c->length = numberItems - 1;
-   c->ext_addr = (int) memory;
+   UNHANDLED_ERROR;
+   //c->ext_addr = (int) memory;
 
    // Memory side
    c->iterB = numberItems;

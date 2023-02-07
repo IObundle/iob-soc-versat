@@ -55,8 +55,8 @@ void VersatSim(unsigned char* matRow,unsigned char* kRow, unsigned char mask){
 
 	if(runVersat && !accel){
 		accel = CreateAccelerator(versat);
-		FUDeclaration* type = GetTypeByName(versat,MakeSizedString("VectorLikeOperation"));
-		CreateFUInstance(accel,type,MakeSizedString("Top"),false,false);
+		FUDeclaration* type = GetTypeByName(versat,STRING("VectorLikeOperation"));
+		CreateFUInstance(accel,type,STRING("Top"),false,false);
 	}
 
 	FUInstance* outputInst;
@@ -132,8 +132,6 @@ int pk_gen(unsigned char * pk, unsigned char * sk, uint32_t * perm, int16_t * pi
 	gf g[ SYS_T+1 ]; // Goppa polynomial
 	gf L[ SYS_N ]; // support
 	gf inv[ SYS_N ];
-
-	int a = PK_NROWS * (SYS_N/8);
 
 	//
 	{
