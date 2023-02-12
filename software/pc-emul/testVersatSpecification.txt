@@ -95,6 +95,20 @@ module StaticConst(){
    var -> out:0;
 }
 
+module SimpleStatic(){
+   StaticConst c0;
+   StaticConst c1;
+#
+   c1 -> out;
+}
+
+module ComplexStatic(){
+   SimpleStatic s0;
+   SimpleStatic s1;
+#
+   s1 -> out;
+}
+
 module ComplexShareConfig(){ // 6 config, 1 static - flatten should have 5 configs
    share config SimpleShareConfig { // 3
       a1;

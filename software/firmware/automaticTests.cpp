@@ -424,14 +424,12 @@ TEST(MatrixMultiplicationVRead){
 
    {
    volatile VReadConfig* config = (volatile VReadConfig*) memA->config;
-   UNHANDLED_ERROR;
-   //config->ext_addr = (int) matrixA;
+   config->ext_addr = (int) matrixA;
    }
 
    {
    volatile VReadConfig* config = (volatile VReadConfig*) memB->config;
-   UNHANDLED_ERROR;
-   //config->ext_addr = (int) matrixB;
+   config->ext_addr = (int) matrixB;
    }
 
    for(int i = 0; i < size; i++){
@@ -449,8 +447,7 @@ TEST(MatrixMultiplicationVRead){
    ConfigureMatrixVWrite(res,size);
    {
    volatile VWriteConfig* config = (volatile VWriteConfig*) res->config;
-   UNHANDLED_ERROR;
-   //config->ext_addr = (int) matrixRes;
+   config->ext_addr = (int) matrixRes;
    }
 
    AcceleratorRun(accel);
@@ -922,6 +919,7 @@ TEST(ReadWriteAES){
 }
 
 int SimpleAdderInstance(Accelerator* accel,int a,int b){
+   FUInstance* ab = GetInstanceByName(accel,"Test","a");
    FUInstance* a1 = GetInstanceByName(accel,"Test","a1");
    FUInstance* a2 = GetInstanceByName(accel,"Test","a2");
    FUInstance* out = GetInstanceByName(accel,"Test","res");
@@ -1111,6 +1109,38 @@ TEST(ComplexShareConfig){
    return EXPECT("4 6 8 7","%d %d %d %d",res0,res1,res2,res3);
 }
 
+TEST(SimpleStaticConfig){
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"SimpleStatic");
+
+   FUInstance* c1 = GetInstanceByName(test.accel,"Test","c1","var");
+   c1->config[0] = 0;
+
+   FUInstance* c0 = GetInstanceByName(test.accel,"Test","c0","var");
+   c0->config[0] = 5;
+
+   AcceleratorRun(test.accel);
+   int* out = RunSimpleAccelerator(&test);
+
+   return EXPECT("5","%d",*out);
+}
+
+TEST(ComplexStaticConfig){
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"ComplexStatic");
+
+   FUInstance* c1 = GetInstanceByName(test.accel,"Test","s0","c1","var");
+   c1->config[0] = 0;
+
+   FUInstance* c0 = GetInstanceByName(test.accel,"Test","s1","c0","var");
+   c0->config[0] = 5;
+
+   AcceleratorRun(test.accel);
+   int* out = RunSimpleAccelerator(&test);
+
+   return EXPECT("5","%d",*out);
+}
+
 TEST(SimpleFlatten){
    SimpleAccelerator test = {};
    InitSimpleAccelerator(&test,versat,"SimpleAdder");
@@ -1235,7 +1265,9 @@ TEST(SimpleMergeNoCommon){
    int resB = 0;
 
    resA = SimpleAdderInstance(accel,3,4);
+   DisplayUnitConfiguration(accel);
    resB = ComplexMultiplierInstance(accel,2,3);
+   DisplayUnitConfiguration(accel);
 
    OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
 
@@ -1278,10 +1310,10 @@ TEST(SimpleMergeUnitAndEdgeCommon){
    int resA = 0;
    int resB = 0;
 
-   //ClearConfigurations(accel);
+   ClearConfigurations(accel);
    resA = SimpleAdderInstance(accel,4,5);
 
-   //ClearConfigurations(accel);
+   ClearConfigurations(accel);
    ActivateMergedAccelerator(versat,accel,typeB);
    resB = SemiComplexAdderInstance(accel,2,3);
 
@@ -1302,14 +1334,14 @@ TEST(SimpleMergeInputOutputCommon){
    int resA = 0;
    int resB = 0;
 
-   //ClearConfigurations(accel);
+   ClearConfigurations(accel);
    resA = ComplexAdderInstance(accel,4,5);
-   DisplayUnitConfiguration(accel);
+   //DisplayUnitConfiguration(accel);
 
-   //ClearConfigurations(accel);
+   ClearConfigurations(accel);
    ActivateMergedAccelerator(versat,accel,typeB);
    resB = ComplexMultiplierInstance(accel,2,3);
-   DisplayUnitConfiguration(accel);
+   //DisplayUnitConfiguration(accel);
 
    OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
 
@@ -1471,11 +1503,11 @@ TEST(TestMerge){
    TestMerge(versat,"SHA","AES","M6",strategy,temp);
    #endif
 
-   #if 0
+   #if 01
    TestMerge(versat,"M8","F8","M7",strategy,temp);
    #endif
 
-   #if 01
+   #if 0
    TestMerge(versat,"Big0","Big1","M",strategy,temp);
    #endif
 
@@ -1850,6 +1882,7 @@ TEST(ComplexCalculateDelay){
    TEST_PASSED; // Need to look at .dot file to check
 }
 
+#if 0
 #ifdef PC
 #include "debug.hpp"
 extern "C"{
@@ -2016,7 +2049,7 @@ TEST(Blake2s){
 
    return info;
 }
-
+#endif
 #endif
 
 #define DISABLED (REVERSE_ENABLED)
@@ -2094,8 +2127,10 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,ComplexMultiplier);
 #endif
 #if SEG1 // Config sharing
-   TEST_INST( 0 ,SimpleShareConfig);
-   TEST_INST( 0 ,ComplexShareConfig);
+   TEST_INST( 1 ,SimpleShareConfig);
+   TEST_INST( 1 ,ComplexShareConfig);
+   TEST_INST( 1 ,SimpleStaticConfig);
+   TEST_INST( 1 ,ComplexStaticConfig);
 #endif
 #if SEG2 // Flattening
    TEST_INST( 1 ,SimpleFlatten);
@@ -2144,7 +2179,9 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 0 ,Blake2s);
 #endif
 
-   //EnterDebugTerminal(versat);
+   #if 0
+   EnterDebugTerminal(versat);
+   #endif
 
    #if 0
    Hook(versat,nullptr,nullptr);

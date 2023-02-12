@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 ROOT_DIR:=../..
 
-GLOBAL_CFLAGS:=-Wall -g -march=native -msse2 -DVERSAT_DEBUG #-m32 #-fsanitize=address
+GLOBAL_CFLAGS:=-Wall -g -march=native -DVERSAT_DEBUG -m32 #-msse2 #-fsanitize=address
 LIBS := -lstdc++ -lm -lgcc -lc -lssl -lcrypto -pthread
 
 include ../software.mk
@@ -111,7 +111,7 @@ build: gen_data fw_emul
 	@mkdir -p src
 
 fw_emul: $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ)
-	gcc -w -fuse-ld=lld -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o $(LIBS)
+	gcc -w -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o $(LIBS) #-fuse-ld=lld 
 	
 run: build
 	./fw_emul $(TEST_LOG)

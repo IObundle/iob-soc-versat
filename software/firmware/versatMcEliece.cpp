@@ -1,3 +1,5 @@
+#if 0
+
 #include <stdint.h>
 #include <stdio.h>
 #include <assert.h>
@@ -281,3 +283,5 @@ int pk_gen(unsigned char * pk, unsigned char * sk, uint32_t * perm, int16_t * pi
 
 	return 0;
 }
+
+#endif
