@@ -35,7 +35,11 @@ Versat* versat;
 
 void AutomaticTests(Versat* versat);
 
-int main(int argc,const char* argv[]){
+#include <mpi.h>
+
+int main(int argc,char* argv[]){
+   MPI_Init(&argc, &argv);
+
    uart_init(UART_BASE,FREQ/BAUD);
    timer_init(TIMER_BASE);
    ila_init(ILA_BASE);
@@ -48,15 +52,17 @@ int main(int argc,const char* argv[]){
    SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,0);
    SetDebug(versat,VersatDebugFlags::USE_FIXED_BUFFERS,0);
    SetDebug(versat,VersatDebugFlags::OUTPUT_GRAPH_DOT,0);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_VCD,1);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_VCD,0);
 
-   ParseCommandLineOptions(versat,argc,argv);
+   //ParseCommandLineOptions(versat,argc,argv);
 
    ParseVersatSpecification(versat,"testVersatSpecification.txt");
 
    AutomaticTests(versat);
 
    uart_finish();
+
+   MPI_Finalize();
 
    return 0;
 }

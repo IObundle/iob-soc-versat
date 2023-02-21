@@ -1798,6 +1798,196 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Asu -> out:24;
 }
 
+module DoubleKeccak24Round(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,Ama,Ame,Ami,Amo,Amu,Asa,Ase,Asi,Aso,Asu){
+   KeccakF1600 d0;
+   KeccakF1600 d1;
+#
+   Aba -> d0:0;
+   Abe -> d0:1;
+   Abi -> d0:2;
+   Abo -> d0:3;
+   Abu -> d0:4;
+   Aga -> d0:5;
+   Age -> d0:6;
+   Agi -> d0:7;
+   Ago -> d0:8;
+   Agu -> d0:9;
+   Aka -> d0:10;
+   Ake -> d0:11;
+   Aki -> d0:12;
+   Ako -> d0:13;
+   Aku -> d0:14;
+   Ama -> d0:15;
+   Ame -> d0:16;
+   Ami -> d0:17;
+   Amo -> d0:18;
+   Amu -> d0:19;
+   Asa -> d0:20;
+   Ase -> d0:21;
+   Asi -> d0:22;
+   Aso -> d0:23;
+   Asu -> d0:24;
+
+   d0:0..23 -> d1:0..23;
+
+   d1 -> out:0;
+   d1 -> out:1;
+   d1 -> out:2;
+   d1 -> out:3;
+   d1 -> out:4;
+   d1 -> out:5;
+   d1 -> out:6;
+   d1 -> out:7;
+   d1 -> out:8;
+   d1 -> out:9;
+   d1 -> out:10;
+   d1 -> out:11;
+   d1 -> out:12;
+   d1 -> out:13;
+   d1 -> out:14;
+   d1 -> out:15;
+   d1 -> out:16;
+   d1 -> out:17;
+   d1 -> out:18;
+   d1 -> out:19;
+   d1 -> out:20;
+   d1 -> out:21;
+   d1 -> out:22;
+   d1 -> out:23;
+   d1 -> out:24;
+}
+
+module Keccak16Rounds(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,Ama,Ame,Ami,Amo,Amu,Asa,Ase,Asi,Aso,Asu){
+   DoubleKeccak24Round d0;
+   DoubleKeccak24Round d1;
+   DoubleKeccak24Round d2;
+   DoubleKeccak24Round d3;
+#
+   Aba -> d0:0;
+   Abe -> d0:1;
+   Abi -> d0:2;
+   Abo -> d0:3;
+   Abu -> d0:4;
+   Aga -> d0:5;
+   Age -> d0:6;
+   Agi -> d0:7;
+   Ago -> d0:8;
+   Agu -> d0:9;
+   Aka -> d0:10;
+   Ake -> d0:11;
+   Aki -> d0:12;
+   Ako -> d0:13;
+   Aku -> d0:14;
+   Ama -> d0:15;
+   Ame -> d0:16;
+   Ami -> d0:17;
+   Amo -> d0:18;
+   Amu -> d0:19;
+   Asa -> d0:20;
+   Ase -> d0:21;
+   Asi -> d0:22;
+   Aso -> d0:23;
+   Asu -> d0:24;
+
+   d0 -> d1;
+   d1 -> d2;
+   d2 -> d3;
+
+   d3 -> out:0;
+   d3 -> out:1;
+   d3 -> out:2;
+   d3 -> out:3;
+   d3 -> out:4;
+   d3 -> out:5;
+   d3 -> out:6;
+   d3 -> out:7;
+   d3 -> out:8;
+   d3 -> out:9;
+   d3 -> out:10;
+   d3 -> out:11;
+   d3 -> out:12;
+   d3 -> out:13;
+   d3 -> out:14;
+   d3 -> out:15;
+   d3 -> out:16;
+   d3 -> out:17;
+   d3 -> out:18;
+   d3 -> out:19;
+   d3 -> out:20;
+   d3 -> out:21;
+   d3 -> out:22;
+   d3 -> out:23;
+   d3 -> out:24;
+}
+
+
+module Keccak24Rounds(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,Ama,Ame,Ami,Amo,Amu,Asa,Ase,Asi,Aso,Asu){
+   DoubleKeccak24Round d0;
+   DoubleKeccak24Round d1;
+   DoubleKeccak24Round d2;
+   DoubleKeccak24Round d3;
+   DoubleKeccak24Round d4;
+   DoubleKeccak24Round d5;
+#
+   Aba -> d0:0;
+   Abe -> d0:1;
+   Abi -> d0:2;
+   Abo -> d0:3;
+   Abu -> d0:4;
+   Aga -> d0:5;
+   Age -> d0:6;
+   Agi -> d0:7;
+   Ago -> d0:8;
+   Agu -> d0:9;
+   Aka -> d0:10;
+   Ake -> d0:11;
+   Aki -> d0:12;
+   Ako -> d0:13;
+   Aku -> d0:14;
+   Ama -> d0:15;
+   Ame -> d0:16;
+   Ami -> d0:17;
+   Amo -> d0:18;
+   Amu -> d0:19;
+   Asa -> d0:20;
+   Ase -> d0:21;
+   Asi -> d0:22;
+   Aso -> d0:23;
+   Asu -> d0:24;
+
+   d0 -> d1;
+   d1 -> d2;
+   d2 -> d3;
+   d3 -> d4;
+   d4 -> d5;
+
+   d5 -> out:0;
+   d5 -> out:1;
+   d5 -> out:2;
+   d5 -> out:3;
+   d5 -> out:4;
+   d5 -> out:5;
+   d5 -> out:6;
+   d5 -> out:7;
+   d5 -> out:8;
+   d5 -> out:9;
+   d5 -> out:10;
+   d5 -> out:11;
+   d5 -> out:12;
+   d5 -> out:13;
+   d5 -> out:14;
+   d5 -> out:15;
+   d5 -> out:16;
+   d5 -> out:17;
+   d5 -> out:18;
+   d5 -> out:19;
+   d5 -> out:20;
+   d5 -> out:21;
+   d5 -> out:22;
+   d5 -> out:23;
+   d5 -> out:24;
+}
+
 module Blake2G(a,b,c,d,m0,m1){
 #
    a = a + b + m0;
@@ -1898,6 +2088,48 @@ module Blake2Round(v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15){
    g6:3 -> out:13;
    g7:3 -> out:14;
    g4:3 -> out:15;
+}
+
+module Blake(v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,va,vb,vc,vd,ve,vf){
+   Blake2Round r0;
+   Blake2Round r1;
+   Blake2Round r2;
+   Blake2Round r3;
+   Blake2Round r4;
+   Blake2Round r5;
+   Blake2Round r6;
+   Blake2Round r7;
+   Blake2Round r8;
+   Blake2Round r9;
+#
+   v0 -> r0:0;
+   v1 -> r0:1;
+   v2 -> r0:2;
+   v3 -> r0:3;
+   v4 -> r0:4;
+   v5 -> r0:5;
+   v6 -> r0:6;
+   v7 -> r0:7;
+   v8 -> r0:8;
+   v9 -> r0:9;
+   va -> r0:10;
+   vb -> r0:11;
+   vc -> r0:12;
+   vd -> r0:13;
+   ve -> r0:14;
+   vf -> r0:15;
+
+   r0:0..15 -> r1:0..15;
+   r1:0..15 -> r2:0..15;
+   r2:0..15 -> r3:0..15;
+   r3:0..15 -> r4:0..15;
+   r4:0..15 -> r5:0..15;
+   r5:0..15 -> r6:0..15;
+   r6:0..15 -> r7:0..15;
+   r7:0..15 -> r8:0..15;
+   r8:0..15 -> r9:0..15;
+
+   r9:0..15 -> out:0..15;
 }
 
 module TestA(Aa,Ab,Ac,Ad){

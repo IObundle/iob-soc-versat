@@ -30,7 +30,7 @@ void ConfigureSimpleVRead(FUInstance* inst, int numberItems,int* memory){
    c->incrB = 1;
    c->perB = 1;
    c->dutyB = 1;
-   #if 0
+   #if 01
    UNHANDLED_ERROR;
    #else
    c->ext_addr = (int) memory;
@@ -53,7 +53,7 @@ void ConfigureSimpleVWrite(FUInstance* inst, int numberItems,int* memory){
    c->int_addr = 0;
    c->pingPong = 0;
    c->length = numberItems - 1;
-   #if 0
+   #if 01
    UNHANDLED_ERROR;
    #else
    c->ext_addr = (int) memory;

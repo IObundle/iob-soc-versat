@@ -424,12 +424,14 @@ TEST(MatrixMultiplicationVRead){
 
    {
    volatile VReadConfig* config = (volatile VReadConfig*) memA->config;
-   config->ext_addr = (int) matrixA;
+   UNHANDLED_ERROR;
+   //config->ext_addr = (int) matrixA;
    }
 
    {
    volatile VReadConfig* config = (volatile VReadConfig*) memB->config;
-   config->ext_addr = (int) matrixB;
+   UNHANDLED_ERROR;
+   //config->ext_addr = (int) matrixB;
    }
 
    for(int i = 0; i < size; i++){
@@ -447,7 +449,8 @@ TEST(MatrixMultiplicationVRead){
    ConfigureMatrixVWrite(res,size);
    {
    volatile VWriteConfig* config = (volatile VWriteConfig*) res->config;
-   config->ext_addr = (int) matrixRes;
+   UNHANDLED_ERROR;
+   //config->ext_addr = (int) matrixRes;
    }
 
    AcceleratorRun(accel);
@@ -1492,6 +1495,10 @@ TEST(TestMerge){
    #endif
 
    #if 0
+   TestMerge(versat,"Big0","Big1","M",strategy,temp);
+   #endif
+
+   #if 0
    TestMerge(versat,"M2","F2","M5",strategy,temp);
    #endif
 
@@ -1500,15 +1507,31 @@ TEST(TestMerge){
    #endif
 
    #if 0
-   TestMerge(versat,"SHA","AES","M6",strategy,temp);
-   #endif
-
-   #if 01
    TestMerge(versat,"M8","F8","M7",strategy,temp);
    #endif
 
    #if 0
-   TestMerge(versat,"Big0","Big1","M",strategy,temp);
+   TestMerge(versat,"SHA","AES","M6",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"SHA","Blake","M6",strategy,temp);
+   #endif
+
+   #if 0
+   TestMerge(versat,"SHA","Keccak24Rounds","M6",strategy,temp);
+   #endif
+
+   #if 0 // DO NOT NEED IT. ALL ZERO
+   TestMerge(versat,"AES","Blake","M6",strategy,temp);
+   #endif
+
+   #if 01
+   TestMerge(versat,"AES","Keccak24Rounds","M6",strategy,temp);
+   #endif
+
+   #if 0 // DO NOT NEED IT. ALL ZERO
+   TestMerge(versat,"Blake","Keccak24Rounds","M6",strategy,temp);
    #endif
 
    TEST_PASSED;
@@ -2087,9 +2110,9 @@ TEST(Blake2s){
 void AutomaticTests(Versat* versat){
    Arena temp = {};
    #ifdef PC
-   InitArena(&temp,Megabyte(1));
+   temp = InitArena(Megabyte(1));
    #else
-   InitArena(&temp,Kilobyte(1));
+   temp = InitArena(Kilobyte(1));
    #endif
 
    TestInfo info = TestInfo(0,0);

@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 ROOT_DIR:=../..
 
-GLOBAL_CFLAGS:=-Wall -g -march=native -DVERSAT_DEBUG -m32 #-msse2 #-fsanitize=address
+GLOBAL_CFLAGS:=-Wall -g -march=native -DVERSAT_DEBUG #-m32 #-msse2 #-fsanitize=address
 LIBS := -lstdc++ -lm -lgcc -lc -lssl -lcrypto -pthread
 
 include ../software.mk
