@@ -2,8 +2,17 @@ SHELL := /bin/bash
 
 ROOT_DIR:=../..
 
-GLOBAL_CFLAGS:=-Wall -g -march=native -DVERSAT_DEBUG #-m32 #-msse2 #-fsanitize=address
+DEBUG_GUI := 0
+
+GLOBAL_CFLAGS:=-std=c++17 -Wall -g -march=native -DVERSAT_DEBUG -Werror=return-type #-msse2 #-fsanitize=address
 LIBS := -lstdc++ -lm -lgcc -lc -lssl -lcrypto -pthread
+
+ifeq ($(DEBUG_GUI),1)
+LIBS += -lSDL2  -lGL -ldl
+else
+DEFINE += -Dx86
+GLOBAL_CFLAGS += -m32
+endif
 
 include ../software.mk
 
@@ -73,6 +82,9 @@ OBJ += ./build/printf.o
 ./build/%.o: $(FIRM_DIR)/crypto/%.c
 	gcc $(GLOBAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 
+./build/mpi.o : mpi.cpp 
+	gcc $(GLOBAL_CFLAGS) -c -o ./build/mpi.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+
 INCLUDE+=$(incdir)./build
 
 SOC_OUT_BIN:=soc-out.bin
@@ -92,7 +104,8 @@ VERILATE_UNIT := xunitF xunitM
 UNIT_VERILOG += $(foreach unit,$(VERILATE_UNIT),$(HW_DIR)/src/units/$(unit).v)
 
 UNIT_HDR+=$(foreach obj,$(VERILATE_UNIT),./build/V$(obj).h)
-OBJ+=./build/firmware.o
+OBJ+= ./build/firmware.o
+OBJ+= ./build/mpi.o
 OBJ+= ./build/unitConfiguration.o
 OBJ+= ./build/versatSHA.o
 OBJ+= ./build/versatMcEliece.o
@@ -111,7 +124,7 @@ build: gen_data fw_emul
 	@mkdir -p src
 
 fw_emul: $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ)
-	gcc -w -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o $(LIBS) #-fuse-ld=lld 
+	g++ -w -o $@ $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o $(LIBS) #-fuse-ld=lld 
 	
 run: build
 	./fw_emul $(TEST_LOG)

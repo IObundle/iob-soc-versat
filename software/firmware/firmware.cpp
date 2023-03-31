@@ -24,22 +24,11 @@ int printf_(const char* format, ...);
 #define printf printf_
 #endif
 
-/*
-
-   Try to get SHA-3 working, also with shake128. See if the larger implementations use larger amount of nodes/stages, something to increase the size of the DFGs.
-   Take a look at blake2.
-
-*/
-
 Versat* versat;
 
 void AutomaticTests(Versat* versat);
 
-#include <mpi.h>
-
 int main(int argc,char* argv[]){
-   MPI_Init(&argc, &argv);
-
    uart_init(UART_BASE,FREQ/BAUD);
    timer_init(TIMER_BASE);
    ila_init(ILA_BASE);
@@ -48,21 +37,17 @@ int main(int argc,char* argv[]){
 
    versat = InitVersat(VERSAT_BASE,1);
 
-   SetDebug(versat,VersatDebugFlags::OUTPUT_ACCELERATORS_CODE,0);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,0);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_ACCELERATORS_CODE,1);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,1);
    SetDebug(versat,VersatDebugFlags::USE_FIXED_BUFFERS,0);
    SetDebug(versat,VersatDebugFlags::OUTPUT_GRAPH_DOT,0);
    SetDebug(versat,VersatDebugFlags::OUTPUT_VCD,0);
-
-   //ParseCommandLineOptions(versat,argc,argv);
 
    ParseVersatSpecification(versat,"testVersatSpecification.txt");
 
    AutomaticTests(versat);
 
    uart_finish();
-
-   MPI_Finalize();
 
    return 0;
 }

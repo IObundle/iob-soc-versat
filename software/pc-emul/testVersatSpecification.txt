@@ -1072,7 +1072,7 @@ module AES(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,
    MainRound round8;
    SBox subBytes;
    ShiftRows shiftRows;
-   AddRoundKey lastKey;
+   AddRoundKey lastKey;  // 70
 #
    x0 -> firstKey:0;
    x1 -> firstKey:1;
@@ -1920,7 +1920,6 @@ module Keccak16Rounds(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Ak
    d3 -> out:24;
 }
 
-
 module Keccak24Rounds(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,Ama,Ame,Ami,Amo,Amu,Asa,Ase,Asi,Aso,Asu){
    DoubleKeccak24Round d0;
    DoubleKeccak24Round d1;
@@ -2251,3 +2250,4 @@ module Big1(){
    Yc1:1 -> out:1;
    Yc1:2 -> out:2;
 }
+
