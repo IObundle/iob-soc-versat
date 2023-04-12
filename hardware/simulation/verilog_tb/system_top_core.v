@@ -235,11 +235,20 @@ module system_top (
             .m_axi_rready(ddr_rready)
             );
 
+
+    //
+    // System Memory Macros
+    //
+
+    `include "versat_external_memory_inst.vh"
+
    //
    // UNIT UNDER TEST
    //
    system uut (
                //PORTS
+         `include "versat_external_memory_portmap.vh"
+
 `ifdef USE_DDR
                //address write
          .m_axi_awid    (sys_awid),

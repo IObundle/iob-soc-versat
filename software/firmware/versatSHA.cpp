@@ -109,7 +109,6 @@ static size_t versat_crypto_hashblocks_sha256(const uint8_t *in, size_t inlen) {
 
       if(!initVersat){
          for(int i = 0; i < 8; i++){
-            registers[i] = GetInstanceByName(accel,"Test","State","s%d",i,"reg");  // Small hack
             VersatUnitWrite(registers[i],0,initialStateValues[i]);
          }
          initVersat = true;
@@ -167,8 +166,6 @@ void VersatSHA(uint8_t *out, const uint8_t *in, size_t inlen) {
    AcceleratorRun(accel);
 
    for (size_t i = 0; i < 8; ++i) {
-      registers[i] = GetInstanceByName(accel,"Test","State","s%d",i,"reg"); // Small hack
-      //printf("%d\n",(int) registers[i]->state);
       uint val = *registers[i]->state;
 
       store_bigendian_32(&out[i*4],val);
@@ -190,7 +187,7 @@ void InitVersatSHA(Versat* versat,bool outputVersatSource){
 
    // Gera o versat.
    if(outputVersatSource){
-      OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+      OutputVersatSource(versat,accel,".");
    }
 }
 

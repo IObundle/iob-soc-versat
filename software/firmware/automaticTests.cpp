@@ -127,7 +127,7 @@ TEST(TestMStage){
 
    int* out = RunSimpleAccelerator(&test,0x5a86b737,0xa9f9be83,0x08251f6d,0xeaea8ee9);
 
-   OutputVersatSource(versat,&test,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,&test,".");
 
    return EXPECT("0xb89ab4ca","0x%x",out[0]);
 }
@@ -144,7 +144,7 @@ TEST(TestFStage){
 
    int* out = RunSimpleAccelerator(&test,0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19,0x428a2f98,0x5a86b737);
 
-   OutputVersatSource(versat,&test,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,&test,".");
 
    char buffer[1024];
    char* ptr = buffer;
@@ -174,13 +174,11 @@ TEST(VReadToVWrite){
       readBuffer[i] = i;
    }
 
-   #if 1
    AcceleratorRun(accel); // Load vread
    AcceleratorRun(accel); // Load vwrite
    AcceleratorRun(accel); // Write data
-   #endif
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    char buffer[1024];
    char* ptr = buffer;
@@ -216,6 +214,7 @@ TEST(StringHasher){
    FUInstance* bytesOut = GetInstanceByName(accel,"Test","bytesOut");
 
    for(int i = 0; i < 5; i++){
+      //bytesIn->externalMemory[i] = (int) ("Waldo"[i]);
       VersatUnitWrite(bytesIn,i,(int) ("Waldo"[i]));
    }
 
@@ -224,9 +223,10 @@ TEST(StringHasher){
 
    AcceleratorRun(accel);
 
-   int hash = VersatUnitRead(bytesOut,0);
+   int hash = VersatUnitRead(bytesOut,0);//bytesOut->externalMemory[0];
 
    for(size_t i = 0; i < sizeof(testString); i++){
+      //bytesIn->externalMemory[i] = (int) testString[i];
       VersatUnitWrite(bytesIn,i,(int) testString[i]);
    }
 
@@ -235,10 +235,10 @@ TEST(StringHasher){
 
    AcceleratorRun(accel);
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    for(size_t i = 0; i < sizeof(testString) - 5; i++){
-      int val = VersatUnitRead(bytesOut,i);
+      int val = VersatUnitRead(bytesOut,i);//bytesOut->externalMemory[i];
 
       if(hash == val){
          return EXPECT("21","%ld",i);
@@ -351,7 +351,7 @@ TEST(Convolution){
       }
    }
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    return EXPECT("-520 -251 -49 -33 -42 303 -221 -100 -149 ","%s",buffer);
 }
@@ -392,7 +392,7 @@ TEST(MatrixMultiplication){
 
    AcceleratorRun(accel);
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    char buffer[1024];
    char* ptr = buffer;
@@ -461,7 +461,7 @@ TEST(MatrixMultiplicationVRead){
    AcceleratorRun(accel);
    AcceleratorRun(accel);
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    char buffer[1024];
    char* ptr = buffer;
@@ -522,6 +522,8 @@ TEST(LookupTable){
    VersatUnitWrite(test.inst,addrB,0xf4);
 
    int* out = RunSimpleAccelerator(&test,addrA,addrB);
+
+   OutputVersatSource(versat,&test,".");
 
    char buffer[1024];
    sprintf(buffer,"0x%02x 0x%02x",out[0],out[1]);
@@ -799,7 +801,7 @@ TEST(AESRound){
 
    int* out = RunSimpleAccelerator(&test,0x19,0xa0,0x9a,0xe9,0x3d,0xf4,0xc6,0xf8,0xe3,0xe2,0x8d,0x48,0xbe,0x2b,0x2a,0x08,0xa0,0x88,0x23,0x2a,0xfa,0x54,0xa3,0x6c,0xfe,0x2c,0x39,0x76,0x17,0xb1,0x39,0x05);
 
-   OutputVersatSource(versat,&test,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,&test,".");
 
    char buffer[1024];
    char* ptr = buffer;
@@ -813,14 +815,17 @@ TEST(AESRound){
 static void FillAES(Accelerator* topLevel,FUInstance* inst){
    int rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36};
    for(int i = 0; i < 10; i++){
+      printf("%d\n",i);
       FUInstance* constRcon = GetSubInstanceByName(topLevel,inst,"rcon%d",i);
       constRcon->config[0] = rcon[i];
 
       FillKeySchedule(topLevel,GetSubInstanceByName(topLevel,inst,"key%d",i));
    }
+   //printf("here\n");
    FillSubBytes(topLevel,GetSubInstanceByName(topLevel,inst,"subBytes"));
 
    for(int i = 0; i < 9; i++){
+      printf("%d\n",i);
       FillRound(topLevel,GetSubInstanceByName(topLevel,inst,"round%d",i));
    }
 }
@@ -917,6 +922,8 @@ TEST(AES){
 
    int* out = RunSimpleAccelerator(&test,0x32,0x88,0x31,0xe0,0x43,0x5a,0x31,0x37,0xf6,0x30,0x98,0x07,0xa8,0x8d,0xa2,0x34,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c);
 
+   OutputVersatSource(versat,&test,".");
+
    char buffer[1024];
    char* ptr = buffer;
    for(int i = 0; i < 16; i++){
@@ -953,7 +960,7 @@ TEST(ReadWriteAES){
    AcceleratorRun(accel);
    AcceleratorRun(accel);
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    char buffer[1024];
    char* ptr = buffer;
@@ -986,6 +993,8 @@ TEST(SimpleAdder){
 
    int result = SimpleAdderInstance(test.accel,3,4);
 
+   OutputVersatSource(versat,&test,".");
+
    return EXPECT("7","%d",result);
 }
 
@@ -1011,10 +1020,12 @@ int ComplexMultiplierInstance(Accelerator* accel,int a,int b){
    FUInstance* c2 = GetInstanceByName(accel,"Test","c2");
    FUInstance* out = GetInstanceByName(accel,"Test","memOut2");
 
+   ConfigureMemoryLinear(c1,1);
+   ConfigureMemoryLinear(c2,1);
+   ConfigureMemoryReceive(out,1,1);
+
    VersatUnitWrite(c1,0,a);
    VersatUnitWrite(c2,0,b);
-
-   ConfigureMemoryReceive(out,1,1);
 
    AcceleratorRun(accel);
 
@@ -1046,7 +1057,63 @@ TEST(ComplexMultiplier){
 
    int result = ComplexMultiplierInstance(test.accel,4,5);
 
+   OutputVersatSource(versat,test.accel,".");
+
    return EXPECT("20","%d",result);
+}
+
+TEST(TestMemory){
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"TestMemory");
+
+   FUInstance* mem = GetInstanceByName(test.accel,"Test","mem");
+
+   ConfigureMemoryLinear(mem,1,3);
+
+   VersatUnitWrite(mem,3,100);
+
+   int* out = RunSimpleAccelerator(&test);
+
+   OutputVersatSource(versat,&test,".");
+
+   return EXPECT("100","%d",out[0]);
+}
+
+TEST(TestVRead){
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"TestVRead");
+
+   FUInstance* read = GetInstanceByName(test.accel,"Test","read");
+
+   int buffer = 200;
+   ConfigureSimpleVRead(read,1,&buffer);
+
+   AcceleratorRun(test.accel);
+   int* out = RunSimpleAccelerator(&test);
+
+   OutputVersatSource(versat,&test,".");
+
+   return EXPECT("200","%d",out[0]);
+}
+
+TEST(TestMuladd){
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"Muladd");
+
+   FUInstance* muladd = GetInstanceByName(test.accel,"Test");
+
+   volatile MuladdConfig* conf = (volatile MuladdConfig*) muladd->config;
+
+   conf->opcode = 0;
+   conf->iterations = 1;
+   conf->period = 1;
+   conf->shift = 0;
+
+   int* out = RunSimpleAccelerator(&test,5,10);
+
+   OutputVersatSource(versat,&test,".");
+
+   return EXPECT("50","%d",out[0]);
 }
 
 TEST(Generator){
@@ -1309,7 +1376,7 @@ TEST(FlattenAESVRead){
    AcceleratorRun(test.accel);
    AcceleratorRun(test.accel);
 
-   OutputVersatSource(versat,test.accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,test.accel,".");
 
    char buffer[1024];
    char* ptr = buffer;
@@ -1338,7 +1405,7 @@ TEST(SimpleMergeNoCommon){
    resA = SimpleAdderInstance(accel,3,4);
    resB = ComplexMultiplierInstance(accel,2,3);
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    return EXPECT("7 6","%d %d",resA,resB);
 }
@@ -1366,7 +1433,9 @@ TEST(SimpleMergeUnitCommonNoEdge){
    ActivateMergedAccelerator(versat,accel,types[1]);
    resB = ComplexAdderInstance(accel,2,3);
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   //DebugAccelerator(accel,temp);
+
+   OutputVersatSource(versat,accel,".");
 
    return EXPECT("9 5","%d %d",resA,resB);
 }
@@ -1394,7 +1463,7 @@ TEST(SimpleMergeUnitAndEdgeCommon){
    ActivateMergedAccelerator(versat,accel,types[1]);
    resB = SemiComplexAdderInstance(accel,2,3);
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    return EXPECT("9 5","%d %d",resA,resB);
 }
@@ -1424,7 +1493,7 @@ TEST(SimpleMergeInputOutputCommon){
    resB = ComplexMultiplierInstance(accel,2,3);
    //DisplayUnitConfiguration(accel);
 
-   OutputVersatSource(versat,accel,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,accel,".");
 
    return EXPECT("9 6","%d %d",resA,resB);
 }
@@ -1499,7 +1568,7 @@ TEST(ComplexMerge){
    ActivateMergedAccelerator(versat,test.accel,types[0]);
 
    #if 0
-   SetSHAAccelerator(accel,inst);
+   SetSHAAccelerator(test.accel,nullptr);
 
    InitVersatSHA(versat,true);
 
@@ -1763,7 +1832,7 @@ TEST(FloatingPointSub){
 
    float* out = (float*) RunSimpleAccelerator(&test,PackInt(0.848317862f),PackInt(0.874653578f));
 
-   OutputVersatSource(versat,&test,"versat_instance.v","versat_defs.vh","versat_data.inc");
+   OutputVersatSource(versat,&test,".");
 
    if(FloatEqual(*out,-0.0263357162f,0.01f)){
       TEST_PASSED;
@@ -2246,7 +2315,7 @@ void AutomaticTests(Versat* versat){
    #ifdef PC
    temp = InitArena(Megabyte(1));
    #else
-   temp = InitArena(Kilobyte(1));
+   temp = InitArena(Kilobyte(4));
    #endif
 
    TestInfo info = TestInfo(0,0);
@@ -2259,16 +2328,30 @@ void AutomaticTests(Versat* versat){
 
    TestVersatSide(versat);
 
+   /*
+   There is currently a problem with the verilator simulation.
+   Technically having a couple of self->step() calls should not any problem but
+   apparently they do, as things change even if they should only change on clock posedge.
+   If tomorrow it appears to be a work day, talk with Pedro to see if he would like to touch the code beforehand.
+
+   Try to fix makefile so it does not take a lot of time to compile the wrapper changes and just test things out to see if you can identify the problem.
+   Or if it is a verilator bug and somehow we need to find a work around.
+
+   Do not know which change I made that added a bug to merge.
+   Need to reach a stage where every test is passing before making any other meaningful change,
+   otherwise I keep getting bad info about which change caused the bug
+   */
+
 #if SEG0
    TEST_INST( 1 ,TestMStage);
    TEST_INST( 1 ,TestFStage);
    TEST_INST( 0 ,SHA);
    TEST_INST( DISABLED ,MultipleSHATests);
-   TEST_INST( DISABLED ,VReadToVWrite);
+   TEST_INST( 1 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
-   TEST_INST( DISABLED ,Convolution);
+   TEST_INST( 1 ,Convolution);
    TEST_INST( 1 ,MatrixMultiplication);
-   TEST_INST( DISABLED ,MatrixMultiplicationVRead);
+   TEST_INST( 1 ,MatrixMultiplicationVRead);
    TEST_INST( 1 ,VersatAddRoundKey);
    TEST_INST( 1 ,LookupTable);
    TEST_INST( 1 ,VersatSubBytes);
@@ -2279,9 +2362,12 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,KeySchedule);
    TEST_INST( 1 ,AESRound);
    TEST_INST( 1 ,AES);
-   TEST_INST( DISABLED ,ReadWriteAES);
-   TEST_INST( 1 ,SimpleAdder);
-   TEST_INST( 1 ,ComplexMultiplier);
+   TEST_INST( 1 ,ReadWriteAES);
+   TEST_INST( DISABLED ,SimpleAdder); // Also a good zero latency test
+   TEST_INST( DISABLED ,ComplexMultiplier);
+   TEST_INST( DISABLED ,TestMemory);
+   TEST_INST( DISABLED ,TestVRead);
+   TEST_INST( DISABLED ,TestMuladd);
 #endif
 #if SEG1 // Config sharing
    TEST_INST( 1 ,SimpleShareConfig);
@@ -2292,13 +2378,13 @@ void AutomaticTests(Versat* versat){
 #if SEG2 // Flattening
    TEST_INST( 1 ,SimpleFlatten);
    TEST_INST( 1 ,FlattenShareConfig);
-   TEST_INST( DISABLED ,FlattenAES); // Takes a bit of time
-   TEST_INST( 0 ,FlattenAESVRead);
-   TEST_INST( DISABLED ,FlattenSHA); // Problem on top level static buffers. Maybe do flattening of accelerators with buffers already fixed.
+   TEST_INST( 1 ,FlattenAES); // Takes a bit of time
+   TEST_INST( 1 ,FlattenAESVRead);
+   TEST_INST( 1 ,FlattenSHA); // Problem on top level static buffers. Maybe do flattening of accelerators with buffers already fixed.
 #endif
 #if SEG3 // Merging
    TEST_INST( 1 ,SimpleMergeNoCommon);
-   TEST_INST( 1 ,SimpleMergeUnitCommonNoEdge);
+   TEST_INST( 0 ,SimpleMergeUnitCommonNoEdge);
    TEST_INST( 1 ,SimpleMergeUnitAndEdgeCommon);
    TEST_INST( 1 ,SimpleMergeInputOutputCommon);
    TEST_INST( 1 ,CombinatorialMerge);

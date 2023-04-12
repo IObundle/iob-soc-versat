@@ -82,9 +82,6 @@ OBJ += ./build/printf.o
 ./build/%.o: $(FIRM_DIR)/crypto/%.c
 	gcc $(GLOBAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 
-./build/mpi.o : mpi.cpp 
-	gcc $(GLOBAL_CFLAGS) -c -o ./build/mpi.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
-
 INCLUDE+=$(incdir)./build
 
 SOC_OUT_BIN:=soc-out.bin
@@ -105,7 +102,6 @@ UNIT_VERILOG += $(foreach unit,$(VERILATE_UNIT),$(HW_DIR)/src/units/$(unit).v)
 
 UNIT_HDR+=$(foreach obj,$(VERILATE_UNIT),./build/V$(obj).h)
 OBJ+= ./build/firmware.o
-OBJ+= ./build/mpi.o
 OBJ+= ./build/unitConfiguration.o
 OBJ+= ./build/versatSHA.o
 OBJ+= ./build/versatMcEliece.o
@@ -129,7 +125,7 @@ fw_emul: $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ)
 run: build
 	./fw_emul $(TEST_LOG)
 	-cp versat_instance.v $(HW_DIR)/src/
-	-cp versat_defs.vh $(HW_DIR)/include/
+	-cp *.vh $(HW_DIR)/include/
 	-cp versat_data.inc $(FIRM_DIR)/
 	-cp ./build/verilogWrapper.inc $(FIRM_DIR)/
 	-cp src/* $(HW_DIR)/src/GeneratedUnits/
@@ -137,7 +133,7 @@ run: build
 clean:
 	@rm -rf fw_emul periphs.h *swreg*.h *swreg*.c test.log soc2cnsl cnsl2soc \
 		$(ETH_LOG) $(SOC_LOG) eth_frame_struct.h $(EMUL_PROFILE_LOG)
-	@rm -f versat_data.inc versat_defs.vh versat_instance.v
+	@rm -f versat_data.inc versat_defs.vh versat_instance.v versat_external_memory_inst.vh versat_external_memory_port.vh versat_external_memory_portmap.vh
 	@$(MAKE) -C $(SW_DIR)/python clean
 	@$(MAKE) -C $(SW_TEST_DIR) clean
 	@rm -f -r ./build

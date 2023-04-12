@@ -668,13 +668,13 @@ module Constants(){
 module SHA(){
    VRead MemRead;
    SwapEndian Swap(1);
-   F F0;
-   F F1;
-   F F2;
-   F F3;
-   M M0;
-   M M1;
-   M M2;
+   xunitF F0;
+   xunitF F1;
+   xunitF F2;
+   xunitF F3;
+   xunitM M0;
+   xunitM M1;
+   xunitM M2;
    Constants cMem0;
    Constants cMem1;
    Constants cMem2;
@@ -2129,6 +2129,18 @@ module Blake(v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,va,vb,vc,vd,ve,vf){
    r8:0..15 -> r9:0..15;
 
    r9:0..15 -> out:0..15;
+}
+
+module TestMemory(){
+   Mem mem;
+#
+   mem -> out;
+}
+
+module TestVRead(){
+   VRead read;
+#
+   read -> out;
 }
 
 module TestA(Aa,Ab,Ac,Ad){

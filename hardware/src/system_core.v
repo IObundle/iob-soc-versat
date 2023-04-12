@@ -21,6 +21,9 @@ module system
    //CPU TRAP
    output trap,
           
+`ifdef VERSAT_EXTERNAL_MEMORY
+      `include "versat_external_memory_port.vh"
+`endif
           
 `ifdef USE_DDR 
    //address write

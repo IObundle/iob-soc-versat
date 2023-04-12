@@ -106,7 +106,7 @@ void ConfigureGenerator(FUInstance* inst, int start,int end,int increment){
    config->incr = increment;
 }
 
-void ConfigureMemoryLinear(FUInstance* inst, int amountOfData){
+void ConfigureMemoryLinear(FUInstance* inst, int amountOfData,int start){
    IntSet(inst->config,0,sizeof(MemConfig));
    volatile MemConfig* config = (volatile MemConfig*) inst->config;
 
@@ -114,6 +114,7 @@ void ConfigureMemoryLinear(FUInstance* inst, int amountOfData){
    config->perA = amountOfData;
    config->dutyA = amountOfData;
    config->incrA = 1;
+   config->startA = start;
 }
 
 void ConfigureMemoryReceive(FUInstance* inst, int amountOfData,int interdataDelay){
