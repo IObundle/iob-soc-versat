@@ -94,6 +94,7 @@ firmware.hex: $(FIRM_DIR)/firmware.bin
 
 #clean general hardware files
 hw-clean: gen-clean
-	@rm -f *.v *.vh *.hex *.bin $(SRC_DIR)/system.v $(TB_DIR)/system_tb.v $(SRC_DIR)/GeneratedUnits/*.v $(SRC_DIR)/versat_instance.v $(INC_DIR)/versat_defs.vh
+	@rm -f *.v *.vh *.hex *.bin $(SRC_DIR)/system.v $(TB_DIR)/system_tb.v $(SRC_DIR)/GeneratedUnits/*.v $(SRC_DIR)/versat_instance.v 
+	@rm -f $(INC_DIR)/versat_defs.vh $(INC_DIR)/versat_external_memory_inst.vh $(INC_DIR)/versat_external_memory_port.vh $(INC_DIR)/versat_external_memory_portmap.vh
 
 .PHONY: hw-clean

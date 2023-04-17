@@ -738,6 +738,8 @@ TEST(FirstLineKey){
       ptr += sprintf(ptr,"0x%02x ",out[i]);
    }
 
+   OutputVersatSource(versat,&test,".");
+
    return EXPECT("0xa0 0xfa 0xfe 0x17 ","%s",buffer);
 }
 
@@ -815,7 +817,7 @@ TEST(AESRound){
 static void FillAES(Accelerator* topLevel,FUInstance* inst){
    int rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36};
    for(int i = 0; i < 10; i++){
-      printf("%d\n",i);
+      //printf("%d\n",i);
       FUInstance* constRcon = GetSubInstanceByName(topLevel,inst,"rcon%d",i);
       constRcon->config[0] = rcon[i];
 
@@ -825,7 +827,7 @@ static void FillAES(Accelerator* topLevel,FUInstance* inst){
    FillSubBytes(topLevel,GetSubInstanceByName(topLevel,inst,"subBytes"));
 
    for(int i = 0; i < 9; i++){
-      printf("%d\n",i);
+      //printf("%d\n",i);
       FillRound(topLevel,GetSubInstanceByName(topLevel,inst,"round%d",i));
    }
 }
@@ -924,6 +926,8 @@ TEST(AES){
 
    OutputVersatSource(versat,&test,".");
 
+   DebugAccelerator(test.accel,temp);
+
    char buffer[1024];
    char* ptr = buffer;
    for(int i = 0; i < 16; i++){
@@ -1006,6 +1010,8 @@ int ComplexAdderInstance(Accelerator* accel,int a,int b){
    VersatUnitWrite(b1,0,a);
    VersatUnitWrite(b2,0,b);
 
+   ConfigureMemoryLinear(b1,1,0);
+   ConfigureMemoryLinear(b2,1,0);
    ConfigureMemoryReceive(out,1,1);
 
    AcceleratorRun(accel);
@@ -1042,6 +1048,7 @@ int SemiComplexAdderInstance(Accelerator* accel,int a,int b){
    d1->config[0] = a;
    VersatUnitWrite(d2,0,b);
 
+   ConfigureMemoryLinear(d2,1,0);
    ConfigureMemoryReceive(out,1,1);
 
    AcceleratorRun(accel);
@@ -1334,11 +1341,13 @@ TEST(FlattenAES){
 
    test.accel = Flatten(versat,test.accel,99);
 
-   FillAESAccelerator(test.accel);
-
    RemapSimpleAccelerator(&test,versat);
 
+   FillAESAccelerator(test.accel);
+
    int* out = RunSimpleAccelerator(&test,0x32,0x88,0x31,0xe0,0x43,0x5a,0x31,0x37,0xf6,0x30,0x98,0x07,0xa8,0x8d,0xa2,0x34,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c);
+
+   DebugAccelerator(test.accel,temp);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -1432,8 +1441,6 @@ TEST(SimpleMergeUnitCommonNoEdge){
    ClearConfigurations(accel);
    ActivateMergedAccelerator(versat,accel,types[1]);
    resB = ComplexAdderInstance(accel,2,3);
-
-   //DebugAccelerator(accel,temp);
 
    OutputVersatSource(versat,accel,".");
 
@@ -1745,8 +1752,6 @@ TEST(SHA){
    SetSHAAccelerator(test.accel,test.inst);
 
    InitVersatSHA(versat,true);
-
-   //DebugAccelerator(test.accel,temp);
 
    unsigned char digest[256];
    for(int i = 0; i < 256; i++){
@@ -2296,7 +2301,7 @@ TEST(Blake2s){
    currentTest += 1; } while(0)
 
 // When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
-#define REVERSE_ENABLED 1
+#define REVERSE_ENABLED 0
 
 //                 76543210
 #define SEGMENTS 0b00000001
@@ -2328,25 +2333,11 @@ void AutomaticTests(Versat* versat){
 
    TestVersatSide(versat);
 
-   /*
-   There is currently a problem with the verilator simulation.
-   Technically having a couple of self->step() calls should not any problem but
-   apparently they do, as things change even if they should only change on clock posedge.
-   If tomorrow it appears to be a work day, talk with Pedro to see if he would like to touch the code beforehand.
-
-   Try to fix makefile so it does not take a lot of time to compile the wrapper changes and just test things out to see if you can identify the problem.
-   Or if it is a verilator bug and somehow we need to find a work around.
-
-   Do not know which change I made that added a bug to merge.
-   Need to reach a stage where every test is passing before making any other meaningful change,
-   otherwise I keep getting bad info about which change caused the bug
-   */
-
 #if SEG0
    TEST_INST( 1 ,TestMStage);
    TEST_INST( 1 ,TestFStage);
-   TEST_INST( 0 ,SHA);
-   TEST_INST( DISABLED ,MultipleSHATests);
+   TEST_INST( 1 ,SHA);
+   TEST_INST( 1 ,MultipleSHATests); // Time consuming
    TEST_INST( 1 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
    TEST_INST( 1 ,Convolution);
@@ -2363,10 +2354,10 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,AESRound);
    TEST_INST( 1 ,AES);
    TEST_INST( 1 ,ReadWriteAES);
-   TEST_INST( DISABLED ,SimpleAdder); // Also a good zero latency test
-   TEST_INST( DISABLED ,ComplexMultiplier);
-   TEST_INST( DISABLED ,TestMemory);
-   TEST_INST( DISABLED ,TestVRead);
+   TEST_INST( 1 ,SimpleAdder);
+   TEST_INST( 1 ,ComplexMultiplier);
+   TEST_INST( 1 ,TestMemory);
+   TEST_INST( 1 ,TestVRead);
    TEST_INST( DISABLED ,TestMuladd);
 #endif
 #if SEG1 // Config sharing
@@ -2378,13 +2369,13 @@ void AutomaticTests(Versat* versat){
 #if SEG2 // Flattening
    TEST_INST( 1 ,SimpleFlatten);
    TEST_INST( 1 ,FlattenShareConfig);
-   TEST_INST( 1 ,FlattenAES); // Takes a bit of time
+   TEST_INST( 0 ,FlattenAES);
    TEST_INST( 1 ,FlattenAESVRead);
-   TEST_INST( 1 ,FlattenSHA); // Problem on top level static buffers. Maybe do flattening of accelerators with buffers already fixed.
+   TEST_INST( 1 ,FlattenSHA);
 #endif
 #if SEG3 // Merging
    TEST_INST( 1 ,SimpleMergeNoCommon);
-   TEST_INST( 0 ,SimpleMergeUnitCommonNoEdge);
+   TEST_INST( 1 ,SimpleMergeUnitCommonNoEdge);
    TEST_INST( 1 ,SimpleMergeUnitAndEdgeCommon);
    TEST_INST( 1 ,SimpleMergeInputOutputCommon);
    TEST_INST( 1 ,CombinatorialMerge);
@@ -2428,9 +2419,10 @@ void AutomaticTests(Versat* versat){
    EnterDebugTerminal(versat);
    #endif
 
-   #if 0
-   Hook(versat,nullptr,nullptr);
-   //Free(versat);
+   #if 1
+   //DebugVersat(versat);
+   Free(&temp);
+   Free(versat);
    #endif
 
    printf("\nAutomatic tests done (passed/total): %d / %d\n",info.testsPassed,info.numberTests);

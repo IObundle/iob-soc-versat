@@ -4,7 +4,7 @@ ROOT_DIR:=../..
 
 DEBUG_GUI := 0
 
-GLOBAL_CFLAGS:=-std=c++17 -Wall -g -march=native -DVERSAT_DEBUG -Werror=return-type #-msse2 #-fsanitize=address
+GLOBAL_CFLAGS:=-std=c++17 -Wall -g -DVERSAT_DEBUG -Werror=return-type -march=native  #-fsanitize=address #-msse2
 LIBS := -lstdc++ -lm -lgcc -lc -lssl -lcrypto -pthread
 
 ifeq ($(DEBUG_GUI),1)
