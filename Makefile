@@ -48,6 +48,9 @@ PC_DIR:=$(SW_DIR)/pc-emul
 pc-emul-build:
 	$(MAKE) -C $(PC_DIR) build
 
+pc-emul-force-build:
+	$(MAKE) -C $(PC_DIR) force-build
+
 pc-emul-run: pc-emul-build 
 	$(MAKE) -C $(PC_DIR) run
 
@@ -83,6 +86,8 @@ sim-run: sim-build ./hardware/src/versat_instance.v
 
 sim-clean: fw-clean
 	make -C $(SIM_DIR) clean
+
+sim-one-build: pc-emul-force-build sim-build
 
 sim-test:
 	make -C $(SIM_DIR) test

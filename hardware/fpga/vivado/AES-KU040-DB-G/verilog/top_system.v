@@ -138,6 +138,8 @@ module top_system
    // SYSTEM
    //
 
+   `include "versat_external_memory_inst.vh"   
+
    system
      #(
        .AXI_ID_W(AXI_ID_W),
@@ -149,6 +151,8 @@ module top_system
       .clk (clk),
       .rst (rst),
       .trap (trap),
+
+      `include "versat_external_memory_portmap.vh"
 
 `ifdef USE_DDR
       //address write

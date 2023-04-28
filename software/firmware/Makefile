@@ -32,9 +32,23 @@ SRC+= $(FIRM_DIR)/unitConfiguration.cpp
 SRC+= $(FIRM_DIR)/versatSHA.cpp
 SRC+= $(FIRM_DIR)/ila.c
 
-INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
+#INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
 #SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c)
 #SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c)
+
+ifeq ($(HARDWARE_TEST),)
+INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
+INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/generated
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
+OUTPUT_DIR:=.
+OUTPUT_NAME:=firmware.elf
+else
+INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
+INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/test/$(HARDWARE_TEST)/
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
+OUTPUT_DIR:=./test/$(HARDWARE_TEST)
+OUTPUT_NAME:=./test/$(HARDWARE_TEST)/firmware.elf
+endif
 
 #PROFILE
 ifeq ($(PROFILE),1)
@@ -50,11 +64,20 @@ endif
 
 #RULES
 
-build: firmware.elf
+#build: firmware.elf
 
-firmware.elf: ../template.lds $(HDR) $(SRC) gen_data
+#firmware.elf: ../template.lds $(HDR) $(SRC) gen_data
+#	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions
+#	$(TOOLCHAIN_PREFIX)objcopy -O binary firmware.elf firmware.bin
+
+build: $(OUTPUT_NAME)
+
+$(OUTPUT_NAME): ../template.lds $(HDR) $(SRC) gen_data
+ifneq ($(HARDWARE_TEST),)
+	@mkdir -p $(OUTPUT_DIR)
+endif
 	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions
-	$(TOOLCHAIN_PREFIX)objcopy -O binary firmware.elf firmware.bin
+	$(TOOLCHAIN_PREFIX)objcopy -O binary $(OUTPUT_DIR)/firmware.elf $(OUTPUT_DIR)/firmware.bin
 
 clean:
 	@rm -rf firmware.bin firmware.elf firmware.map *.hex periphs.h UARTsw_reg.h TIMERsw_reg.h *swreg.h \

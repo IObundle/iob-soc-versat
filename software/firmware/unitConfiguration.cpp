@@ -2,8 +2,8 @@
 
 #include "basicWrapper.inc"
 
-void IntSet(volatile int* buffer,int value,int byteSize){
-   int nInts = byteSize / 4;
+void IntSet(volatile iptr* buffer,int value,int byteSize){
+   int nInts = byteSize / sizeof(iptr);
 
    for(int i = 0; i < nInts; i++){
       buffer[i] = value;
@@ -135,7 +135,7 @@ void ConfigureMemoryReceive(FUInstance* inst, int amountOfData,int interdataDela
    config->incr2A = 0;
 }
 
-void ConfigureLeftSideMatrixVRead(FUInstance* inst, int iterations){
+void ConfigureLeftSideMatrixVRead(FUInstance* inst, int iterations,void* data){
    IntSet(inst->config,0,sizeof(VReadConfig));
    volatile VReadConfig* config = (volatile VReadConfig*) inst->config;
 
@@ -151,6 +151,7 @@ void ConfigureLeftSideMatrixVRead(FUInstance* inst, int iterations){
    config->int_addr = 0;
    config->pingPong = 0;
    config->length = numberItems - 1;
+   config->ext_addr = (iptr) data;
 
    config->iterB = iterations;
    config->perB = iterations;
@@ -165,7 +166,7 @@ void ConfigureLeftSideMatrixVRead(FUInstance* inst, int iterations){
    config->incr2B = iterations;
 }
 
-void ConfigureRightSideMatrixVRead(FUInstance* inst, int iterations){
+void ConfigureRightSideMatrixVRead(FUInstance* inst, int iterations,void* data){
    IntSet(inst->config,0,sizeof(VReadConfig));
    volatile VReadConfig* config = (volatile VReadConfig*) inst->config;
 
@@ -181,6 +182,7 @@ void ConfigureRightSideMatrixVRead(FUInstance* inst, int iterations){
    config->int_addr = 0;
    config->pingPong = 0;
    config->length = numberItems - 1;
+   config->ext_addr = (iptr) data;
 
    config->iterB = iterations;
    config->perB = iterations;
@@ -195,7 +197,7 @@ void ConfigureRightSideMatrixVRead(FUInstance* inst, int iterations){
    config->incr2B = 0;
 }
 
-void ConfigureMatrixVWrite(FUInstance* inst,int amountOfData){
+void ConfigureMatrixVWrite(FUInstance* inst,int amountOfData,void* data){
    IntSet(inst->config,0,sizeof(VWriteConfig));
    volatile VWriteConfig* config = (volatile VWriteConfig*) inst->config;
 
@@ -207,8 +209,9 @@ void ConfigureMatrixVWrite(FUInstance* inst,int amountOfData){
    config->dutyA = amountOfData;
    config->size = 8;
    config->int_addr = 0;
-   config->pingPong = 0;
+   config->pingPong = 1;
    config->length = amountOfData - 1;
+   config->ext_addr = (iptr) data;
 
    config->iterB = amountOfData;
    config->perB = 4;

@@ -10,8 +10,8 @@ void ConfigureRightSideMatrix(FUInstance* inst, int iterations);
 void ConfigureGenerator(FUInstance* inst, int start,int end,int increment);
 void ConfigureMemoryLinear(FUInstance* inst, int amountOfData,int start = 0);
 void ConfigureMemoryReceive(FUInstance* inst, int amountOfData,int interdataDelay);
-void ConfigureLeftSideMatrixVRead(FUInstance* inst, int iterations);
-void ConfigureRightSideMatrixVRead(FUInstance* inst, int iterations);
-void ConfigureMatrixVWrite(FUInstance* inst,int amountOfData);
+void ConfigureLeftSideMatrixVRead(FUInstance* inst, int iterations,void* data);
+void ConfigureRightSideMatrixVRead(FUInstance* inst, int iterations,void* data);
+void ConfigureMatrixVWrite(FUInstance* inst,int amountOfData,void* data);
 
 #endif // INCLUDED_UNIT_CONFIGURATION

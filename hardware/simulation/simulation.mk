@@ -20,7 +20,7 @@ DDR_ADDR_W=$(DCACHE_ADDR_W)
 CONSOLE_CMD=$(PYTHON_DIR)/console -L
 
 #produce waveform dump
-VCD ?= 1
+VCD ?= 0
 
 ifeq ($(VCD),1)
 DEFINE+=$(defmacro)VCD
@@ -30,8 +30,16 @@ ifeq ($(INIT_MEM),0)
 CONSOLE_CMD+=-f
 endif
 
-ifneq ($(wildcard  firmware.hex),)
-FW_SIZE=$(shell wc -l firmware.hex | awk '{print $$1}')
+ifeq ($(HARDWARE_TEST),)
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
+INPUT_FIRM_FOLDER := $(FIRM_DIR)
+else
+INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(HARDWARE_TEST)
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
+endif
+
+ifneq ($(wildcard  $(OUTPUT_SIM_FOLDER)/firmware.hex),)
+FW_SIZE=$(shell wc -l $(OUTPUT_SIM_FOLDER)/firmware.hex | awk '{print $$1}')
 endif
 
 DEFINE+=$(defmacro)FW_SIZE=$(FW_SIZE)
@@ -68,9 +76,13 @@ endif
 
 sim:
 ifeq ($(SIM_SERVER),)
-	cp $(FIRM_DIR)/firmware.bin .
+	cp $(INPUT_FIRM_FOLDER)/firmware.bin .
 	@rm -f soc2cnsl cnsl2soc
+ifeq ($(HARDWARE_TEST),)
 	$(CONSOLE_CMD) $(TEST_LOG) &
+else
+	cd $(OUTPUT_SIM_FOLDER); ../../$(CONSOLE_CMD) $(TEST_LOG) &
+endif
 	bash -c "trap 'make kill-cnsl' INT TERM KILL EXIT; make exec"
 else
 	ssh $(SIM_SSH_FLAGS) $(SIM_USER)@$(SIM_SERVER) "if [ ! -d $(REMOTE_ROOT_DIR) ]; then mkdir -p $(REMOTE_ROOT_DIR); fi"

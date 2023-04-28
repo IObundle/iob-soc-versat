@@ -106,6 +106,7 @@ write_checkpoint -force checkpoints/post_synth
 #start_gui
 
 opt_design -debug_log -verbose
+power_opt_design -verbose
 report_timing_summary -file reports/opt_timing.txt -max_paths 3000
 
 place_design
@@ -120,6 +121,8 @@ report_clock_interaction -file reports/clock_interaction.txt
 report_cdc -details -file reports/cdc.txt
 report_synchronizer_mtbf -file reports/synchronizer_mtbf.txt
 report_utilization -hierarchical -file reports/utilization.txt
+report_power -file reports/power.txt
+report_power_opt -file reports/power_opt.txt
 
 write_bitstream -force top_system.bit
 

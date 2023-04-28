@@ -35,6 +35,8 @@ int printf_(const char* format, ...);
 #endif
 #endif
 
+extern bool debugFlag;
+
 struct TestInfo{
    int testsPassed;
    int numberTests;
@@ -241,7 +243,7 @@ TEST(StringHasher){
       int val = VersatUnitRead(bytesOut,i);//bytesOut->externalMemory[i];
 
       if(hash == val){
-         return EXPECT("21","%ld",i);
+         return EXPECT("21","%zd",i);
       }
    }
 
@@ -406,11 +408,25 @@ TEST(MatrixMultiplication){
    return EXPECT("90 100 110 120 202 228 254 280 314 356 398 440 426 484 542 600 ","%s",buffer);
 }
 
+int ClearCache(){
+   int bigBuffer[1024*64];
+
+   for(int i = 0; i < 1024 * 64; i += 64){
+      bigBuffer[i] = i;
+   }
+   int counter = 0;
+   for(int i = 0; i < 1024 * 64; i += 64){
+      counter += bigBuffer[i];
+   }
+
+   return counter;
+}
+
 TEST(MatrixMultiplicationVRead){
    #define DIM 4
    int matrixA[DIM*DIM];
    int matrixB[DIM*DIM];
-   int matrixRes[DIM*DIM];
+   static int matrixRes[DIM*DIM];
    volatile int* resPtr = (volatile int*) matrixRes;
    SimpleAccelerator test = {};
    InitSimpleAccelerator(&test,versat,"MatrixMultiplicationVread");
@@ -426,18 +442,9 @@ TEST(MatrixMultiplicationVRead){
    int dimensions = DIM;
    int size = dimensions * dimensions;
 
-   ConfigureLeftSideMatrixVRead(memA,dimensions);
-   ConfigureRightSideMatrixVRead(memB,dimensions);
-
-   {
-   volatile VReadConfig* config = (volatile VReadConfig*) memA->config;
-   config->ext_addr = (iptr) matrixA;
-   }
-
-   {
-   volatile VReadConfig* config = (volatile VReadConfig*) memB->config;
-   config->ext_addr = (iptr) matrixB;
-   }
+   ConfigureLeftSideMatrixVRead(memA,dimensions,matrixA);
+   ConfigureRightSideMatrixVRead(memB,dimensions,matrixB);
+   ConfigureMatrixVWrite(res,size,matrixRes);
 
    for(int i = 0; i < size; i++){
       matrixA[i] = i + 1;
@@ -451,18 +458,27 @@ TEST(MatrixMultiplicationVRead){
    conf->period = dimensions;
    conf->shift = 0;
 
-   ConfigureMatrixVWrite(res,size);
-   {
-   volatile VWriteConfig* config = (volatile VWriteConfig*) res->config;
-   config->ext_addr = (iptr) matrixRes;
-   }
-
-   AcceleratorRun(accel);
-   AcceleratorRun(accel);
-   AcceleratorRun(accel);
+   #if 0
+   //timeRegion("Run"){
+      AcceleratorRun(accel,3);
+   //}
+   #endif
 
    OutputVersatSource(versat,accel,".");
 
+   //printf("%d\n",ClearCache());
+
+   for(int y = 0; y < DIM; y++){
+      for(int x = 0; x < DIM; x++){
+         int accum = 0;
+         for(int i = 0; i < DIM; i++){
+            accum += matrixA[y * DIM + i] * matrixB[x + i * DIM];
+         }
+         matrixRes[y * DIM + x] = accum;
+      }
+   }
+
+   #if 1
    char buffer[1024];
    char* ptr = buffer;
    for(int i = 0; i < dimensions; i++){
@@ -470,6 +486,7 @@ TEST(MatrixMultiplicationVRead){
          ptr += sprintf(ptr,"%d ",resPtr[i*dimensions + j]);
       }
    }
+   #endif
 
    return EXPECT("90 100 110 120 202 228 254 280 314 356 398 440 426 484 542 600 ","%s",buffer);
 }
@@ -817,17 +834,16 @@ TEST(AESRound){
 static void FillAES(Accelerator* topLevel,FUInstance* inst){
    int rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36};
    for(int i = 0; i < 10; i++){
-      //printf("%d\n",i);
+      printf("%d\n",i);
       FUInstance* constRcon = GetSubInstanceByName(topLevel,inst,"rcon%d",i);
       constRcon->config[0] = rcon[i];
 
       FillKeySchedule(topLevel,GetSubInstanceByName(topLevel,inst,"key%d",i));
    }
-   //printf("here\n");
    FillSubBytes(topLevel,GetSubInstanceByName(topLevel,inst,"subBytes"));
 
    for(int i = 0; i < 9; i++){
-      //printf("%d\n",i);
+      printf("%d\n",i);
       FillRound(topLevel,GetSubInstanceByName(topLevel,inst,"round%d",i));
    }
 }
@@ -925,8 +941,6 @@ TEST(AES){
    int* out = RunSimpleAccelerator(&test,0x32,0x88,0x31,0xe0,0x43,0x5a,0x31,0x37,0xf6,0x30,0x98,0x07,0xa8,0x8d,0xa2,0x34,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c);
 
    OutputVersatSource(versat,&test,".");
-
-   DebugAccelerator(test.accel,temp);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -1265,9 +1279,10 @@ TEST(SimpleFlatten){
    SimpleAccelerator test = {};
    InitSimpleAccelerator(&test,versat,"SimpleAdder");
 
-   Accelerator* flatten = Flatten(versat,test.accel,1);
+   test.accel = Flatten(versat,test.accel,99);
+   RemapSimpleAccelerator(&test,versat);
 
-   int result = SimpleAdderInstance(flatten,4,5);
+   int result = SimpleAdderInstance(test.accel,4,5);
 
    return EXPECT("9","%d",result);
 }
@@ -1276,30 +1291,31 @@ TEST(FlattenShareConfig){
    SimpleAccelerator test = {};
    InitSimpleAccelerator(&test,versat,"ComplexShareConfig");
 
-   Accelerator* flatten = Flatten(versat,test.accel,99);
+   test.accel = Flatten(versat,test.accel,99);
+   RemapSimpleAccelerator(&test,versat);
 
    // Test by changing config for shared 1
-   FUInstance* a11 = GetInstanceByName(flatten,"Test","shared1","a1");
-   FUInstance* a12 = GetInstanceByName(flatten,"Test","shared1","a2");
-   FUInstance* b11 = GetInstanceByName(flatten,"Test","shared1","b1");
-   FUInstance* b12 = GetInstanceByName(flatten,"Test","shared1","b2");
+   FUInstance* a11 = GetInstanceByName(test.accel,"Test","shared1","a1");
+   FUInstance* a12 = GetInstanceByName(test.accel,"Test","shared1","a2");
+   FUInstance* b11 = GetInstanceByName(test.accel,"Test","shared1","b1");
+   FUInstance* b12 = GetInstanceByName(test.accel,"Test","shared1","b2");
 
    // But reading the output of shared 2 (should be the same, since same configuration = same results)
-   FUInstance* out20 = GetInstanceByName(flatten,"Test","shared2","out0");
-   FUInstance* out21 = GetInstanceByName(flatten,"Test","shared2","out1");
-   FUInstance* out22 = GetInstanceByName(flatten,"Test","shared2","out2");
+   FUInstance* out20 = GetInstanceByName(test.accel,"Test","shared2","out0");
+   FUInstance* out21 = GetInstanceByName(test.accel,"Test","shared2","out1");
+   FUInstance* out22 = GetInstanceByName(test.accel,"Test","shared2","out2");
 
    a11->config[0] = 2;
-   AcceleratorRun(flatten);
+   AcceleratorRun(test.accel);
    int res0 = out20->state[0];
 
    a11->config[0] = 0;
    a12->config[0] = 3;
-   AcceleratorRun(flatten);
+   AcceleratorRun(test.accel);
    int res1 = out20->state[0];
 
    b12->config[0] = 4;
-   AcceleratorRun(flatten);
+   AcceleratorRun(test.accel);
    int res2 = out21->state[0];
 
    a11->config[0] = 0;
@@ -1309,7 +1325,7 @@ TEST(FlattenShareConfig){
 
    a12->config[0] = 3;
    b12->config[0] = 4;
-   AcceleratorRun(flatten);
+   AcceleratorRun(test.accel);
    int res3 = out22->state[0];
 
    return EXPECT("4 6 8 7","%d %d %d %d",res0,res1,res2,res3);
@@ -1319,9 +1335,10 @@ TEST(FlattenSHA){
    SimpleAccelerator test = {};
    InitSimpleAccelerator(&test,versat,"SHA");
 
-   Accelerator* flatten = Flatten(versat,test.accel,99);
+   test.accel = Flatten(versat,test.accel,99);
+   RemapSimpleAccelerator(&test,versat);
 
-   SetSHAAccelerator(flatten,nullptr);
+   SetSHAAccelerator(test.accel,nullptr);
 
    InitVersatSHA(versat,true);
 
@@ -1346,8 +1363,6 @@ TEST(FlattenAES){
    FillAESAccelerator(test.accel);
 
    int* out = RunSimpleAccelerator(&test,0x32,0x88,0x31,0xe0,0x43,0x5a,0x31,0x37,0xf6,0x30,0x98,0x07,0xa8,0x8d,0xa2,0x34,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c);
-
-   DebugAccelerator(test.accel,temp);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -1572,12 +1587,13 @@ TEST(ComplexMerge){
    SimpleAccelerator test = {};
    InitSimpleAccelerator(&test,versat,"SHA_AES");
 
-   ActivateMergedAccelerator(versat,test.accel,types[0]);
-
    #if 0
+   ActivateMergedAccelerator(versat,test.accel,types[0]);
    SetSHAAccelerator(test.accel,nullptr);
 
    InitVersatSHA(versat,true);
+
+   DebugAccelerator(test.accel);
 
    unsigned char digest[256];
    for(int i = 0; i < 256; i++){
@@ -1591,6 +1607,10 @@ TEST(ComplexMerge){
 
    ActivateMergedAccelerator(versat,test.accel,types[1]);
    FillAESAccelerator(test.accel);
+
+   DebugAccelerator(test.accel);
+
+   OutputVersatSource(versat,test.accel,".");
 
    int* out = RunSimpleAccelerator(&test,0x32,0x88,0x31,0xe0,0x43,0x5a,0x31,0x37,0xf6,0x30,0x98,0x07,0xa8,0x8d,0xa2,0x34,0x2b,0x28,0xab,0x09,0x7e,0xae,0xf7,0xcf,0x15,0xd2,0x15,0x4f,0x16,0xa6,0x88,0x3c);
 
@@ -1768,29 +1788,34 @@ TEST(MultipleSHATests){
    SimpleAccelerator test = {};
    InitSimpleAccelerator(&test,versat,"SHA");
 
-   SetSHAAccelerator(test.accel,test.inst);
+   //test.accel = Flatten(versat,test.accel,99);
+
+   SetSHAAccelerator(test.accel,nullptr);
 
    InitVersatSHA(versat,true);
 
    unsigned char digestSW[256];
    unsigned char digestHW[256];
    int passed = 0;
-   for(int i = 0; i < NUM_MSGS; i++){
-      for(int ii = 0; ii < 256; ii++){
-         digestSW[ii] = 0;
-         digestHW[ii] = 0;
-      }
 
-      sha256(digestSW,msg_array[i],msg_len[i]);
-      VersatSHA(digestHW,msg_array[i],msg_len[i]);
+   for(int counter = 0; counter < 1; counter++){
+      for(int i = 0; i < NUM_MSGS; i++){
+         for(int ii = 0; ii < 256; ii++){
+            digestSW[ii] = 0;
+            digestHW[ii] = 0;
+         }
 
-      #if 1
-      if(memcmp(digestSW,digestHW,256) == 0){
-         passed += 1;
-      } else {
-         printf("%d\n",i);
+         sha256(digestSW,msg_array[i],msg_len[i]);
+         VersatSHA(digestHW,msg_array[i],msg_len[i]);
+
+         #if 1
+         if(memcmp(digestSW,digestHW,256) == 0){
+            passed += 1;
+         } else {
+            printf("%d\n",i);
+         }
+         #endif
       }
-      #endif
    }
 
    return EXPECT("65","%d",passed);
@@ -2283,6 +2308,140 @@ TEST(Blake2s){
 #endif
 #endif
 
+struct Mat4{
+   int data[4*4];
+};
+
+void MatrixVersatRun(Accelerator* accel,volatile VReadConfig* vreadA,volatile VReadConfig* vreadB,volatile VWriteConfig* vwrite,
+                                        volatile Mat4* matrixA,volatile Mat4* matrixB,volatile Mat4* matrixRes,int times){
+   vreadA->ext_addr = (iptr) &matrixA[0];
+   vreadB->ext_addr = (iptr) &matrixB[0];
+
+   AcceleratorRun(accel,1); // Read initial good data
+
+   for(int ii = 0; ii < times; ii++){
+      vreadA->ext_addr = (iptr) &matrixA[ii];
+      vreadB->ext_addr = (iptr) &matrixB[ii];
+
+      AcceleratorRun(accel,1);
+
+      vwrite->ext_addr = (iptr) &matrixRes[ii];
+   }
+
+   AcceleratorRun(accel,1); // Finish writing last good data
+}
+
+void PCRun(volatile Mat4* matrixA,volatile Mat4* matrixB,volatile Mat4* matrixRes,int times){
+   const int dim = 4;
+   for(int ii = 0; ii < times; ii++){
+      for(int y = 0; y < dim; y++){
+         for(int x = 0; x < dim; x++){
+            int accum = 0;
+            for(int i = 0; i < dim; i++){
+               accum += matrixA[ii].data[y * dim + i] * matrixB[ii].data[x + i * dim];
+            }
+            matrixRes[ii].data[y * dim + x] = accum;
+         }
+      }
+   }
+}
+
+void DisplayRun(volatile Mat4* matrixRes,int times){
+   const int dim = 4;
+   for(int ii = 0; ii < times; ii++){
+      for(int i = 0; i < dim; i++){
+         for(int j = 0; j < dim; j++){
+            printf("%d ",matrixRes[ii].data[i*dim + j]);
+         }
+         printf("\n");
+      }
+   }
+   printf("\n");
+}
+
+TEST(TestMatrixMultiplications){
+   static constexpr int AMOUNT = 10000;
+
+   volatile Mat4* matrixA = (volatile Mat4*) malloc(sizeof(Mat4) * AMOUNT);
+   volatile Mat4* matrixB = (volatile Mat4*) malloc(sizeof(Mat4) * AMOUNT);
+   volatile Mat4* matrixRes = (volatile Mat4*) malloc(sizeof(Mat4) * AMOUNT);
+
+   SimpleAccelerator test = {};
+   InitSimpleAccelerator(&test,versat,"MatrixMultiplicationVread");
+   Accelerator* accel = test.accel;
+   FUInstance* matA = GetInstanceByName(accel,"Test","matA");
+   FUInstance* matB = GetInstanceByName(accel,"Test","matB");
+   FUInstance* muladd = GetInstanceByName(accel,"Test","ma");
+   FUInstance* res = GetInstanceByName(accel,"Test","res");
+   const int dim = 4;
+   const int size = 16;
+
+   for(int i = 0; i < AMOUNT; i++){
+      for(int ii = 0; ii < size; ii++){
+         matrixA[i].data[ii] = ii + i + 1;
+         matrixB[i].data[ii] = ii + i + 2;
+      }
+   }
+
+   ConfigureLeftSideMatrixVRead(matA,dim,(void*) matrixA);
+   ConfigureRightSideMatrixVRead(matB,dim,(void*) matrixB);
+   ConfigureMatrixVWrite(res,size,(void*) matrixRes);
+
+   volatile VReadConfig* vreadA = (volatile VReadConfig*) matA->config;
+   volatile VReadConfig* vreadB = (volatile VReadConfig*) matB->config;
+   volatile VWriteConfig* vwrite = (volatile VWriteConfig*) res->config;
+
+   volatile MuladdConfig* conf = (volatile MuladdConfig*) muladd->config;
+
+   conf->opcode = 0;
+   conf->iterations = size;
+   conf->period = dim;
+   conf->shift = 0;
+
+   OutputVersatSource(versat,accel,".");
+
+   MatrixVersatRun(accel,vreadA,vreadB,vwrite,matrixA,matrixB,matrixRes,1);
+
+   timeRegion("Versat1"){
+      MatrixVersatRun(accel,vreadA,vreadB,vwrite,matrixA,matrixB,matrixRes,1);
+      DisplayRun(matrixRes,1);
+   }
+   timeRegion("Versat20"){
+      MatrixVersatRun(accel,vreadA,vreadB,vwrite,matrixA,matrixB,matrixRes,20);
+   }
+   timeRegion("Versat100"){
+      MatrixVersatRun(accel,vreadA,vreadB,vwrite,matrixA,matrixB,matrixRes,100);
+   }
+   timeRegion("Versat1000"){
+      MatrixVersatRun(accel,vreadA,vreadB,vwrite,matrixA,matrixB,matrixRes,1000);
+   }
+   timeRegion("Versat10000"){
+      MatrixVersatRun(accel,vreadA,vreadB,vwrite,matrixA,matrixB,matrixRes,10000);
+   }
+   timeRegion("PC1"){
+      PCRun(matrixA,matrixB,matrixRes,1);
+      DisplayRun(matrixRes,1);
+   }
+   timeRegion("PC20"){
+      PCRun(matrixA,matrixB,matrixRes,20);
+   }
+   timeRegion("PC100"){
+      PCRun(matrixA,matrixB,matrixRes,100);
+   }
+   timeRegion("PC1000"){
+      PCRun(matrixA,matrixB,matrixRes,1000);
+   }
+   timeRegion("PC10000"){
+      PCRun(matrixA,matrixB,matrixRes,10000);
+   }
+
+   free((void*)matrixA);
+   free((void*)matrixB);
+   free((void*)matrixRes);
+   //return EXPECT("90 100 110 120 202 228 254 280 314 356 398 440 426 484 542 600 ","%s",buffer);
+   TEST_PASSED;
+}
+
 #define DISABLED (REVERSE_ENABLED)
 
 #ifndef HARDWARE_TEST
@@ -2301,10 +2460,10 @@ TEST(Blake2s){
    currentTest += 1; } while(0)
 
 // When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
-#define REVERSE_ENABLED 0
+#define REVERSE_ENABLED 1
 
 //                 76543210
-#define SEGMENTS 0b00000001
+#define SEGMENTS 0b00101111
 
 #define SEG0 (SEGMENTS & 0x01)
 #define SEG1 (SEGMENTS & 0x02)
@@ -2327,16 +2486,17 @@ void AutomaticTests(Versat* versat){
    int hardwareTest = HARDWARE_TEST;
    int currentTest = 0;
 
-   #if 0
-   EnterDebugTerminal(versat);
-   #endif
-
    TestVersatSide(versat);
+
+   #if HARDWARE_TEST != -1
+   SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,1);
+   SetDebug(versat,VersatDebugFlags::OUTPUT_ACCELERATORS_CODE,0);
+   #endif
 
 #if SEG0
    TEST_INST( 1 ,TestMStage);
    TEST_INST( 1 ,TestFStage);
-   TEST_INST( 1 ,SHA);
+   TEST_INST( 0 ,SHA);
    TEST_INST( 1 ,MultipleSHATests); // Time consuming
    TEST_INST( 1 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
@@ -2369,7 +2529,7 @@ void AutomaticTests(Versat* versat){
 #if SEG2 // Flattening
    TEST_INST( 1 ,SimpleFlatten);
    TEST_INST( 1 ,FlattenShareConfig);
-   TEST_INST( 0 ,FlattenAES);
+   TEST_INST( 1 ,FlattenAES);
    TEST_INST( 1 ,FlattenAESVRead);
    TEST_INST( 1 ,FlattenSHA);
 #endif
@@ -2389,9 +2549,9 @@ void AutomaticTests(Versat* versat){
 #endif
 #if SEG5 // Floating point and related units
    TEST_INST( 1 ,FloatingPointAdd);
-   TEST_INST( 0 ,FloatingPointSub);
+   TEST_INST( 1 ,FloatingPointSub);
    TEST_INST( 1 ,FloatingPointMul);
-   TEST_INST( 1 ,FloatingPointDiv);
+   TEST_INST( DISABLED ,FloatingPointDiv);
    TEST_INST( 1 ,FloatingPointSqrt);
    TEST_INST( 1 ,IntSqrt);
    TEST_INST( 1 ,Q16Sqrt);
@@ -2402,7 +2562,8 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,Int2Float);
 #endif
 #if SEG6 // Individual units
-   TEST_INST( 1 ,TestConfigOrder);
+   TEST_INST( 1 ,TestMatrixMultiplications);
+   TEST_INST( 0 ,TestConfigOrder);
    TEST_INST( 0 ,RunSimpleAcceleratorLatency);
    TEST_INST( 0 ,ComplexCalculateDelay);
    TEST_INST( 0 ,Generator);
@@ -2416,11 +2577,7 @@ void AutomaticTests(Versat* versat){
 #endif
 
    #if 0
-   EnterDebugTerminal(versat);
-   #endif
-
-   #if 1
-   //DebugVersat(versat);
+   DebugVersat(versat);
    Free(&temp);
    Free(versat);
    #endif

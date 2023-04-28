@@ -8,11 +8,18 @@ incdir:=-I
 SIMULATOR=verilator
 SIM_SERVER=$(VSIM_SERVER)
 SIM_USER=$(VSIM_USER)
-SIM_PROC=Vsystem_top
 
 HDR=iob_uart_swreg.h
 
 include ../simulation.mk
+
+SIM_PROC=Vsystem_top
+
+ifeq ($(HARDWARE_TEST),)
+SIM_FOLDER:=.
+else
+SIM_FOLDER:=test/$(HARDWARE_TEST)
+endif
 
 # remove space between -I and directory for verilator
 INCLUDE_VERI=$(subst -I ,-I,$(INCLUDE))
@@ -58,16 +65,25 @@ VERILATOR_FLAGS += -MAKEFLAGS "CXXFLAGS=\"$(DEFINE)\"" # Pass defines to the ver
 VERILATOR_INPUT = $(INCLUDE_VERI) $(DEFINE) $(VSRC) --top-module system_top system_tb.cpp
 ######################################################################
 
-comp: $(SIM_PROC)
+comp: $(SIM_FOLDER)/$(SIM_PROC)
 
 #simulator executable
-$(SIM_PROC): $(HDR)
+$(SIM_FOLDER)/$(SIM_PROC): $(HDR)
+ifneq ($(HARDWARE_TEST),)
+	@mkdir -p test/$(HARDWARE_TEST)
+endif
 	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILATOR_INPUT)
-	cp obj_dir/$@ .
+ifeq ($(HARDWARE_TEST),)
+	cp obj_dir/Vsystem_top ./
+else
+	cp obj_dir/Vsystem_top ./test/$(HARDWARE_TEST)/
+	#cp boot.hex ./$(HARDWARE_TEST)/
+	#cp firmware.hex ./$(HARDWARE_TEST)/
+endif
 
 #run the simulator
 exec:
-	./$(SIM_PROC)
+	cd $(SIM_FOLDER); ./$(SIM_PROC)
 
 iob_uart_swreg.h: $(FIRM_DIR)/iob_uart_swreg.h
 	cp $< $@

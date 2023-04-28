@@ -64,16 +64,27 @@ ifeq ($(USE_DDR),1)
 VSRC+=$(SRC_DIR)/ext_mem.v
 endif
 
+ifeq ($(HARDWARE_TEST),)
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
+INPUT_FIRM_FOLDER := $(FIRM_DIR)/
+VSRC+=$(SW_DIR)/pc-emul/generated/versat_instance.v
+INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/generated
+else
+INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(HARDWARE_TEST)
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
+VSRC+=$(SW_DIR)/pc-emul/test/$(HARDWARE_TEST)/versat_instance.v
+INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/test/$(HARDWARE_TEST)/
+endif
+
 #system
 VSRC+=$(SRC_DIR)/boot_ctr.v $(SRC_DIR)/int_mem.v $(SRC_DIR)/sram.v
 VSRC+=system.v
 
-VSRC+=$(wildcard $(SRC_DIR)/GeneratedUnits/*.v)
-VSRC+=$(SRC_DIR)/versat_instance.v
+VSRC+=$(wildcard $(SW_DIR)/pc-emul/generated/src/*.v)
 VSRC+=$(SRC_DIR)/units/xunitF.v
 VSRC+=$(SRC_DIR)/units/xunitM.v
 
-HEXPROGS=boot.hex firmware.hex
+HEXPROGS=$(OUTPUT_SIM_FOLDER)/boot.hex $(OUTPUT_SIM_FOLDER)/firmware.hex
 
 # make system.v with peripherals
 system.v: $(SRC_DIR)/system_core.v
@@ -85,12 +96,14 @@ system.v: $(SRC_DIR)/system_core.v
 	$(foreach p, $(PERIPHERALS), if test -f $($p_DIR)/hardware/include/inst.vh; then sed -i '/endmodule/e cat $($p_DIR)/hardware/include/inst.vh' $@; fi;) # insert peripheral instances
 
 # make and copy memory init files
-boot.hex: $(BOOT_DIR)/boot.bin
+$(OUTPUT_SIM_FOLDER)/boot.hex: $(BOOT_DIR)/boot.bin
+	@mkdir -p $(OUTPUT_SIM_FOLDER)
 	$(PYTHON_DIR)/makehex.py $< $(BOOTROM_ADDR_W) > $@
 
-firmware.hex: $(FIRM_DIR)/firmware.bin
+$(OUTPUT_SIM_FOLDER)/firmware.hex: $(INPUT_FIRM_FOLDER)/firmware.bin
+	@mkdir -p $(OUTPUT_SIM_FOLDER)
 	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > $@
-	$(PYTHON_DIR)/hex_split.py firmware .
+	$(PYTHON_DIR)/hex_split.py $(OUTPUT_SIM_FOLDER)/firmware .
 
 #clean general hardware files
 hw-clean: gen-clean
