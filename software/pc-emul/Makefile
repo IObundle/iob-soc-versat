@@ -118,17 +118,15 @@ CONSOLE_CMD=$(ROOT_DIR)/software/console/eth_console -L
 #RULES
 
 ifeq ($(HARDWARE_TEST),)
-OUTPUT_SW_FOLDER := .
+OUTPUT_FOLDER := ./generated
 FW_NAME:=./generated/fw_emul
 OUTPUT_SIM_FOLDER := $(HW_DIR)/src
 OUTPUT_FIRM_FOLDER := $(SW_DIR)/firmware
-OUTPUT_FOLDER := ./generated
 else
-OUTPUT_SW_FOLDER := ./test/$(HARDWARE_TEST)
+OUTPUT_FOLDER := ./test/$(HARDWARE_TEST)
 FW_NAME:=./test/$(HARDWARE_TEST)/fw_emul
 OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
 OUTPUT_FIRM_FOLDER := $(SW_DIR)/firmware/test/$(HARDWARE_TEST)
-OUTPUT_FOLDER := ./test/$(HARDWARE_TEST)
 endif
 
 build: gen_data $(FW_NAME)
@@ -137,9 +135,7 @@ force-build: gen_data
 	g++ -w -o fw_emul $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o ./verilated/*.o $(FIRM_DIR)/automaticTests.cpp $(LIBS) #-fuse-ld=lld 
 
 $(FW_NAME): $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ) $(FIRM_DIR)/automaticTests.cpp
-ifneq ($(HARDWARE_TEST),)
-	mkdir -p $(OUTPUT_SW_FOLDER)
-endif
+	@mkdir -p $(OUTPUT_FOLDER)
 	g++ -w -o $(FW_NAME) $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o ./verilated/*.o $(FIRM_DIR)/automaticTests.cpp $(LIBS) #-fuse-ld=lld 
 
 run: $(FW_NAME)

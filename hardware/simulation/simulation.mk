@@ -20,7 +20,7 @@ DDR_ADDR_W=$(DCACHE_ADDR_W)
 CONSOLE_CMD=$(PYTHON_DIR)/console -L
 
 #produce waveform dump
-VCD ?= 0
+VCD ?= 1
 
 ifeq ($(VCD),1)
 DEFINE+=$(defmacro)VCD
@@ -69,10 +69,16 @@ else
 	ssh $(SIM_SSH_FLAGS) $(SIM_USER)@$(SIM_SERVER) 'make -C $(REMOTE_ROOT_DIR) sim-build SIMULATOR=$(SIMULATOR) INIT_MEM=$(INIT_MEM) USE_DDR=$(USE_DDR) RUN_EXTMEM=$(RUN_EXTMEM) VCD=$(VCD) TEST_LOG=\"$(TEST_LOG)\"'
 endif
 
-run: sim
+run: systemRedux.fst
 ifeq ($(VCD),1)
-	if [ ! `pgrep -u $(USER) gtkwave` ]; then gtkwave system.vcd; fi &
+	if [ ! `pgrep -u $(USER) gtkwave` ]; then gtkwave systemRedux.fst; fi &
 endif
+
+systemRedux.vcd: sim
+	cat system.vcd | vcdCut versat > systemRedux.vcd
+
+systemRedux.fst: systemRedux.vcd
+	vcd2fst -v systemRedux.vcd -f systemRedux.fst
 
 sim:
 ifeq ($(SIM_SERVER),)
@@ -149,7 +155,7 @@ test5:
 #clean target common to all simulators
 clean-remote: hw-clean
 	@rm -f soc2cnsl cnsl2soc *.txt
-	@rm -f system.vcd
+	@rm -f system.vcd systemRedux.vcd
 ifneq ($(SIM_SERVER),)
 	ssh $(SIM_SSH_FLAGS) $(SIM_USER)@$(SIM_SERVER) "if [ ! -d $(REMOTE_ROOT_DIR) ]; then mkdir -p $(REMOTE_ROOT_DIR); fi"
 	rsync -avz --delete --force --exclude .git $(SIM_SYNC_FLAGS) $(ROOT_DIR) $(SIM_USER)@$(SIM_SERVER):$(REMOTE_ROOT_DIR)
@@ -175,7 +181,7 @@ debug:
 	@echo $(CACHE_DIR)
 	@echo $(UART_DIR)
 
-.PRECIOUS: system.vcd test.log
+.PRECIOUS: system.vcd systemRedux.vcd test.log
 
 .PHONY: build run sim \
 	kill-remote-sim clean-remote \

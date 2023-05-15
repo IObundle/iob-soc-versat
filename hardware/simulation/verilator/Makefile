@@ -68,7 +68,7 @@ VERILATOR_INPUT = $(INCLUDE_VERI) $(DEFINE) $(VSRC) --top-module system_top syst
 comp: $(SIM_FOLDER)/$(SIM_PROC)
 
 #simulator executable
-$(SIM_FOLDER)/$(SIM_PROC): $(HDR)
+$(SIM_FOLDER)/$(SIM_PROC): $(HDR) $(VSRC)
 ifneq ($(HARDWARE_TEST),)
 	@mkdir -p test/$(HARDWARE_TEST)
 endif

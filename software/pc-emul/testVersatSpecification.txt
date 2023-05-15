@@ -64,7 +64,7 @@ module VReadToVWrite(){
    read -> write;
 }
 
-module SimpleShareConfig(){ // 3
+module SimpleShareConfig(){
    share config Const {
       a1;
       a2;
@@ -1034,6 +1034,202 @@ module MainRound(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,
    addRoundKey:0..15 -> out:0..15;
 }
 
+/*
+iterative IterativeMul(x){
+   Mul mul;
+   Const const0;
+   Const const1;
+   Const const2;
+   Const const3;
+# 4
+   x -> mul:0;
+
+   %0 const0 -> mul:1;   
+   %1 const1 -> mul:1;
+   %2 const2 -> mul:1;
+   %3 const3 -> mul:1;
+
+   mul -> mul:0;
+
+   mul -> out;
+}
+*/
+
+module MainRoundAndKey(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,rcon){
+   MainRound round;
+   KeySchedule key;
+#
+   x0 -> round:0;
+   x1 -> round:1;
+   x2 -> round:2;
+   x3 -> round:3;
+   x4 -> round:4;
+   x5 -> round:5;
+   x6 -> round:6;
+   x7 -> round:7;
+   x8 -> round:8;
+   x9 -> round:9;
+   xa -> round:10;
+   xb -> round:11;
+   xc -> round:12;
+   xd -> round:13;
+   xe -> round:14;
+   xf -> round:15;
+   k0 -> key:0;
+   k1 -> key:1;
+   k2 -> key:2;
+   k3 -> key:3;
+   k4 -> key:4;
+   k5 -> key:5;
+   k6 -> key:6;
+   k7 -> key:7;
+   k8 -> key:8;
+   k9 -> key:9;
+   ka -> key:10;
+   kb -> key:11;
+   kc -> key:12;
+   kd -> key:13;
+   ke -> key:14;
+   kf -> key:15;
+   rcon -> key:16;
+   
+   key:0..15 -> round:16..31;
+
+   round:0..15 -> out:0..15;
+   key:0..15 -> out:16..31;
+}
+
+iterative AESPathExample(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,rcon0,rcon1,rcon2,rcon3,rcon4,rcon5,rcon6,rcon7,rcon8){
+   MainRoundAndKey roundAndKey;
+# 8
+   x0 -> roundAndKey:0;
+   x1 -> roundAndKey:1;
+   x2 -> roundAndKey:2;
+   x3 -> roundAndKey:3;
+   x4 -> roundAndKey:4;
+   x5 -> roundAndKey:5;
+   x6 -> roundAndKey:6;
+   x7 -> roundAndKey:7;
+   x8 -> roundAndKey:8;
+   x9 -> roundAndKey:9;
+   xa -> roundAndKey:10;
+   xb -> roundAndKey:11;
+   xc -> roundAndKey:12;
+   xd -> roundAndKey:13;
+   xe -> roundAndKey:14;
+   xf -> roundAndKey:15;
+   k0 -> roundAndKey:16;
+   k1 -> roundAndKey:17;
+   k2 -> roundAndKey:18;
+   k3 -> roundAndKey:19;
+   k4 -> roundAndKey:20;
+   k5 -> roundAndKey:21;
+   k6 -> roundAndKey:22;
+   k7 -> roundAndKey:23;
+   k8 -> roundAndKey:24;
+   k9 -> roundAndKey:25;
+   ka -> roundAndKey:26;
+   kb -> roundAndKey:27;
+   kc -> roundAndKey:28;
+   kd -> roundAndKey:29;
+   ke -> roundAndKey:30;
+   kf -> roundAndKey:31;
+
+   roundAndKey:0..31 -> roundAndKey:0..31;
+
+   %0 rcon0 -> roundAndKey:32;
+   %1 rcon1 -> roundAndKey:32;
+   %2 rcon2 -> roundAndKey:32;
+   %3 rcon3 -> roundAndKey:32;
+   %4 rcon4 -> roundAndKey:32;
+   %5 rcon5 -> roundAndKey:32;
+   %6 rcon6 -> roundAndKey:32;
+   %7 rcon7 -> roundAndKey:32;
+   %8 rcon8 -> roundAndKey:32;
+
+   roundAndKey:0..31 -> out:0..31;
+}
+
+module AESWithIterativeOnly(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
+   Const rcon0;
+   Const rcon1;
+   Const rcon2;
+   Const rcon3;
+   Const rcon4;
+   Const rcon5;
+   Const rcon6;
+   Const rcon7;
+   Const rcon8;
+   Const rcon9;
+   
+   AESPathExample mk0;
+   
+   AddRoundKey firstKey;
+#
+   x0 -> firstKey:0;
+   x1 -> firstKey:1;
+   x2 -> firstKey:2;
+   x3 -> firstKey:3;
+   x4 -> firstKey:4;
+   x5 -> firstKey:5;
+   x6 -> firstKey:6;
+   x7 -> firstKey:7;
+   x8 -> firstKey:8;
+   x9 -> firstKey:9;
+   xa -> firstKey:10;
+   xb -> firstKey:11;
+   xc -> firstKey:12;
+   xd -> firstKey:13;
+   xe -> firstKey:14;
+   xf -> firstKey:15;
+   k0 -> firstKey:16;
+   k1 -> firstKey:17;
+   k2 -> firstKey:18;
+   k3 -> firstKey:19;
+   k4 -> firstKey:20;
+   k5 -> firstKey:21;
+   k6 -> firstKey:22;
+   k7 -> firstKey:23;
+   k8 -> firstKey:24;
+   k9 -> firstKey:25;
+   ka -> firstKey:26;
+   kb -> firstKey:27;
+   kc -> firstKey:28;
+   kd -> firstKey:29;
+   ke -> firstKey:30;
+   kf -> firstKey:31;
+
+   firstKey:0..15 -> mk0:0..15;
+   k0 -> mk0:16;
+   k1 -> mk0:17;
+   k2 -> mk0:18;
+   k3 -> mk0:19;
+   k4 -> mk0:20;
+   k5 -> mk0:21;
+   k6 -> mk0:22;
+   k7 -> mk0:23;
+   k8 -> mk0:24;
+   k9 -> mk0:25;
+   ka -> mk0:26;
+   kb -> mk0:27;
+   kc -> mk0:28;
+   kd -> mk0:29;
+   ke -> mk0:30;
+   kf -> mk0:31;
+   
+   rcon0 -> mk0:32;
+   rcon1 -> mk0:33;
+   rcon2 -> mk0:34;
+   rcon3 -> mk0:35;
+   rcon4 -> mk0:36;
+   rcon5 -> mk0:37;
+   rcon6 -> mk0:38;
+   rcon7 -> mk0:39;
+   rcon8 -> mk0:40;
+
+   mk0:0..31 -> out:0..31;
+}
+
 module AES(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
    Const rcon0;
    Const rcon1;
@@ -1046,27 +1242,19 @@ module AES(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,
    Const rcon8;
    Const rcon9;
    
-   KeySchedule key0;
-   KeySchedule key1;
-   KeySchedule key2;
-   KeySchedule key3;
-   KeySchedule key4;
-   KeySchedule key5;
-   KeySchedule key6;
-   KeySchedule key7;
-   KeySchedule key8;
+   MainRoundAndKey mk0;
+   MainRoundAndKey mk1;
+   MainRoundAndKey mk2;
+   MainRoundAndKey mk3;
+   MainRoundAndKey mk4;
+   MainRoundAndKey mk5;
+   MainRoundAndKey mk6;
+   MainRoundAndKey mk7;
+   MainRoundAndKey mk8;
+
    KeySchedule key9;
 
    AddRoundKey firstKey;
-   MainRound round0;
-   MainRound round1;
-   MainRound round2;
-   MainRound round3;
-   MainRound round4;
-   MainRound round5;
-   MainRound round6;
-   MainRound round7;
-   MainRound round8;
    SBox subBytes;
    ShiftRows shiftRows;
    AddRoundKey lastKey;
@@ -1104,72 +1292,154 @@ module AES(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,
    ke -> firstKey:30;
    kf -> firstKey:31;
 
-   k0 -> key0:0;
-   k1 -> key0:1;
-   k2 -> key0:2;
-   k3 -> key0:3;
-   k4 -> key0:4;
-   k5 -> key0:5;
-   k6 -> key0:6;
-   k7 -> key0:7;
-   k8 -> key0:8;
-   k9 -> key0:9;
-   ka -> key0:10;
-   kb -> key0:11;
-   kc -> key0:12;
-   kd -> key0:13;
-   ke -> key0:14;
-   kf -> key0:15;
-   rcon0 -> key0:16;
+   firstKey:0..15 -> mk0:0..15;
+   k0 -> mk0:16;
+   k1 -> mk0:17;
+   k2 -> mk0:18;
+   k3 -> mk0:19;
+   k4 -> mk0:20;
+   k5 -> mk0:21;
+   k6 -> mk0:22;
+   k7 -> mk0:23;
+   k8 -> mk0:24;
+   k9 -> mk0:25;
+   ka -> mk0:26;
+   kb -> mk0:27;
+   kc -> mk0:28;
+   kd -> mk0:29;
+   ke -> mk0:30;
+   kf -> mk0:31;
+   
+   rcon0 -> mk0:32;
+   mk0:0..15 -> mk1:0..15;
+   mk0:16..31 -> mk1:16..31;
 
-   key0:0..15 -> key1:0..15;
-   rcon1 -> key1:16;
+   rcon1 -> mk1:32;
+   mk1:0..15 -> mk2:0..15;
+   mk1:16..31 -> mk2:16..31;
 
-   key1:0..15 -> key2:0..15;
-   rcon2 -> key2:16;
+   rcon2 -> mk2:32;
+   mk2:0..15 -> mk3:0..15;
+   mk2:16..31 -> mk3:16..31;
 
-   key2:0..15 -> key3:0..15;
-   rcon3 -> key3:16;
+   rcon3 -> mk3:32;
+   mk3:0..15 -> mk4:0..15;
+   mk3:16..31 -> mk4:16..31;
 
-   key3:0..15 -> key4:0..15;
-   rcon4 -> key4:16;
+   rcon4 -> mk4:32;
+   mk4:0..15 -> mk5:0..15;
+   mk4:16..31 -> mk5:16..31;
 
-   key4:0..15 -> key5:0..15;
-   rcon5 -> key5:16;
+   rcon5 -> mk5:32;
+   mk5:0..15 -> mk6:0..15;
+   mk5:16..31 -> mk6:16..31;
 
-   key5:0..15 -> key6:0..15;
-   rcon6 -> key6:16;
+   rcon6 -> mk6:32;
+   mk6:0..15 -> mk7:0..15;
+   mk6:16..31 -> mk7:16..31;
 
-   key6:0..15 -> key7:0..15;
-   rcon7 -> key7:16;
+   rcon7 -> mk7:32;
+   mk7:0..15 -> mk8:0..15;
+   mk7:16..31 -> mk8:16..31;
 
-   key7:0..15 -> key8:0..15;
-   rcon8 -> key8:16;
+   rcon8 -> mk8:32;
+   mk8:16..31 -> key9:0..15;
 
-   key8:0..15 -> key9:0..15;
    rcon9 -> key9:16;
+   mk8:0..15 -> subBytes:0..15;
+   subBytes:0..15 -> shiftRows:0..15;
+   shiftRows:0..15 -> lastKey:0..15;
 
-   firstKey:0..15 -> round0:0..15;
-   round0:0..15 -> round1:0..15;
-   round1:0..15 -> round2:0..15;
-   round2:0..15 -> round3:0..15;
-   round3:0..15 -> round4:0..15;
-   round4:0..15 -> round5:0..15;
-   round5:0..15 -> round6:0..15;
-   round6:0..15 -> round7:0..15;
-   round7:0..15 -> round8:0..15;
+   key9:0..15 -> lastKey:16..31;
 
-   key0:0..15 -> round0:16..31;
-   key1:0..15 -> round1:16..31;
-   key2:0..15 -> round2:16..31;
-   key3:0..15 -> round3:16..31;
-   key4:0..15 -> round4:16..31;
-   key5:0..15 -> round5:16..31;
-   key6:0..15 -> round6:16..31;
-   key7:0..15 -> round7:16..31;
-   key8:0..15 -> round8:16..31;
+   lastKey:0..15 -> out:0..15;
+}
 
-   round8:0..15 -> subBytes:0..15;
+module AESWithIterative(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
+   Const rcon0;
+   Const rcon1;
+   Const rcon2;
+   Const rcon3;
+   Const rcon4;
+   Const rcon5;
+   Const rcon6;
+   Const rcon7;
+   Const rcon8;
+   Const rcon9;
+   
+   AESPathExample mk0;
+
+   KeySchedule key9;
+
+   AddRoundKey firstKey;
+   SBox subBytes;
+   ShiftRows shiftRows;
+   AddRoundKey lastKey;
+#
+   x0 -> firstKey:0;
+   x1 -> firstKey:1;
+   x2 -> firstKey:2;
+   x3 -> firstKey:3;
+   x4 -> firstKey:4;
+   x5 -> firstKey:5;
+   x6 -> firstKey:6;
+   x7 -> firstKey:7;
+   x8 -> firstKey:8;
+   x9 -> firstKey:9;
+   xa -> firstKey:10;
+   xb -> firstKey:11;
+   xc -> firstKey:12;
+   xd -> firstKey:13;
+   xe -> firstKey:14;
+   xf -> firstKey:15;
+   k0 -> firstKey:16;
+   k1 -> firstKey:17;
+   k2 -> firstKey:18;
+   k3 -> firstKey:19;
+   k4 -> firstKey:20;
+   k5 -> firstKey:21;
+   k6 -> firstKey:22;
+   k7 -> firstKey:23;
+   k8 -> firstKey:24;
+   k9 -> firstKey:25;
+   ka -> firstKey:26;
+   kb -> firstKey:27;
+   kc -> firstKey:28;
+   kd -> firstKey:29;
+   ke -> firstKey:30;
+   kf -> firstKey:31;
+
+   firstKey:0..15 -> mk0:0..15;
+   k0 -> mk0:16;
+   k1 -> mk0:17;
+   k2 -> mk0:18;
+   k3 -> mk0:19;
+   k4 -> mk0:20;
+   k5 -> mk0:21;
+   k6 -> mk0:22;
+   k7 -> mk0:23;
+   k8 -> mk0:24;
+   k9 -> mk0:25;
+   ka -> mk0:26;
+   kb -> mk0:27;
+   kc -> mk0:28;
+   kd -> mk0:29;
+   ke -> mk0:30;
+   kf -> mk0:31;
+   rcon0 -> mk0:32;
+   rcon1 -> mk0:33;
+   rcon2 -> mk0:34;
+   rcon3 -> mk0:35;
+   rcon4 -> mk0:36;
+   rcon5 -> mk0:37;
+   rcon6 -> mk0:38;
+   rcon7 -> mk0:39;
+   rcon8 -> mk0:40;
+   
+   mk0:0..15 -> subBytes:0..15;
+   mk0:16..31 -> key9:0..15;
+
+   rcon9 -> key9:16;
    subBytes:0..15 -> shiftRows:0..15;
    shiftRows:0..15 -> lastKey:0..15;
 
@@ -1193,7 +1463,86 @@ module ReadWriteAES(){
    merge -> results;
 }
 
+module SMVM(){
+   Generator gen;
+   LookupTableRead col;
+   LookupTableRead row;
+   LookupTableRead val;
+   LookupTableRead vector;
+   Mul mul;
+
+   ChangeDetect change;
+   SignalAccum accum;
+   SignalMemStorage output;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   gen -> row;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   row -> change:0;
+   row -> change:1;
+
+   mul    -> accum:0;
+   change -> accum:1;
+
+   accum:0 -> output:0;
+   accum:1 -> output:1;
+}
+
+module SimpleExample(){
+   Const c0;
+   Const c1;
+   Store output;
+#
+   add = c0 + c1;
+   add -> output;
+}
+
+module HierExample(x,y){
+#
+   add = x + y;
+   sub = x - y;
+
+   add -> out:0;
+   sub -> out:1;
+}
+
+module HierUseExample(){
+   Const c0;
+   Const c1;
+   HierExample ex;
+   Store s0;
+   Store s1;
+#
+   c0 -> ex:0;
+   c1 -> ex:1;
+
+   ex:0 -> s0;
+   ex:1 -> s1;
+}
+
+
 /*
+
+module FixedAverage(){
+   Mem mem;
+   Store output;
+#
+   sum = mem[0] + mem[1] + mem[2] + mem[3];
+   average = sum >> 2;
+
+   average -> output;
+}
+
+
+
+
+
 module TestGenerator(){
    Generator gen;
    Mem mem;
@@ -1589,22 +1938,22 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    BCo = Abo ^ Ago ^ Ako ^ Amo ^ Aso;
    BCu = Abu ^ Agu ^ Aku ^ Amu ^ Asu;
 
-   Da = BCu ^ (BCe <<> 1);
-   De = BCa ^ (BCi <<> 1);
-   Di = BCe ^ (BCo <<> 1);
-   Do = BCi ^ (BCu <<> 1);
-   Du = BCo ^ (BCa <<> 1);
+   Da = BCu ^ (BCe ><< 1);
+   De = BCa ^ (BCi ><< 1);
+   Di = BCe ^ (BCo ><< 1);
+   Do = BCi ^ (BCu ><< 1);
+   Du = BCo ^ (BCa ><< 1);
 
    Aba ^= Da;
    BCa = Aba;
    Age ^= De;
-   BCe = Age <<> 44;
+   BCe = Age ><< 44;
    Aki ^= Di;
-   BCi = Aki <<> 43;
+   BCi = Aki ><< 43;
    Amo ^= Do;
-   BCo = Amo <<> 21;
+   BCo = Amo ><< 21;
    Asu ^= Du;
-   BCu = Asu <<> 14;
+   BCu = Asu ><< 14;
    Eba = BCa ^ ((~BCe) & BCi);
    Eba ^= roundConst0;
    Ebe = BCe ^ ((~BCi) & BCo);
@@ -1613,15 +1962,15 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Ebu = BCu ^ ((~BCa) & BCe);
 
    Abo ^= Do;
-   BCa = Abo <<> 28;
+   BCa = Abo ><< 28;
    Agu ^= Du;
-   BCe = Agu <<> 20;
+   BCe = Agu ><< 20;
    Aka ^= Da;
-   BCi = Aka <<> 3;
+   BCi = Aka ><< 3;
    Ame ^= De;
-   BCo = Ame <<> 45;
+   BCo = Ame ><< 45;
    Asi ^= Di;
-   BCu = Asi <<> 61;
+   BCu = Asi ><< 61;
    Ega = BCa ^ ((~BCe) & BCi);
    Ege = BCe ^ ((~BCi) & BCo);
    Egi = BCi ^ ((~BCo) & BCu);
@@ -1629,15 +1978,15 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Egu = BCu ^ ((~BCa) & BCe);
 
    Abe ^= De;
-   BCa = Abe <<> 1;
+   BCa = Abe ><< 1;
    Agi ^= Di;
-   BCe = Agi <<> 6;
+   BCe = Agi ><< 6;
    Ako ^= Do;
-   BCi = Ako <<> 25;
+   BCi = Ako ><< 25;
    Amu ^= Du;
-   BCo = Amu <<> 8;
+   BCo = Amu ><< 8;
    Asa ^= Da;
-   BCu = Asa <<> 18;
+   BCu = Asa ><< 18;
    Eka = BCa ^ ((~BCe) & BCi);
    Eke = BCe ^ ((~BCi) & BCo);
    Eki = BCi ^ ((~BCo) & BCu);
@@ -1645,15 +1994,15 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Eku = BCu ^ ((~BCa) & BCe);
 
    Abu ^= Du;
-   BCa = Abu <<> 27;
+   BCa = Abu ><< 27;
    Aga ^= Da;
-   BCe = Aga <<> 36;
+   BCe = Aga ><< 36;
    Ake ^= De;
-   BCi = Ake <<> 10;
+   BCi = Ake ><< 10;
    Ami ^= Di;
-   BCo = Ami <<> 15;
+   BCo = Ami ><< 15;
    Aso ^= Do;
-   BCu = Aso <<> 56;
+   BCu = Aso ><< 56;
    Ema = BCa ^ ((~BCe) & BCi);
    Eme = BCe ^ ((~BCi) & BCo);
    Emi = BCi ^ ((~BCo) & BCu);
@@ -1661,15 +2010,15 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Emu = BCu ^ ((~BCa) & BCe);
 
    Abi ^= Di;
-   BCa = Abi <<> 62;
+   BCa = Abi ><< 62;
    Ago ^= Do;
-   BCe = Ago <<> 55;
+   BCe = Ago ><< 55;
    Aku ^= Du;
-   BCi = Aku <<> 39;
+   BCi = Aku ><< 39;
    Ama ^= Da;
-   BCo = Ama <<> 41;
+   BCo = Ama ><< 41;
    Ase ^= De;
-   BCu = Ase <<> 2;
+   BCu = Ase ><< 2;
    Esa = BCa ^ ((~BCe) & BCi);
    Ese = BCe ^ ((~BCi) & BCo);
    Esi = BCi ^ ((~BCo) & BCu);
@@ -1682,22 +2031,22 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    BCo = Ebo ^ Ego ^ Eko ^ Emo ^ Eso;
    BCu = Ebu ^ Egu ^ Eku ^ Emu ^ Esu;
 
-   Da = BCu ^ BCe <<> 1;
-   De = BCa ^ BCi <<> 1;
-   Di = BCe ^ BCo <<> 1;
-   Do = BCi ^ BCu <<> 1;
-   Du = BCo ^ BCa <<> 1;
+   Da = BCu ^ BCe ><< 1;
+   De = BCa ^ BCi ><< 1;
+   Di = BCe ^ BCo ><< 1;
+   Do = BCi ^ BCu ><< 1;
+   Du = BCo ^ BCa ><< 1;
 
    Eba ^= Da;
    BCa = Eba;
    Ege ^= De;
-   BCe = Ege <<> 44;
+   BCe = Ege ><< 44;
    Eki ^= Di;
-   BCi = Eki <<> 43;
+   BCi = Eki ><< 43;
    Emo ^= Do;
-   BCo = Emo <<> 21;
+   BCo = Emo ><< 21;
    Esu ^= Du;
-   BCu = Esu <<> 14;
+   BCu = Esu ><< 14;
    Aba = BCa ^ ((~BCe) & BCi);
    Aba ^= roundConst1;
    Abe = BCe ^ ((~BCi) & BCo);
@@ -1706,15 +2055,15 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Abu = BCu ^ ((~BCa) & BCe);
 
    Ebo ^= Do;
-   BCa = Ebo <<> 28;
+   BCa = Ebo ><< 28;
    Egu ^= Du;
-   BCe = Egu <<> 20;
+   BCe = Egu ><< 20;
    Eka ^= Da;
-   BCi = Eka <<> 3;
+   BCi = Eka ><< 3;
    Eme ^= De;
-   BCo = Eme <<> 45;
+   BCo = Eme ><< 45;
    Esi ^= Di;
-   BCu = Esi <<> 61;
+   BCu = Esi ><< 61;
    Aga = BCa ^ ((~BCe) & BCi);
    Age = BCe ^ ((~BCi) & BCo);
    Agi = BCi ^ ((~BCo) & BCu);
@@ -1722,15 +2071,15 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Agu = BCu ^ ((~BCa) & BCe);
 
    Ebe ^= De;
-   BCa = Ebe <<> 1;
+   BCa = Ebe ><< 1;
    Egi ^= Di;
-   BCe = Egi <<> 6;
+   BCe = Egi ><< 6;
    Eko ^= Do;
-   BCi = Eko <<> 25;
+   BCi = Eko ><< 25;
    Emu ^= Du;
-   BCo = Emu <<> 8;
+   BCo = Emu ><< 8;
    Esa ^= Da;
-   BCu = Esa <<> 18;
+   BCu = Esa ><< 18;
    Aka = BCa ^ ((~BCe) & BCi);
    Ake = BCe ^ ((~BCi) & BCo);
    Aki = BCi ^ ((~BCo) & BCu);
@@ -1738,15 +2087,15 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Aku = BCu ^ ((~BCa) & BCe);
 
    Ebu ^= Du;
-   BCa = Ebu <<> 27;
+   BCa = Ebu ><< 27;
    Ega ^= Da;
-   BCe = Ega <<> 36;
+   BCe = Ega ><< 36;
    Eke ^= De;
-   BCi = Eke <<> 10;
+   BCi = Eke ><< 10;
    Emi ^= Di;
-   BCo = Emi <<> 15;
+   BCo = Emi ><< 15;
    Eso ^= Do;
-   BCu = Eso <<> 56;
+   BCu = Eso ><< 56;
    Ama = BCa ^ ((~BCe) & BCi);
    Ame = BCe ^ ((~BCi) & BCo);
    Ami = BCi ^ ((~BCo) & BCu);
@@ -1754,15 +2103,15 @@ module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,A
    Amu = BCu ^ ((~BCa) & BCe);
 
    Ebi ^= Di;
-   BCa = Ebi <<> 62;
+   BCa = Ebi ><< 62;
    Ego ^= Do;
-   BCe = Ego <<> 55;
+   BCe = Ego ><< 55;
    Eku ^= Du;
-   BCi = Eku <<> 39;
+   BCi = Eku ><< 39;
    Ema ^= Da;
-   BCo = Ema <<> 41;
+   BCo = Ema ><< 41;
    Ese ^= De;
-   BCu = Ese <<> 2;
+   BCu = Ese ><< 2;
    Asa = BCa ^ ((~BCe) & BCi);
    Ase = BCe ^ ((~BCi) & BCo);
    Asi = BCi ^ ((~BCo) & BCu);
@@ -1988,13 +2337,13 @@ module Keccak24Rounds(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Ak
 module Blake2G(a,b,c,d,m0,m1){
 #
    a = a + b + m0;
-   d = (d ^ a) >>< 16;
+   d = (d ^ a) ><< 16;
    c = c + d;
-   b = (b ^ c) >>< 12;
+   b = (b ^ c) ><< 12;
    a = a + b + m1;
-   d = (d ^ a) >>< 8;
+   d = (d ^ a) ><< 8;
    c = c + d;
-   b = (b ^ c) >>< 7;
+   b = (b ^ c) ><< 7;
 
    a -> out:0;
    b -> out:1;

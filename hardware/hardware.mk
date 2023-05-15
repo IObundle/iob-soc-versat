@@ -105,6 +105,13 @@ $(OUTPUT_SIM_FOLDER)/firmware.hex: $(INPUT_FIRM_FOLDER)/firmware.bin
 	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > $@
 	$(PYTHON_DIR)/hex_split.py $(OUTPUT_SIM_FOLDER)/firmware .
 
+boot.hex: $(BOOT_DIR)/boot.bin
+	$(PYTHON_DIR)/makehex.py $< $(BOOTROM_ADDR_W) > $@
+
+firmware.hex: $(FIRM_DIR)/firmware.bin
+	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > $@
+	$(PYTHON_DIR)/hex_split.py firmware .
+
 #clean general hardware files
 hw-clean: gen-clean
 	@rm -f *.v *.vh *.hex *.bin $(SRC_DIR)/system.v $(TB_DIR)/system_tb.v $(SRC_DIR)/GeneratedUnits/*.v $(SRC_DIR)/versat_instance.v 
