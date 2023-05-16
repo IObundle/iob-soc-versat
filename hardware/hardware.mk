@@ -73,7 +73,8 @@ else
 INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(HARDWARE_TEST)
 OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
 VSRC+=$(SW_DIR)/pc-emul/test/$(HARDWARE_TEST)/versat_instance.v
-INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/test/$(HARDWARE_TEST)/
+INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/test/$(HARDWARE_TEST)/src
+INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/test/$(HARDWARE_TEST)
 endif
 
 #system
