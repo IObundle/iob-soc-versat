@@ -665,6 +665,25 @@ module Constants(){
    mem -> out:0;
 }
 
+iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
+   // Unidades
+   Comb_F_Stage comb;
+# 16
+   a -> comb:0;
+   b -> comb:1;
+   c -> comb:2;
+   d -> comb:3;
+   e -> comb:4;
+   f -> comb:5;
+   g -> comb:6;
+   h -> comb:7;
+   k -> comb:8;
+   w -> comb:9;
+
+   comb:0..7 -> comb:0..7;
+   comb:0..7 -> out:0..7;
+}
+
 module SHA(){
    VRead MemRead;
    SwapEndian Swap(1);
@@ -675,6 +694,7 @@ module SHA(){
    xunitM M0;
    xunitM M1;
    xunitM M2;
+   Iterative_SHA_F iF0;
    Constants cMem0;
    Constants cMem1;
    Constants cMem2;
@@ -686,6 +706,10 @@ module SHA(){
    State:0..7 -> F0:0..7;
    cMem0      -> F0:8;
    Swap       -> F0:9;
+
+   State:0..7 -> iF0:0..7;
+   cMem0      -> iF0:8;
+   Swap       -> iF0:9;
 
    F0:0..7    -> F1:0..7;
    cMem1      -> F1:8;
@@ -1034,7 +1058,6 @@ module MainRound(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,
    addRoundKey:0..15 -> out:0..15;
 }
 
-/*
 iterative IterativeMul(x){
    Mul mul;
    Const const0;
@@ -1053,7 +1076,6 @@ iterative IterativeMul(x){
 
    mul -> out;
 }
-*/
 
 module MainRoundAndKey(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,rcon){
    MainRound round;
@@ -1101,7 +1123,7 @@ module MainRoundAndKey(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,
 
 iterative AESPathExample(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,rcon0,rcon1,rcon2,rcon3,rcon4,rcon5,rcon6,rcon7,rcon8){
    MainRoundAndKey roundAndKey;
-# 8
+# 9
    x0 -> roundAndKey:0;
    x1 -> roundAndKey:1;
    x2 -> roundAndKey:2;
@@ -1148,86 +1170,6 @@ iterative AESPathExample(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k
    %8 rcon8 -> roundAndKey:32;
 
    roundAndKey:0..31 -> out:0..31;
-}
-
-module AESWithIterativeOnly(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
-   Const rcon0;
-   Const rcon1;
-   Const rcon2;
-   Const rcon3;
-   Const rcon4;
-   Const rcon5;
-   Const rcon6;
-   Const rcon7;
-   Const rcon8;
-   Const rcon9;
-   
-   AESPathExample mk0;
-   
-   AddRoundKey firstKey;
-#
-   x0 -> firstKey:0;
-   x1 -> firstKey:1;
-   x2 -> firstKey:2;
-   x3 -> firstKey:3;
-   x4 -> firstKey:4;
-   x5 -> firstKey:5;
-   x6 -> firstKey:6;
-   x7 -> firstKey:7;
-   x8 -> firstKey:8;
-   x9 -> firstKey:9;
-   xa -> firstKey:10;
-   xb -> firstKey:11;
-   xc -> firstKey:12;
-   xd -> firstKey:13;
-   xe -> firstKey:14;
-   xf -> firstKey:15;
-   k0 -> firstKey:16;
-   k1 -> firstKey:17;
-   k2 -> firstKey:18;
-   k3 -> firstKey:19;
-   k4 -> firstKey:20;
-   k5 -> firstKey:21;
-   k6 -> firstKey:22;
-   k7 -> firstKey:23;
-   k8 -> firstKey:24;
-   k9 -> firstKey:25;
-   ka -> firstKey:26;
-   kb -> firstKey:27;
-   kc -> firstKey:28;
-   kd -> firstKey:29;
-   ke -> firstKey:30;
-   kf -> firstKey:31;
-
-   firstKey:0..15 -> mk0:0..15;
-   k0 -> mk0:16;
-   k1 -> mk0:17;
-   k2 -> mk0:18;
-   k3 -> mk0:19;
-   k4 -> mk0:20;
-   k5 -> mk0:21;
-   k6 -> mk0:22;
-   k7 -> mk0:23;
-   k8 -> mk0:24;
-   k9 -> mk0:25;
-   ka -> mk0:26;
-   kb -> mk0:27;
-   kc -> mk0:28;
-   kd -> mk0:29;
-   ke -> mk0:30;
-   kf -> mk0:31;
-   
-   rcon0 -> mk0:32;
-   rcon1 -> mk0:33;
-   rcon2 -> mk0:34;
-   rcon3 -> mk0:35;
-   rcon4 -> mk0:36;
-   rcon5 -> mk0:37;
-   rcon6 -> mk0:38;
-   rcon7 -> mk0:39;
-   rcon8 -> mk0:40;
-
-   mk0:0..31 -> out:0..31;
 }
 
 module AES(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
@@ -2639,29 +2581,4 @@ iterative Iterative_Databus(){
    data -> out;
 }
 
-iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
-   // Unidades
-   Comb_F_Stage comb;
-# 16 // Initial
-   a -> comb:0;
-   b -> comb:1;
-   c -> comb:2;
-   d -> comb:3;
-   e -> comb:4;
-   f -> comb:5;
-   g -> comb:6;
-   h -> comb:7;
-   k -> comb:8;
-   w -> comb:9;
-
-   comb:0..7 -> data:0..7;
-   data:0..7 -> out:0..7;
-# // For loop
-   data:0..7 -> comb:0..7; 
-   k -> comb:8;
-   w -> comb:9;
-
-   comb:0..7 -> data:0..7;
-   data:0..7 -> out:0..7;
-}
 */

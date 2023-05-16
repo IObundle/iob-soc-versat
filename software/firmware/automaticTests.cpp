@@ -816,7 +816,6 @@ static void FillRoundAndKey(Accelerator* topLevel,FUInstance* roundAndKey){
 static void FillAES(Accelerator* topLevel,FUInstance* inst){
    int rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36};
    for(int i = 0; i < 10; i++){
-      printf("%d\n",i);
       FUInstance* constRcon = GetSubInstanceByName(topLevel,inst,"rcon%d",i);
       constRcon->config[0] = rcon[i];
    }
@@ -824,7 +823,6 @@ static void FillAES(Accelerator* topLevel,FUInstance* inst){
    FillKeySchedule(topLevel,GetSubInstanceByName(topLevel,inst,"key9"));
 
    for(int i = 0; i < 9; i++){
-      printf("%d\n",i);
       FillRoundAndKey(topLevel,GetSubInstanceByName(topLevel,inst,"mk%d",i));
    }
 }
@@ -1830,48 +1828,13 @@ TEST(IterativeMul){
    c1->config[0] = 2;
    c2->config[0] = 3;
    c3->config[0] = 4;
-   //merge->config[0] = 3;
+   merge->config[0] = 4;
 
    int* out = RunSimpleAccelerator(&test,0x1);
 
    OutputVersatSource(versat,&test,".");
 
    return EXPECT("24","%d",*out);
-}
-
-TEST(AESPathExample){
-   SimpleAccelerator test = {};
-   InitSimpleAccelerator(&test,versat,"AESWithIterativeOnly");
-
-   FUInstance* t = GetInstanceByName(test.accel,"Test","mk0","roundAndKey");
-
-   FUInstance* merge = GetInstanceByName(test.accel,"Test","mk0","Merge0");
-
-   FUInstance* rcon0 = GetInstanceByName(test.accel,"Test","rcon0");
-
-   merge->config[0] = 4;
-   rcon0->config[0] = 1;
-
-   FillRoundAndKey(test.accel,t);
-
-   int* out = RunSimpleAccelerator(&test,0x32,0x88,0x31,0xe0,
-                                         0x43,0x5a,0x31,0x37,
-                                         0xf6,0x30,0x98,0x07,
-                                         0xa8,0x8d,0xa2,0x34,
-                                         0x2b,0x28,0xab,0x09,
-                                         0x7e,0xae,0xf7,0xcf,
-                                         0x15,0xd2,0x15,0x4f,
-                                         0x16,0xa6,0x88,0x3c);
-
-   OutputVersatSource(versat,&test,".");
-
-   char buffer[1024];
-   char* ptr = buffer;
-   for(int i = 0; i < 16; i++){
-      ptr += sprintf(ptr,"0x%02x ",out[i]);
-   }
-
-   return EXPECT("0xa4 0x68 0x6b 0x02 0x9c 0x9f 0x5b 0x6a 0x7f 0x35 0xea 0x50 0xf2 0x2b 0x43 0x49 ","%s",buffer);
 }
 
 TEST(AESWithIterative){
@@ -1886,7 +1849,7 @@ TEST(AESWithIterative){
    FillKeySchedule(test.accel,k);
 
    FUInstance* merge = GetInstanceByName(test.accel,"Test","mk0","Merge0");
-   merge->config[0] = 3;
+   merge->config[0] = 4;
 
    int rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36};
    for(int i = 0; i < 10; i++){
@@ -2896,10 +2859,10 @@ TEST(SpecExampleWithPointers){
    currentTest += 1; } while(0)
 
 // When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
-#define REVERSE_ENABLED 1
+#define REVERSE_ENABLED 0
 
 //                 876543210
-#define SEGMENTS 0b000010000
+#define SEGMENTS 0b000000001
 
 #define SEG0 (SEGMENTS & 0x01)
 #define SEG1 (SEGMENTS & 0x02)
@@ -2938,7 +2901,6 @@ void AutomaticTests(Versat* versat){
    Need to implement the rest of the iterative units.
       Probably gonna need to add buffers inside the iterative units so that the input can arrive at the same time and the inside still works.
 
-
 */
 
 #if SEG0
@@ -2960,7 +2922,7 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,FirstLineKey);
    TEST_INST( 1 ,KeySchedule);
    TEST_INST( 1 ,AESRound);
-   TEST_INST( 0 ,AES);
+   TEST_INST( 1 ,AES);
    TEST_INST( 1 ,ReadWriteAES);
    TEST_INST( 1 ,SimpleAdder);
    TEST_INST( 1 ,ComplexMultiplier);
@@ -2993,9 +2955,8 @@ void AutomaticTests(Versat* versat){
    TEST_INST( DISABLED ,TestMerge);
 #endif
 #if SEG4 // Iterative units
-   TEST_INST( 1 ,SimpleIterative);
+   TEST_INST( 0 ,SimpleIterative);
    TEST_INST( 1 ,IterativeMul);
-   TEST_INST( 1 ,AESPathExample);
    TEST_INST( 0 ,AESWithIterative);
 #endif
 #if SEG5 // Floating point and related units
