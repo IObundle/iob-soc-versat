@@ -46,8 +46,8 @@ module ext_mem
       .LINE_OFF_W(7),    //Cache Line Offset (number of lines)
       .WORD_OFF_W(3),    //Word Offset (number of words per line)
       .WTBUF_DEPTH_W(5), //FIFO's depth -- 5 minimum for BRAM implementation
-      .CTRL_CACHE (0),   //Cache-Control can't be accessed
-      .CTRL_CNT(0)       //Remove counters
+      .CTRL_CACHE (1),   //Cache-Control can't be accessed
+      .CTRL_CNT(1)       //Remove counters
       )
    icache 
      (
@@ -114,8 +114,8 @@ module ext_mem
       .LINE_OFF_W(7),    //Cache Line Offset (number of lines)
       .WORD_OFF_W(3),    //Word Offset (number of words per line)
       .WTBUF_DEPTH_W(5), //FIFO's depth -- 5 minimum for BRAM implementation
-      .CTRL_CACHE (0),   //Either 1 to enable cache-control or 0 to disable
-      .CTRL_CNT(0)       //do not change (it's implementation depends on the previous)
+      .CTRL_CACHE (1),   //Either 1 to enable cache-control or 0 to disable
+      .CTRL_CNT(1)       //do not change (it's implementation depends on the previous)
       )
    dcache 
      (

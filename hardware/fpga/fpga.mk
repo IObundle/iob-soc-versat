@@ -30,6 +30,10 @@ endif
 # Use
 #
 
+# Board grab
+BOARD_GRAB_CMD=$(SW_DIR)/python/board_client.py grab 600
+FPGA_PROG=../prog.sh
+
 FORCE ?= 1
 
 run:
@@ -37,8 +41,8 @@ ifeq ($(NORUN),0)
 ifeq ($(BOARD_SERVER),)
 	cp $(FIRM_DIR)/firmware.bin .
 	if [ ! -f $(LOAD_FILE) ]; then touch $(LOAD_FILE); chown $(USER):dialout $(LOAD_FILE); chmod 664 $(LOAD_FILE); fi;\
-	bash -c "trap 'make queue-out' INT TERM KILL; make queue-in; if [ $(FORCE) = 1 -o \"`head -1 $(LOAD_FILE)`\" != \"$(JOB)\" ];\
-	then ../prog.sh; echo $(JOB) > $(LOAD_FILE); fi; $(CONSOLE_CMD) $(TEST_LOG); make queue-out;"
+	$(BOARD_GRAB_CMD) -p '$(FPGA_PROG)' -c '$(CONSOLE_CMD) $(TEST_LOG)'
+	cp $(SW_DIR)/python/$(SOC_OUT_BIN) .
 else
 	ssh $(BOARD_USER)@$(BOARD_SERVER) "if [ ! -d $(REMOTE_ROOT_DIR) ]; then mkdir -p $(REMOTE_ROOT_DIR); fi"
 	rsync -avz --delete --force --exclude .git $(ROOT_DIR) $(BOARD_USER)@$(BOARD_SERVER):$(REMOTE_ROOT_DIR)

@@ -248,6 +248,22 @@ module CH(a,b,c){
    res -> out;
 }
 
+module CHImpl(){
+   Const a;
+   Const b;
+   Const c;
+   CH ch;
+   Reg output;
+#
+   a -> ch:0;
+   b -> ch:1;
+   c -> ch:2;
+
+   ch -> output;
+}
+
+/* 
+
 module Maj(x,y,z){
 #
    res = (x & y) ^ (x & z) ^ (y & z);
@@ -665,25 +681,6 @@ module Constants(){
    mem -> out:0;
 }
 
-iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
-   // Unidades
-   Comb_F_Stage comb;
-# 16
-   a -> comb:0;
-   b -> comb:1;
-   c -> comb:2;
-   d -> comb:3;
-   e -> comb:4;
-   f -> comb:5;
-   g -> comb:6;
-   h -> comb:7;
-   k -> comb:8;
-   w -> comb:9;
-
-   comb:0..7 -> comb:0..7;
-   comb:0..7 -> out:0..7;
-}
-
 module SHA(){
    VRead MemRead;
    SwapEndian Swap(1);
@@ -694,7 +691,7 @@ module SHA(){
    xunitM M0;
    xunitM M1;
    xunitM M2;
-   Iterative_SHA_F iF0;
+   //Iterative_SHA_F iF0;
    Constants cMem0;
    Constants cMem1;
    Constants cMem2;
@@ -707,9 +704,9 @@ module SHA(){
    cMem0      -> F0:8;
    Swap       -> F0:9;
 
-   State:0..7 -> iF0:0..7;
-   cMem0      -> iF0:8;
-   Swap       -> iF0:9;
+   //State:0..7 -> iF0:0..7;
+   //cMem0      -> iF0:8;
+   //Swap       -> iF0:9;
 
    F0:0..7    -> F1:0..7;
    cMem1      -> F1:8;
@@ -728,6 +725,58 @@ module SHA(){
    M1 -> M2;
    
    F3:0..7 -> State:0..7;
+}
+
+module SMVM(){
+   Generator gen;
+   LookupTableRead col;
+   LookupTableRead row;
+   LookupTableRead val;
+   LookupTableRead vector;
+   Mul mul;
+
+   ChangeDetect change;
+   SignalAccum accum;
+   SignalMemStorage output;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   gen -> row;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   row -> change:0;
+   row -> change:1;
+
+   mul    -> accum:0;
+   change -> accum:1;
+
+   accum:0 -> output:0;
+   accum:1 -> output:1;
+}
+
+/*
+
+iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
+   // Unidades
+   Comb_F_Stage comb;
+# 16
+   a -> comb:0;
+   b -> comb:1;
+   c -> comb:2;
+   d -> comb:3;
+   e -> comb:4;
+   f -> comb:5;
+   g -> comb:6;
+   h -> comb:7;
+   k -> comb:8;
+   w -> comb:9;
+
+   comb:0..7 -> comb:0..7;
+   comb:0..7 -> out:0..7;
 }
 
 module SBox(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
@@ -1297,6 +1346,7 @@ module AES(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,
    lastKey:0..15 -> out:0..15;
 }
 
+
 module AESWithIterative(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
    Const rcon0;
    Const rcon1;
@@ -1390,6 +1440,7 @@ module AESWithIterative(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2
    lastKey:0..15 -> out:0..15;
 }
 
+
 module ReadWriteAES(){
    VRead cypher;
    VRead key;
@@ -1403,37 +1454,6 @@ module ReadWriteAES(){
    aes:0..15 -> merge:0..15;
 
    merge -> results;
-}
-
-module SMVM(){
-   Generator gen;
-   LookupTableRead col;
-   LookupTableRead row;
-   LookupTableRead val;
-   LookupTableRead vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-
-   mul    -> accum:0;
-   change -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
 }
 
 module SimpleExample(){
@@ -1468,6 +1488,7 @@ module HierUseExample(){
    ex:1 -> s1;
 }
 
+*/
 
 /*
 

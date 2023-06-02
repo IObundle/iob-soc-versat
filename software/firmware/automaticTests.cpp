@@ -1129,7 +1129,22 @@ TEST(Generator){
    return EXPECT("5 6 7 8 9 0 ","%s",buffer);
 }
 
-TEST(Test64Bits){
+TEST(VersatExteriorPorts){
+   Accelerator* accel = CreateAccelerator(versat);
+
+   FUInstance* in0 = CreateOrGetInput(accel,STRING("in0"),0);
+   FUInstance* in1 = CreateOrGetInput(accel,STRING("in1"),1);
+   FUInstance* out = CreateOrGetOutput(accel);
+
+   FUDeclaration* type = GetTypeByName(versat,STRING("ADD"));
+   FUInstance* simpleAdder = CreateFUInstance(accel,type,STRING("mux"));
+
+   ConnectUnits(in0,0,simpleAdder,0);
+   ConnectUnits(in1,0,simpleAdder,1);
+   ConnectUnits(simpleAdder,0,out,0);
+
+   OutputVersatSource(versat,accel,".");
+
    TEST_PASSED;
 }
 
@@ -1383,10 +1398,7 @@ TEST(FlattenAESVRead){
 }
 
 TEST(SimpleMergeNoCommon){
-   FUDeclaration* types[2];
-   types[0] = GetTypeByName(versat,STRING("SimpleAdder"));
-   types[1] = GetTypeByName(versat,STRING("ComplexMultiplier"));
-
+   FUDeclaration* types[2] = {GetTypeByName(versat,STRING("SimpleAdder")),GetTypeByName(versat,STRING("ComplexMultiplier"))};
    Array<FUDeclaration*> typeArray = C_ARRAY_TO_ARRAY(types);
 
    FUDeclaration* merged = Merge(versat,typeArray,STRING("NoCommonMerged"));
@@ -1869,6 +1881,8 @@ TEST(AESWithIterative){
                                          0x16,0xa6,0x88,0x3c);
 
    OutputVersatSource(versat,&test,".");
+
+   DebugAccelerator(test.accel);
 
    char buffer[1024];
    char* ptr = buffer;
@@ -2859,7 +2873,7 @@ TEST(SpecExampleWithPointers){
    currentTest += 1; } while(0)
 
 // When 1, need to pass 0 to enable test (changes enabler from 1 to 0)
-#define REVERSE_ENABLED 0
+#define REVERSE_ENABLED 1
 
 //                 876543210
 #define SEGMENTS 0b000000001
@@ -2895,18 +2909,20 @@ void AutomaticTests(Versat* versat){
 
 /*
 
-   There is a problem with using the FU units "view" for accelerators, where we store a view inside the accelerator and then return a pointer to that view.
-      The ideal solution would be to keep using the "view" and change other code to retrieve the correct InstanceNode for the correct graph.
+   There is a problem with the inclusion of simulatable hierarchical units.
+      We still need to call the initialize function on lower level units
 
-   Need to implement the rest of the iterative units.
-      Probably gonna need to add buffers inside the iterative units so that the input can arrive at the same time and the inside still works.
+   The problem of static configurations inside an iterative unit is more problematic. We currently do not allow user written code to define a configuration as static, yet that is exactly what the situation demands that we do.
+   Furthemore, a "correct" implementation of static configurations would pass down the logic of connecting the static pointer to the unit.
+      As in, we would need another wrapper function (or an extra argument for the initialization function) that receives the hashmap and fetches the values of the configurations.
+      In order to do that, we would probably have to map the name of the wires to the value, because that would be the easist way to implement it.
 
 */
 
 #if SEG0
-   TEST_INST( 1 ,TestMStage);
+   TEST_INST( 0 ,TestMStage);
    TEST_INST( 1 ,TestFStage);
-   TEST_INST( 1 ,SHA); // Not working because of the change to the "view" of accelerators
+   TEST_INST( 1 ,SHA);
    TEST_INST( 1 ,MultipleSHATests); // Time consuming
    TEST_INST( 1 ,VReadToVWrite);
    TEST_INST( 1 ,StringHasher);
@@ -2955,9 +2971,9 @@ void AutomaticTests(Versat* versat){
    TEST_INST( DISABLED ,TestMerge);
 #endif
 #if SEG4 // Iterative units
-   TEST_INST( 0 ,SimpleIterative);
-   TEST_INST( 1 ,IterativeMul);
-   TEST_INST( 0 ,AESWithIterative);
+   TEST_INST( 0 ,SimpleIterative); // Problem with emulation of static units. The static wires get parsed as configuration to the unit. Its a bigger problem, handle it later
+   TEST_INST( 0 ,IterativeMul);
+   TEST_INST( 1 ,AESWithIterative);
 #endif
 #if SEG5 // Floating point and related units
    TEST_INST( 1 ,FloatingPointAdd);
@@ -2974,12 +2990,12 @@ void AutomaticTests(Versat* versat){
    TEST_INST( 1 ,Int2Float);
 #endif
 #if SEG6 // Individual units
-   TEST_INST( 1 ,TestMatrixMultiplications);
+   TEST_INST( 0 ,TestMatrixMultiplications);
    TEST_INST( 0 ,TestConfigOrder);
    TEST_INST( 0 ,RunSimpleAcceleratorLatency);
    TEST_INST( 0 ,ComplexCalculateDelay);
    TEST_INST( 0 ,Generator);
-   TEST_INST( 0 ,Test64Bits);
+   TEST_INST( 1 ,VersatExteriorPorts);
 #endif
 #if SEG7
    TEST_INST( DISABLED ,McEliece);

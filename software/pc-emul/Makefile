@@ -7,14 +7,14 @@ DEBUG_GUI := 0
 LOCAL_CFLAGS := -Wall -g -Werror=return-type -march=native -DVERSAT_DEBUG
 GLOBAL_CFLAGS:= $(LOCAL_CFLAGS) -std=c++17 #-fsanitize=address #-msse2
 
-LIBS := -lstdc++ -lm -lgcc -lc -pthread #-lssl -lcrypto 
+LIBS := -lstdc++ -lm -lgcc -lc -pthread -ldl #-lssl -lcrypto 
 
 ifeq ($(DEBUG_GUI),1)
 LIBS += -lSDL2  -lGL -ldl
 else
-DEFINE += -Dx86
-GLOBAL_CFLAGS += -m32
-LOCAL_CFLAGS += -m32
+#DEFINE += -Dx86
+#GLOBAL_CFLAGS += -m32
+#LOCAL_CFLAGS += -m32
 endif
 
 include ../software.mk
@@ -86,6 +86,9 @@ OBJ += ./build/printf.o
 	gcc $(LOCAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 
 INCLUDE+=$(incdir)./build
+INCLUDE+=$(incdir)./generated
+INCLUDE+=$(incdir)$(VERILATOR_INCLUDE)
+OBJ+= $(wildcard ./generated/*.o)
 
 SOC_OUT_BIN:=soc-out.bin
 
@@ -104,19 +107,18 @@ VERILATE_UNIT := xunitF xunitM
 UNIT_VERILOG += $(foreach unit,$(VERILATE_UNIT),$(HW_DIR)/src/units/$(unit).v)
 
 UNIT_HDR+=$(foreach obj,$(VERILATE_UNIT),./verilated/V$(obj).h)
-OBJ+= ./build/firmware.o
-OBJ+= ./build/unitConfiguration.o
-OBJ+= ./build/versatSHA.o
-OBJ+= ./build/versatMcEliece.o
-OBJ+= ./build/VersatMachSuite.o
-OBJ+= ./build/VersatBlake2.o
+#OBJ+= ./build/firmware.o
+#OBJ+= ./build/unitConfiguration.o
+#OBJ+= ./build/versatSHA.o
+#OBJ+= ./build/versatMcEliece.o
+#OBJ+= ./build/VersatMachSuite.o
+#OBJ+= ./build/VersatBlake2.o
 #OBJ+= ./build/automaticTests.o
 
 #CONSOLE
 CONSOLE_CMD=$(ROOT_DIR)/software/console/eth_console -L
 
 #RULES
-
 ifeq ($(HARDWARE_TEST),)
 OUTPUT_FOLDER := ./generated
 FW_NAME:=./generated/fw_emul
@@ -132,16 +134,26 @@ endif
 build: gen_data $(FW_NAME)
 
 force-build: gen_data
-	g++ -w -o fw_emul $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o ./verilated/*.o $(FIRM_DIR)/automaticTests.cpp $(LIBS) #-fuse-ld=lld 
+	g++ -w -o fw_emul $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o ./verilated/*.o $(FIRM_DIR)/firmware.cpp $(LIBS) #-fuse-ld=lld 
 
-$(FW_NAME): $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ) $(FIRM_DIR)/automaticTests.cpp
+./build/versatCompiler:
+	$(MAKE) -C $(VERSAT_DIR) compiler
+	cp $(VERSAT_DIR)/versatCompiler ./build/versatCompiler
+
+$(OUTPUT_FOLDER)/accel.hpp: $(SHARED_HARDWARE) testVersatSpecification.txt ./build/versatCompiler
+	./build/versatCompiler $(SHARED_HARDWARE) -I $(VERSAT_DIR)/hardware/include testVersatSpecification.txt -s -T ADD -o ./generated/
+	cp $(OUTPUT_FOLDER)/accel.hpp $(FIRM_DIR)/accel.hpp
+
+$(FW_NAME): $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ) $(FIRM_DIR)/firmware.cpp ./build/versatCompiler $(OUTPUT_FOLDER)/accel.hpp test.cpp # $(VERSAT_DIR)/registerUnits.cpp 
 	@mkdir -p $(OUTPUT_FOLDER)
-	g++ -w -o $(FW_NAME) $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o ./verilated/*.o $(FIRM_DIR)/automaticTests.cpp $(LIBS) #-fuse-ld=lld 
+	g++ -g -w -o $(FW_NAME) $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) -I./verilated/-I$(VERILATOR_INCLUDE) -I$(OUTPUT_FOLDER)/ $(FIRM_DIR)/firmware.cpp test.cpp ./generated/*.o ./build/*.o ./verilated/*.o $(LIBS) #$(FIRM_DIR)/automaticTests.cpp $(FIRM_DIR)/automaticTests.cpp $(FIRM_DIR)/otherFirmware.cpp $(LIBS) #-fuse-ld=lld $(VERSAT_DIR)/registerUnits.cpp 
+
+gen-versat: $(OUTPUT_FOLDER)/accel.hpp
 
 run: $(FW_NAME)
 	@mkdir -p $(OUTPUT_FOLDER)
 	cp testVersatSpecification.txt $(OUTPUT_FOLDER)
-	cd $(OUTPUT_FOLDER); ./fw_emul
+	-cd $(OUTPUT_FOLDER); ./fw_emul
 	rm $(OUTPUT_FOLDER)/testVersatSpecification.txt
 
 clean:
@@ -175,7 +187,7 @@ $(SOC_LOG):
 $(EMUL_PROFILE_LOG): $(SOC_LOG)
 	@grep "PROFILE:" $< > $(EMUL_PROFILE_LOG)
 
-./build/%.o: $(FIRM_DIR)/%.cpp $(UNIT_OBJ)
+./build/%.o: $(FIRM_DIR)/%.cpp $(UNIT_OBJ) ./build/basicWrapper.inc
 	g++ $(GLOBAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $(FIRM_DIR)/$*.cpp -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 
 ./verilated/V%.h: $(HW_DIR)/src/units/%.v
@@ -185,7 +197,7 @@ $(EMUL_PROFILE_LOG): $(SOC_LOG)
 	mv ./obj/*.h ./verilated/
 	rm -r -f ./obj
 
-.PHONY: build run \
+.PHONY: build run ./build/versatCompiler\
 	test validate profile \
 	clean force-build
 

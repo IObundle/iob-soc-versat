@@ -32,13 +32,16 @@ BAUD ?=$(SIM_BAUD)
 FREQ ?=$(SIM_FREQ)
 
 fw-build: ila-build
-	make -C $(FIRM_DIR) build-all
+	$(MAKE) -C $(FIRM_DIR) build-all
 
 fw-clean:
-	make -C $(FIRM_DIR) clean-all
+	$(MAKE) -C $(FIRM_DIR) clean-all
 
 fw-debug:
-	make -C $(FIRM_DIR) debug
+	$(MAKE) -C $(FIRM_DIR) debug
+
+gen-versat:
+	$(MAKE) -C $(PC_DIR) gen-versat
 
 #
 # EMULATE ON PC
@@ -60,7 +63,6 @@ pc-emul-clean: fw-clean
 pc-emul-test: pc-emul-clean
 	$(MAKE) -C $(PC_DIR) test
 
-
 HW_DIR=./hardware
 #
 # SIMULATE RTL
@@ -72,32 +74,32 @@ SIM_DIR=$(HW_DIR)/simulation/$(SIMULATOR)
 SIM_BAUD = 2500000
 SIM_FREQ =50000000
 sim-build: ila-build
-	make -C $(PC_DIR) run
-	make fw-build
-	make -C $(SIM_DIR) build
+	#$(MAKE) -C $(PC_DIR) run
+	$(MAKE) fw-build
+	$(MAKE) -C $(SIM_DIR) build
 
 ./hardware/src/versat_instance.v:
-	make -C $(PC_DIR) run
-	make fw-build SIM=1
-	make -C $(SIM_DIR) build
+	$(MAKE) -C $(PC_DIR) run
+	$(MAKE) fw-build SIM=1
+	$(MAKE) -C $(SIM_DIR) build
 
-sim-run: sim-build ./hardware/src/versat_instance.v
-	make -C $(SIM_DIR) run
+sim-run: sim-build #./hardware/src/versat_instance.v
+	$(MAKE) -C $(SIM_DIR) run
 
 sim-clean: fw-clean
-	make -C $(SIM_DIR) clean
+	$(MAKE) -C $(SIM_DIR) clean
 
 sim-one-build: pc-emul-force-build sim-build
 
 sim-test:
-	make -C $(SIM_DIR) test
+	$(MAKE) -C $(SIM_DIR) test
 
 sim-versat-fus:
-	make -C $(SIM_DIR) xunitM SIMULATOR=icarus
-	make -C $(SIM_DIR) xunitF SIMULATOR=icarus
+	$(MAKE) -C $(SIM_DIR) xunitM SIMULATOR=icarus
+	$(MAKE) -C $(SIM_DIR) xunitF SIMULATOR=icarus
 
 sim-debug:
-	make -C $(SIM_DIR) debug
+	$(MAKE) -C $(SIM_DIR) debug
 
 #
 # BUILD, LOAD AND RUN ON FPGA BOARD
@@ -114,40 +116,40 @@ BOARD_FREQ =50000000
 endif
 
 fpga-fw-build: ila-build
-	make fw-build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
+	$(MAKE) fw-build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
 
 fpga-build: ila-build
-	make -C $(PC_DIR) run
-	make fw-build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
-	make -C $(BOARD_DIR) build
+	#$(MAKE) -C $(PC_DIR) run
+	$(MAKE) fw-build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
+	$(MAKE) -C $(BOARD_DIR) build
 
 fpga-run: fpga-fw-build
-	make -C $(BOARD_DIR) run TEST_LOG="$(TEST_LOG)"
+	$(MAKE) -C $(BOARD_DIR) run TEST_LOG="$(TEST_LOG)"
 
 fpga-clean: fw-clean
-	make -C $(BOARD_DIR) clean
+	$(MAKE) -C $(BOARD_DIR) clean
 
 fpga-veryclean:
-	make -C $(BOARD_DIR) veryclean
+	$(MAKE) -C $(BOARD_DIR) veryclean
 
 fpga-debug:
-	make -C $(BOARD_DIR) debug
+	$(MAKE) -C $(BOARD_DIR) debug
 
 fpga-test:
-	make -C $(BOARD_DIR) test
+	$(MAKE) -C $(BOARD_DIR) test
 
 #
 # COMPILE DOCUMENTS
 #
 DOC_DIR=document/$(DOC)
 doc-build:
-	make -C $(DOC_DIR) $(DOC).pdf
+	$(MAKE) -C $(DOC_DIR) $(DOC).pdf
 
 doc-clean:
-	make -C $(DOC_DIR) clean
+	$(MAKE) -C $(DOC_DIR) clean
 
 doc-test:
-	make -C $(DOC_DIR) test
+	$(MAKE) -C $(DOC_DIR) test
 
 #
 # CLEAN
@@ -164,32 +166,32 @@ test-pc-emul: pc-emul-test
 test-pc-emul-clean: pc-emul-clean
 
 test-sim:
-	make sim-test SIMULATOR=verilator
-	make sim-test SIMULATOR=icarus
+	$(MAKE) sim-test SIMULATOR=verilator
+	$(MAKE) sim-test SIMULATOR=icarus
 
 test-sim-clean:
-	make sim-clean SIMULATOR=verilator
-	make sim-clean SIMULATOR=icarus
+	$(MAKE) sim-clean SIMULATOR=verilator
+	$(MAKE) sim-clean SIMULATOR=icarus
 
 test-fpga:
-	make fpga-test BOARD=CYCLONEV-GT-DK
-	make fpga-test BOARD=AES-KU040-DB-G
+	$(MAKE) fpga-test BOARD=CYCLONEV-GT-DK
+	$(MAKE) fpga-test BOARD=AES-KU040-DB-G
 
 test-fpga-clean:
-	make fpga-clean BOARD=CYCLONEV-GT-DK
-	make fpga-clean BOARD=AES-KU040-DB-G
+	$(MAKE) fpga-clean BOARD=CYCLONEV-GT-DK
+	$(MAKE) fpga-clean BOARD=AES-KU040-DB-G
 
 test-doc:
-	make fpga-clean BOARD=CYCLONEV-GT-DK
-	make fpga-clean BOARD=AES-KU040-DB-G
-	make fpga-build BOARD=CYCLONEV-GT-DK
-	make fpga-build BOARD=AES-KU040-DB-G
-	make doc-test DOC=pb
-	make doc-test DOC=presentation
+	$(MAKE) fpga-clean BOARD=CYCLONEV-GT-DK
+	$(MAKE) fpga-clean BOARD=AES-KU040-DB-G
+	$(MAKE) fpga-build BOARD=CYCLONEV-GT-DK
+	$(MAKE) fpga-build BOARD=AES-KU040-DB-G
+	$(MAKE) doc-test DOC=pb
+	$(MAKE) doc-test DOC=presentation
 
 test-doc-clean:
-	make doc-clean DOC=pb
-	make doc-clean DOC=presentation
+	$(MAKE) doc-clean DOC=pb
+	$(MAKE) doc-clean DOC=presentation
 
 test: test-clean test-pc-emul test-sim test-fpga test-doc
 

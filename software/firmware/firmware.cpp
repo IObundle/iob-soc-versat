@@ -1,7 +1,6 @@
 #include <cstdio>
 
-#include "versat.hpp"
-#include "utils.hpp"
+#include "accel.hpp"
 
 extern "C"{
 #include "system.h"
@@ -24,10 +23,6 @@ int printf_(const char* format, ...);
 #define printf printf_
 #endif
 
-Versat* versat;
-
-void AutomaticTests(Versat* versat);
-
 int main(int argc,char* argv[]){
    uart_init(UART_BASE,FREQ/BAUD);
    timer_init(TIMER_BASE);
@@ -35,17 +30,14 @@ int main(int argc,char* argv[]){
 
    printf("Init base modules\n");
 
-   Versat* versat = InitVersat(VERSAT_BASE,1);
+   versat_init(VERSAT_BASE);
 
-   SetDebug(versat,VersatDebugFlags::OUTPUT_ACCELERATORS_CODE,1);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_VERSAT_CODE,1);
-   SetDebug(versat,VersatDebugFlags::USE_FIXED_BUFFERS,0);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_GRAPH_DOT,0);
-   SetDebug(versat,VersatDebugFlags::OUTPUT_VCD,0);
+   TOP_input_0_constant = 0x1;
+   TOP_input_1_constant = 0x2;
 
-   ParseVersatSpecification(versat,"testVersatSpecification.txt");
+   RunAccelerator(1);
 
-   AutomaticTests(versat);
+   printf("%d\n",TOP_output_0_currentValue);
 
    uart_finish();
 
