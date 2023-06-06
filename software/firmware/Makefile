@@ -28,7 +28,6 @@ HDR+=periphs.h
 SRC+= firmware.S firmware.cpp $(UART_DIR)/software/printf.c
 SRC+= $(wildcard  $(FIRM_DIR)/crypto/*.c)
 SRC+= $(FIRM_DIR)/ila.c
-SRC+= $(FIRM_DIR)/firmwareVersatPC.cpp # Do not forget to move this to versat afterwards
 
 #INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
 #SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c)

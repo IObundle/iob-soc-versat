@@ -67,8 +67,9 @@ endif
 ifeq ($(HARDWARE_TEST),)
 OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
 INPUT_FIRM_FOLDER := $(FIRM_DIR)/
-VSRC+=$(SW_DIR)/pc-emul/versat_instance.v
-INCLUDE+=$(incdir)$(SW_DIR)/pc-emul
+VSRC+=$(SW_DIR)/pc-emul/generated/versat_instance.v
+INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/generated
+INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/src
 else
 INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(HARDWARE_TEST)
 OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
@@ -81,9 +82,7 @@ endif
 VSRC+=$(SRC_DIR)/boot_ctr.v $(SRC_DIR)/int_mem.v $(SRC_DIR)/sram.v
 VSRC+=system.v
 
-VSRC+=$(wildcard $(SW_DIR)/pc-emul/generated/src/*.v)
-VSRC+=$(SRC_DIR)/units/xunitF.v
-VSRC+=$(SRC_DIR)/units/xunitM.v
+VSRC+=$(wildcard $(SW_DIR)/pc-emul/src/*.v)
 
 HEXPROGS=$(OUTPUT_SIM_FOLDER)/boot.hex $(OUTPUT_SIM_FOLDER)/firmware.hex
 
