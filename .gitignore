@@ -4,7 +4,7 @@
 #SOFTWARE
 software/periphs.h
 
-*.c
+#*.c
 
 software/pc-emul/*
 !software/pc-emul/Makefile
@@ -19,6 +19,8 @@ software/test/*.bin
 !software/console/console
 !software/console/eth_console
 
+!software/firmware/benchmarks
+!software/firmware/crypto
 
 #HARDWARE
 #sources
