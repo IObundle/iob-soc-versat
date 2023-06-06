@@ -11,8 +11,6 @@ extern "C"{
 #include "iob-timer.h"
 #include "iob-ila.h"
 
-#include "crypto/sha2.h"
-
 int printf_(const char* format, ...);
 }
 

@@ -35,15 +35,8 @@ LIBS := $(VERSAT_DIR)/libversat.a -lstdc++ -lm -lgcc -lc -pthread -ldl
 #HEADERS
 HDR+=periphs.h 
 
-HDR+=$(FIRM_DIR)/unitConfiguration.hpp
-
 #SOURCES
 SRC+= $(UART_DIR)/software/printf.c
-
-OBJ += $(foreach name,$(basename $(notdir $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c))),./build/$(name).o)
-OBJ += $(foreach name,$(basename $(notdir $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c))),./build/$(name).o)
-OBJ += $(foreach name,$(basename $(notdir $(wildcard $(FIRM_DIR)/crypto/blake2/*.c))),./build/$(name).o)
-OBJ += $(foreach name,$(basename $(notdir $(wildcard $(FIRM_DIR)/crypto/*.c))),./build/$(name).o)
 
 OBJ += ./build/iob-uart.o
 OBJ += ./build/iob_uart_swreg_pc_emul.o
@@ -73,18 +66,6 @@ OBJ += ./build/printf.o
 
 ./build/printf.o : ../../submodules/UART/software/printf.c 
 	gcc $(LOCAL_CFLAGS) -c -o ./build/printf.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
-
-./build/%.o: $(FIRM_DIR)/crypto/mceliece/mceliece348864/%.c
-	gcc $(LOCAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
-
-./build/%.o: $(FIRM_DIR)/crypto/mceliece/%.c
-	gcc $(LOCAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
-
-./build/%.o: $(FIRM_DIR)/crypto/blake2/%.c
-	gcc $(LOCAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
-
-./build/%.o: $(FIRM_DIR)/crypto/%.c
-	gcc $(LOCAL_CFLAGS) -c -o ./build/$*.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 
 INCLUDE+=$(incdir)./build
 INCLUDE+=$(incdir)./generated

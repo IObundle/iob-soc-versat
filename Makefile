@@ -74,7 +74,7 @@ SIM_DIR=$(HW_DIR)/simulation/$(SIMULATOR)
 SIM_BAUD = 2500000
 SIM_FREQ =50000000
 sim-build: ila-build
-	#$(MAKE) -C $(PC_DIR) run
+	$(MAKE) -C $(PC_DIR) run
 	$(MAKE) fw-build
 	$(MAKE) -C $(SIM_DIR) build
 
@@ -83,7 +83,7 @@ sim-build: ila-build
 	$(MAKE) fw-build SIM=1
 	$(MAKE) -C $(SIM_DIR) build
 
-sim-run: sim-build #./hardware/src/versat_instance.v
+sim-run: sim-build ./hardware/src/versat_instance.v
 	$(MAKE) -C $(SIM_DIR) run
 
 sim-clean: fw-clean

@@ -11,7 +11,6 @@ module UnumIV #(
     
     input               running,
     input               run,
-    output              done,
 
     //input
     input [DATA_W-1:0]  in0,

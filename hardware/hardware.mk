@@ -83,6 +83,7 @@ VSRC+=$(SRC_DIR)/boot_ctr.v $(SRC_DIR)/int_mem.v $(SRC_DIR)/sram.v
 VSRC+=system.v
 
 VSRC+=$(wildcard $(SW_DIR)/pc-emul/src/*.v)
+VSRC+=$(wildcard $(SRC_DIR)/units/*.v)
 
 HEXPROGS=$(OUTPUT_SIM_FOLDER)/boot.hex $(OUTPUT_SIM_FOLDER)/firmware.hex
 
