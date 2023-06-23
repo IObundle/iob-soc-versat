@@ -262,8 +262,6 @@ module CHImpl(){
    ch -> output;
 }
 
-/* 
-
 module Maj(x,y,z){
 #
    res = (x & y) ^ (x & z) ^ (y & z);
@@ -758,27 +756,6 @@ module SMVM(){
    accum:1 -> output:1;
 }
 
-/*
-
-iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
-   // Unidades
-   Comb_F_Stage comb;
-# 16
-   a -> comb:0;
-   b -> comb:1;
-   c -> comb:2;
-   d -> comb:3;
-   e -> comb:4;
-   f -> comb:5;
-   g -> comb:6;
-   h -> comb:7;
-   k -> comb:8;
-   w -> comb:9;
-
-   comb:0..7 -> comb:0..7;
-   comb:0..7 -> out:0..7;
-}
-
 module SBox(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
    LookupTable s0;
    LookupTable s1;
@@ -1105,6 +1082,27 @@ module MainRound(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,
    kf -> addRoundKey:31;
 
    addRoundKey:0..15 -> out:0..15;
+}
+
+/*
+
+iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
+   // Unidades
+   Comb_F_Stage comb;
+# 16
+   a -> comb:0;
+   b -> comb:1;
+   c -> comb:2;
+   d -> comb:3;
+   e -> comb:4;
+   f -> comb:5;
+   g -> comb:6;
+   h -> comb:7;
+   k -> comb:8;
+   w -> comb:9;
+
+   comb:0..7 -> comb:0..7;
+   comb:0..7 -> out:0..7;
 }
 
 iterative IterativeMul(x){
@@ -1487,8 +1485,6 @@ module HierUseExample(){
    ex:0 -> s0;
    ex:1 -> s1;
 }
-
-*/
 
 /*
 

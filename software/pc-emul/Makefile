@@ -7,14 +7,6 @@ DEBUG_GUI := 0
 LOCAL_CFLAGS := -Wall -g -Werror=return-type -march=native -DVERSAT_DEBUG
 GLOBAL_CFLAGS:= $(LOCAL_CFLAGS) -std=c++17 #-fsanitize=address #-msse2
 
-ifeq ($(DEBUG_GUI),1)
-LIBS += -lSDL2  -lGL -ldl
-else
-#DEFINE += -Dx86
-#GLOBAL_CFLAGS += -m32
-#LOCAL_CFLAGS += -m32
-endif
-
 include ../software.mk
 
 #DEFINE+=-DLONGLONG 
@@ -31,12 +23,13 @@ VERSAT_SPEC_INCLUDE:=-I ./generated -I ./build -I ./src
 $(foreach p, $(PERIPHERALS), $(eval include $($p_DIR)/software/pc-emul/pc-emul.mk))
 
 LIBS := $(VERSAT_DIR)/libversat.a -lstdc++ -lm -lgcc -lc -pthread -ldl
+LIBS += -lSDL2  -lGL -ldl
 
 #HEADERS
 HDR+=periphs.h 
 
 #SOURCES
-SRC+= $(UART_DIR)/software/printf.c
+#SRC+= $(UART_DIR)/software/printf.c
 
 OBJ += ./build/iob-uart.o
 OBJ += ./build/iob_uart_swreg_pc_emul.o
@@ -67,20 +60,11 @@ OBJ += ./build/printf.o
 ./build/printf.o : ../../submodules/UART/software/printf.c 
 	gcc $(LOCAL_CFLAGS) -c -o ./build/printf.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 
-INCLUDE+=$(incdir)./build
-INCLUDE+=$(incdir)./generated
-INCLUDE+=$(incdir)$(VERILATOR_INCLUDE)
-OBJ+= $(wildcard ./generated/*.o)
+#INCLUDE+=$(incdir)./build
+INCLUDE+=$(VERSAT_INCLUDE)
+#OBJ+= $(wildcard ./generated/*.o)
 
 SOC_OUT_BIN:=soc-out.bin
-
-#PROFILE
-ifeq ($(PROFILE),1)
-HDR+=$(FIRM_DIR)/profile.h
-SRC+= $(FIRM_DIR)/profile.c
-DEFINE+=$(defmacro)PROFILE
-INCLUDE+=$(incdir)$(FIRM_DIR)
-endif
 
 DEFINE+=$(defmacro)"CRYPTO_NAMESPACE(x)=x"
 
@@ -88,39 +72,50 @@ DEFINE+=$(defmacro)"CRYPTO_NAMESPACE(x)=x"
 CONSOLE_CMD=$(ROOT_DIR)/software/console/eth_console -L
 
 #RULES
-ifeq ($(HARDWARE_TEST),)
+ifeq ($(TEST),)
 OUTPUT_FOLDER := ./generated
 FW_NAME:=./generated/fw_emul
-OUTPUT_SIM_FOLDER := $(HW_DIR)/src
-OUTPUT_FIRM_FOLDER := $(SW_DIR)/firmware
+TYPE_NAME:=CustomInstruction
+FIRMWARE:=$(FIRM_DIR)/firmware.cpp
+FIRMWARE_GENERATED:=$(FIRM_DIR)/generated
+OPTS:=-s
 else
-OUTPUT_FOLDER := ./test/$(HARDWARE_TEST)
-FW_NAME:=./test/$(HARDWARE_TEST)/fw_emul
-OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
-OUTPUT_FIRM_FOLDER := $(SW_DIR)/firmware/test/$(HARDWARE_TEST)
+OUTPUT_FOLDER := ./test/$(TEST)
+FW_NAME:=./test/$(TEST)/fw_emul
+TYPE_NAME:=$(TEST)
+FIRMWARE:=$(FIRM_DIR)/Tests/$(TEST).cpp
+OPTS:=-s
+FIRMWARE_GENERATED:=$(FIRM_DIR)/generated
 endif
+
+INCLUDE+=$(incdir)$(OUTPUT_FOLDER)
 
 temp := $(shell mkdir -p $(OUTPUT_FOLDER))
 temp2 := $(shell mkdir -p ./build)
+temp3 := $(shell $(MAKE) -C $(VERSAT_DIR) versat) # This is a bad way of doing things because the clean target now takes forever
+temp4 := $(shell mkdir -p $(FIRMWARE_GENERATED))
+
+VERSAT_EXE:=$(VERSAT_DIR)/versat
+
+SRC+=$(FIRM_DIR)/Tests/testbench.hpp # Header but contains code common to all testbenches
 
 build: gen_data $(FW_NAME)
 
 force-build: gen_data
 	g++ -w -o fw_emul $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) ./build/*.o $(FIRM_DIR)/firmware.cpp $(LIBS) #-fuse-ld=lld 
 
-run-versat:
-	$(MAKE) -C $(VERSAT_DIR) versat
-
-$(OUTPUT_FOLDER)/accel.hpp: run-versat $(VERSAT_DIR)/versat
-	$(VERSAT_DIR)/versat $(SHARED_HARDWARE) $(HW_DIR)/src/units/*.v -I $(VERSAT_DIR)/hardware/include testVersatSpecification.txt -s -T UnumIV -o ./generated/
+$(OUTPUT_FOLDER)/accel.hpp: $(VERSAT_EXE) $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) testVersatSpecification.txt
+	$(VERSAT_EXE) $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) -I $(VERSAT_DIR)/hardware/include testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(OUTPUT_FOLDER)
 	$(MAKE) -C $(OUTPUT_FOLDER) all
-	cp $(OUTPUT_FOLDER)/accel.hpp $(FIRM_DIR)/accel.hpp
 
-$(FW_NAME): run-versat $(OUTPUT_FOLDER)/accel.hpp $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(OBJ) $(FIRM_DIR)/firmware.cpp
-	g++ -g -w -o $(FW_NAME) $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) -I$(VERILATOR_INCLUDE) -I$(OUTPUT_FOLDER)/ $(FIRM_DIR)/firmware.cpp $(VERSAT_SPEC_OBJS) ./build/*.o ./generated/*.o $(LIBS)
+$(FIRMWARE_GENERATED)/accel.hpp: $(VERSAT_EXE) $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) testVersatSpecification.txt
+	$(VERSAT_EXE) $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) -I $(VERSAT_DIR)/hardware/include testVersatSpecification.txt -T $(TYPE_NAME) -o $(FIRMWARE_GENERATED)
+
+$(FW_NAME): $(FIRMWARE_GENERATED)/accel.hpp $(OUTPUT_FOLDER)/accel.hpp $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(FIRMWARE) $(OBJ) $(wildcard $(OUTPUT_FOLDER)/*.o) $(FIRMWARE) 
+	g++ -g -w -o $(FW_NAME) $(GLOBAL_CFLAGS) $(DEFINE) $(INCLUDE) -I$(VERILATOR_INCLUDE) -I$(OUTPUT_FOLDER) $(FIRMWARE) $(VERSAT_SPEC_OBJS) $(SRC) ./build/*.o $(OUTPUT_FOLDER)/*.o $(LIBS)
 
 run: $(FW_NAME)
-	-cd $(OUTPUT_FOLDER); ./fw_emul
+	@cd $(OUTPUT_FOLDER); ./fw_emul
 
 clean:
 	@rm -rf fw_emul periphs.h *swreg*.h *swreg*.c test.log soc2cnsl cnsl2soc \
@@ -129,10 +124,6 @@ clean:
 	@$(MAKE) -C $(SW_DIR)/python clean
 	@$(MAKE) -C $(SW_TEST_DIR) clean
 	@rm -f -r ./test ./build ./debug ./src ./generated
-
-test: 
-	$(MAKE) run
-	$(MAKE) validate
 
 validate:
 	$(MAKE) -C $(SW_TEST_DIR) validate SOC_OUT_BIN=$(SOC_OUT_BIN) TEST_VECTOR_RSP=$(TEST_VECTOR_RSP)
@@ -148,7 +139,12 @@ $(SOC_LOG):
 $(EMUL_PROFILE_LOG): $(SOC_LOG)
 	@grep "PROFILE:" $< > $(EMUL_PROFILE_LOG)
 
-.PHONY: build run ./build/versatCompiler\
+build-test: $(FW_NAME)
+
+run-test:
+	@cd $(OUTPUT_FOLDER); ./fw_emul;
+
+.PHONY: build run versat \
 	test validate profile \
 	clean force-build
 

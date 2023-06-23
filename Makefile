@@ -1,10 +1,23 @@
 SHELL = /bin/bash
-export 
+export
 
 #run on external memory implies DDR use
 ifeq ($(RUN_EXTMEM),1)
 USE_DDR=1
 endif
+
+TESTS:= M_Stage F_Stage AddRoundKey LookupTable
+
+$(TESTS):
+	$(MAKE) -C $(PC_DIR) build-test TEST=$@
+
+test: $(TESTS)
+	$(foreach i, $(TESTS),$(MAKE) -s -C $(PC_DIR) run-test TEST=$i;)
+
+single-test:
+	@echo "Trying " $(TEST)
+	$(MAKE) -C $(PC_DIR) build-test TEST=$(TEST)
+	$(MAKE) -C $(PC_DIR) run-test
 
 ILA_DIR=./submodules/ILA
 ILA_PYTHON_DIR=$(ILA_DIR)/software/python
@@ -62,6 +75,9 @@ pc-emul-clean: fw-clean
 
 pc-emul-test: pc-emul-clean
 	$(MAKE) -C $(PC_DIR) test
+
+run-versat:
+	$(MAKE) -C $(PC_DIR) run-versat
 
 HW_DIR=./hardware
 #
@@ -192,8 +208,6 @@ test-doc:
 test-doc-clean:
 	$(MAKE) doc-clean DOC=pb
 	$(MAKE) doc-clean DOC=presentation
-
-test: test-clean test-pc-emul test-sim test-fpga test-doc
 
 test-clean: test-pc-emul-clean test-sim-clean test-fpga-clean test-doc-clean
 

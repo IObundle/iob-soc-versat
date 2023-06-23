@@ -29,10 +29,6 @@ SRC+= firmware.S firmware.cpp $(UART_DIR)/software/printf.c
 SRC+= $(wildcard  $(FIRM_DIR)/crypto/*.c)
 SRC+= $(FIRM_DIR)/ila.c
 
-#INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
-#SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/mceliece348864/*.c)
-#SRC+= $(wildcard $(FIRM_DIR)/crypto/mceliece/*.c)
-
 ifeq ($(HARDWARE_TEST),)
 INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
 INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/generated
