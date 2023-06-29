@@ -58,8 +58,8 @@ module StaticMuladd(x,y){
 }
 
 module VReadToVWrite(){
-   VRead read;
-   VWrite write;
+   VRead #(.AXI_ADDR_W(AXI_ADDR_W)) read;
+   VWrite #(.AXI_ADDR_W(AXI_ADDR_W)) write;
 #
    read -> write;
 }
@@ -727,10 +727,10 @@ module SHA(){
 
 module SMVM(){
    Generator gen;
-   LookupTableRead col;
-   LookupTableRead row;
-   LookupTableRead val;
-   LookupTableRead vector;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
    Mul mul;
 
    ChangeDetect change;

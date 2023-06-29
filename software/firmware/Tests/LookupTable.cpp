@@ -1,15 +1,17 @@
 #include "testbench.hpp"
 
-void SingleTest(){
-   int addrA = 0;
-   int addrB = 4;
+void Debug();
 
-   VersatUnitWrite(addrA,0xf0);
-   VersatUnitWrite(addrB,0xf4);
+void SingleTest(){
+   iptr addrA = 0;
+   iptr addrB = 4;
+
+   VersatUnitWrite(TOP_simple_addr + 0,0xf0);
+   VersatUnitWrite(TOP_simple_addr + 4,0xf4);
 
    SimpleInputStart[0] = addrA;
    SimpleInputStart[1] = addrB;
-
+   
    RunAccelerator(1);
 
    Assert_Eq(0xf0,SimpleOutputStart[0]);

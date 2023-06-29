@@ -30,13 +30,7 @@ int main(int argc,char* argv[]){
 
    versat_init(VERSAT_BASE);
 
-   ACCEL_TOP_input_0_constant = 3;
-   ACCEL_TOP_input_1_constant = 20;
-   ACCEL_TOP_input_2_constant = 100;
-
    RunAccelerator(1);
-
-   printf("%d\n",ACCEL_TOP_output_0_currentValue);
 
    uart_finish();
 

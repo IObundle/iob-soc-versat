@@ -6,7 +6,7 @@ ifeq ($(RUN_EXTMEM),1)
 USE_DDR=1
 endif
 
-TESTS:= M_Stage F_Stage AddRoundKey LookupTable
+TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVM VReadToVWrite
 
 $(TESTS):
 	$(MAKE) -C $(PC_DIR) build-test TEST=$@
