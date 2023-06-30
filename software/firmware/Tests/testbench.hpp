@@ -3,7 +3,7 @@
 
 #include <cstdio>
 
-#include "accel.hpp"
+#include "versat_accel.hpp"
 
 extern "C"{
 #include "system.h"

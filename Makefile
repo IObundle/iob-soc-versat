@@ -8,17 +8,6 @@ endif
 
 TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVM VReadToVWrite
 
-$(TESTS):
-	$(MAKE) -C $(PC_DIR) build-test TEST=$@
-
-test: $(TESTS)
-	$(foreach i, $(TESTS),$(MAKE) -s -C $(PC_DIR) run-test TEST=$i;)
-
-single-test:
-	@echo "Trying " $(TEST)
-	$(MAKE) -C $(PC_DIR) build-test TEST=$(TEST)
-	$(MAKE) -C $(PC_DIR) run-test
-
 ILA_DIR=./submodules/ILA
 ILA_PYTHON_DIR=$(ILA_DIR)/software/python
 ila-build: ilaFormat.txt
@@ -210,6 +199,20 @@ test-doc-clean:
 	$(MAKE) doc-clean DOC=presentation
 
 test-clean: test-pc-emul-clean test-sim-clean test-fpga-clean test-doc-clean
+
+$(TESTS):
+	$(MAKE) -C $(PC_DIR) build-test TEST=$@
+
+test: $(TESTS)
+	$(foreach i, $(TESTS),$(MAKE) -s -C $(PC_DIR) run-test TEST=$i;)
+
+single-test:
+	@echo "Trying " $(TEST)
+	$(MAKE) -C $(PC_DIR) build-test TEST=$(TEST)
+	$(MAKE) -C $(PC_DIR) run-test
+
+versat-clean:
+	$(MAKE) -C ./submodules/VERSAT clean
 
 debug:
 	@echo $(UART_DIR)
