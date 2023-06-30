@@ -1,4 +1,11 @@
 
+module TripleAdd(x,y,z){
+   
+#
+   res = x + y + z;
+   res -> out;
+}
+
 module OnlyInputToOutput(x){
 #
    x -> out:0;

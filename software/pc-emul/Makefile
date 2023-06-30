@@ -78,7 +78,7 @@ CONSOLE_CMD=$(ROOT_DIR)/software/console/eth_console -L
 ifeq ($(TEST),)
 OUTPUT_FOLDER:=./generated
 FW_NAME:=./generated/fw_emul
-TYPE_NAME:=SMVM
+TYPE_NAME:=TripleAdd
 FIRMWARE:=$(FIRM_DIR)/firmware.c
 FIRMWARE_GENERATED:=$(FIRM_DIR)/generated
 OPTS:=-s

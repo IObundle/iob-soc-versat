@@ -1,3 +1,4 @@
+/*
 $buffer 14
 
 $trigger (versat.xversat.addr == 5)
@@ -42,3 +43,5 @@ versat.m_axi_arready 1
 versat.m_axi_arvalid 1
 versat.m_axi_rready 1
 versat.m_axi_rvalid 1
+*/
+

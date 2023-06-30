@@ -62,10 +62,10 @@ GENERATED:=$(FIRM_DIR)/generated
 temp := $(shell mkdir -p $(GENERATED))
 VERSAT_EXE:=$(VERSAT_DIR)/versat
 EXTRA_SOURCES:=$(foreach file,$(VSRC) $(VERSAT_VSRC),-S $(file))
-TYPE_NAME:=SMVM
+TYPE_NAME:=TripleAdd
 
 $(GENERATED)/versat_accel.h: 
-	$(VERSAT_EXE) -x32 $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) $(EXTRA_SOURCES) $(V_INCLUDE) -I $(VERSAT_DIR)/hardware/include $(FIRM_DIR)/../pc-emul/testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(GENERATED)
+	$(VERSAT_EXE) -s -x32 $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) $(EXTRA_SOURCES) $(V_INCLUDE) -I $(VERSAT_DIR)/hardware/include $(FIRM_DIR)/../pc-emul/testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(GENERATED)
 
 #firmware.elf: ../template.lds $(HDR) $(SRC) gen_data
 #	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions
