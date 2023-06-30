@@ -76,14 +76,14 @@ CONSOLE_CMD=$(ROOT_DIR)/software/console/eth_console -L
 
 #RULES
 ifeq ($(TEST),)
-OUTPUT_FOLDER := ./generated
+OUTPUT_FOLDER:=./generated
 FW_NAME:=./generated/fw_emul
 TYPE_NAME:=SMVM
 FIRMWARE:=$(FIRM_DIR)/firmware.c
 FIRMWARE_GENERATED:=$(FIRM_DIR)/generated
 OPTS:=-s
 else
-OUTPUT_FOLDER := ./test/$(TEST)
+OUTPUT_FOLDER:=./test/$(TEST)
 FW_NAME:=./test/$(TEST)/fw_emul
 TYPE_NAME:=$(TEST)
 FIRMWARE:=$(FIRM_DIR)/Tests/$(TEST).cpp
@@ -99,10 +99,10 @@ temp3 := $(shell mkdir -p $(FIRMWARE_GENERATED))
 
 VERSAT_EXE:=$(VERSAT_DIR)/versat
 
-EXTRA_SOURCES:=$(foreach file,$(VSRC),-S $(file))
+EXTRA_SOURCES:=$(foreach file,$(VSRC) $(VERSAT_VSRC),-S $(file))
 #SRC+=$(FIRM_DIR)/Tests/testbench.hpp # Header but contains code common to all testbenches
 
-LIBS+=$(OUTPUT_FOLDER)/libversat.a
+LIBS+=$(OUTPUT_FOLDER)/libaccel.a
 
 build: gen_data $(FW_NAME)
 

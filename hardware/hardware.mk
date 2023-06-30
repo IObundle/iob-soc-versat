@@ -67,9 +67,9 @@ endif
 ifeq ($(HARDWARE_TEST),)
 OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
 INPUT_FIRM_FOLDER := $(FIRM_DIR)/
-VSRC+=$(SW_DIR)/pc-emul/generated/versat_instance.v
-INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/generated
-INCLUDE+=$(incdir)$(SW_DIR)/pc-emul/src
+VSRC+=$(SW_DIR)/firmware/generated/versat_instance.v
+INCLUDE+=$(incdir)$(FIRM_DIR)/generated
+INCLUDE+=$(incdir)$(FIRM_DIR)/src
 else
 INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(HARDWARE_TEST)
 OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)

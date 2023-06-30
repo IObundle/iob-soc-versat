@@ -25,18 +25,17 @@ include $(ILA_DIR)/software/embedded/embedded.mk
 HDR+=periphs.h
 
 #SOURCES
-SRC+= firmware.S firmware.cpp $(UART_DIR)/software/printf.c
+SRC+= firmware.S firmware.c $(UART_DIR)/software/printf.c
 SRC+= $(wildcard  $(FIRM_DIR)/crypto/*.c)
 SRC+= $(FIRM_DIR)/ila.c
 
 ifeq ($(HARDWARE_TEST),)
-INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
-INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/generated
+INCLUDE+=$(incdir)$(FIRM_DIR)/generated
 OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
 OUTPUT_DIR:=.
 OUTPUT_NAME:=firmware.elf
 else
-INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/build
+INCLUDE+=$(incdir)$(FIRM_DIR)/generated/
 INCLUDE+=$(incdir)$(FIRM_DIR)/../pc-emul/test/$(HARDWARE_TEST)/
 OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
 OUTPUT_DIR:=./test/$(HARDWARE_TEST)
@@ -59,13 +58,22 @@ endif
 
 #build: firmware.elf
 
+GENERATED:=$(FIRM_DIR)/generated
+temp := $(shell mkdir -p $(GENERATED))
+VERSAT_EXE:=$(VERSAT_DIR)/versat
+EXTRA_SOURCES:=$(foreach file,$(VSRC) $(VERSAT_VSRC),-S $(file))
+TYPE_NAME:=SMVM
+
+$(GENERATED)/versat_accel.h: 
+	$(VERSAT_EXE) -x32 $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) $(EXTRA_SOURCES) $(V_INCLUDE) -I $(VERSAT_DIR)/hardware/include $(FIRM_DIR)/../pc-emul/testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(GENERATED)
+
 #firmware.elf: ../template.lds $(HDR) $(SRC) gen_data
 #	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions
 #	$(TOOLCHAIN_PREFIX)objcopy -O binary firmware.elf firmware.bin
 
 build: $(OUTPUT_NAME)
 
-$(OUTPUT_NAME): ../template.lds $(HDR) $(SRC) gen_data
+$(OUTPUT_NAME): ../template.lds $(HDR) $(SRC) gen_data $(GENERATED)/versat_accel.h
 ifneq ($(HARDWARE_TEST),)
 	@mkdir -p $(OUTPUT_DIR)
 endif
