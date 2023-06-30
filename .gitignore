@@ -6,6 +6,8 @@ software/periphs.h
 
 #*.c
 
+TAGS
+
 software/pc-emul/*
 !software/pc-emul/Makefile
 !software/pc-emul/test.expected
