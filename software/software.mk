@@ -30,7 +30,29 @@ INCLUDE+=$(incdir)$(SW_DIR) $(incdir).
 INCLUDE+=$(incdir)$(LIB_DIR)/software/include
 
 #headers
-HDR=$(SW_DIR)/system.h
+HDR=$(SW_DIR)/system.h periphs.h
+
+VERSAT_EXE:=$(VERSAT_DIR)/versat
+
+ifeq ($(TEST),)
+TYPE_NAME:=SMVMCPU
+FIRMWARE:=$(FIRM_DIR)/firmware.c
+COMPILER:=gcc
+else
+TYPE_NAME:=$(TEST)
+ifneq ($(wildcard $(FIRM_DIR)/Tests/$(TEST).c),)
+	FIRMWARE:=$(FIRM_DIR)/Tests/$(TEST).c
+	COMPILER:=gcc
+else
+	FIRMWARE:=$(FIRM_DIR)/Tests/$(TEST).cpp
+	COMPILER:=g++
+endif
+endif
+
+versat:
+	$(MAKE) -C $(VERSAT_DIR) versat
+
+$(VERSAT_EXE): versat # Makes sure versat is updated
 
 #common sources (none so far)
 #SRC=$(SW_DIR)/*.c
@@ -38,13 +60,10 @@ HDR=$(SW_DIR)/system.h
 #peripherals' base addresses
 periphs.h: periphs_tmp.h
 	@is_diff=`diff -q -N $@ $<`; if [ "$$is_diff" ]; then cp $< $@; fi
-	@rm periphs_tmp.h
+	#@rm periphs_tmp.h
 
 periphs_tmp.h:
 	$(foreach p, $(PERIPHERALS), $(shell echo "#define $p_BASE (1<<$P) |($p<<($P-N_SLAVES_W))" >> $@) )
-
-gen_data:
-	$(MAKE) -C $(SW_TEST_DIR) gen_test_data TEST_VECTOR_RSP=$(TEST_VECTOR_RSP)
 
 build-all:
 	$(MAKE) -C $(FIRM_DIR) build

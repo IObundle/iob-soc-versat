@@ -1,7 +1,7 @@
-#include "testbench.hpp"
+#include "testbench.h"
 
 void SingleTest(){
-   iptr input[] = {0x5a86b737,0xa9f9be83,0x08251f6d,0xeaea8ee9};
+   iptr input[] = {(iptr)0x5a86b737,(iptr)0xa9f9be83,(iptr)0x08251f6d,(iptr)0xeaea8ee9};
    VersatMemoryCopy(SimpleInputStart,input,4);
 
    ACCEL_Comb_M_Stage_sigma_sigma0_const1_constant = 7;

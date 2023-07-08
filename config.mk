@@ -6,12 +6,11 @@
 
 IOBSOC_NAME:=IOBSOCSHA
 
+TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVM VReadToVWrite SMVMCPU
+
 #
 # PRIMARY PARAMETERS: CAN BE CHANGED BY USERS OR OVERRIDEN BY ENV VARS
 #
-
-#TEST VECTOR
-TEST_VECTOR_RSP ?=SHA256ShortMsg.rsp
 
 #CPU ARCHITECTURE
 DATA_W := 32
@@ -36,10 +35,13 @@ BOOTROM_ADDR_W:=12
 #PRE-INIT MEMORY WITH PROGRAM AND DATA
 INIT_MEM ?=1
 
+#RMAC ADDRESS
+RMAC_ADDR := 4437e6a6893b
+
 #PERIPHERAL LIST
 #must match respective submodule CORE_NAME in the core.mk file of the submodule
 #PERIPHERALS:=UART
-PERIPHERALS ?=UART TIMER VERSAT ILA
+PERIPHERALS ?=UART TIMER VERSAT ILA ETHERNET
 
 #RISC-V HARD MULTIPLIER AND DIVIDER INSTRUCTIONS
 USE_MUL_DIV ?=1
@@ -91,6 +93,7 @@ UART_DIR=$(ROOT_DIR)/submodules/UART
 LIB_DIR=$(ROOT_DIR)/submodules/LIB
 MEM_DIR=$(ROOT_DIR)/submodules/MEM
 AXI_DIR=$(ROOT_DIR)/submodules/AXI
+ETHERNET_DIR=$(ROOT_DIR)/submodules/ETHERNET
 TIMER_DIR=$(ROOT_DIR)/submodules/TIMER
 VERSAT_DIR=$(ROOT_DIR)/submodules/VERSAT
 ILA_DIR=$(ROOT_DIR)/submodules/ILA
@@ -146,6 +149,24 @@ DEFINE+=$(defmacro)N_SLAVES_W=$(N_SLAVES_W)
 
 ifneq ($(HARDWARE_TEST),)
 DEFINE+=$(defmacro)HARDWARE_TEST=$(HARDWARE_TEST)
+endif
+
+
+#BOARD and FREQ
+#default baud and system clock frequency
+SIM_BAUD = 2500000
+SIM_FREQ =50000000
+#default baud and frequency if not given
+BAUD ?=$(SIM_BAUD)
+FREQ ?=$(SIM_FREQ)
+#default board running locally or remotely
+BOARD_DIR =$(shell find hardware -name $(BOARD))
+#default baud and system clock freq for boards
+BOARD_BAUD = 115200
+#default board frequency
+BOARD_FREQ ?=100000000
+ifeq ($(BOARD), CYCLONEV-GT-DK)
+BOARD_FREQ =50000000
 endif
 
 #RULES

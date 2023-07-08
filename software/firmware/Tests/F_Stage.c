@@ -1,4 +1,4 @@
-#include "testbench.hpp"
+#include "testbench.h"
 
 void SingleTest(){
    ACCEL_TOP_input_0_constant = 0x6a09e667;

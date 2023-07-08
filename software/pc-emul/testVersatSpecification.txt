@@ -1,4 +1,13 @@
 
+module SMVMCPU(x,y){
+   FloatMul mul;
+#
+   x -> mul:0;
+   y -> mul:1;
+
+   mul -> out;
+}
+
 module TripleAdd(x,y,z){
    
 #
@@ -755,6 +764,36 @@ module SMVM(){
 
    row -> change:0;
    row -> change:1;
+
+   mul    -> accum:0;
+   change -> accum:1;
+
+   accum:0 -> output:0;
+   accum:1 -> output:1;
+}
+
+module SMVMCSR(){
+   Generator gen;
+   //TimedFlag row;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
+   Mul mul;
+
+   ChangeDetect change;
+   SignalAccum accum;
+   SignalMemStorage output;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   //row -> change:0;
+   //row -> change:1;
 
    mul    -> accum:0;
    change -> accum:1;
