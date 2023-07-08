@@ -15,10 +15,10 @@ include ../simulation.mk
 
 SIM_PROC=Vsystem_top
 
-ifeq ($(HARDWARE_TEST),)
+ifeq ($(TEST),)
 SIM_FOLDER:=.
 else
-SIM_FOLDER:=test/$(HARDWARE_TEST)
+SIM_FOLDER:=test/$(TEST)
 endif
 
 # remove space between -I and directory for verilator
@@ -69,16 +69,16 @@ comp: $(SIM_FOLDER)/$(SIM_PROC)
 
 #simulator executable
 $(SIM_FOLDER)/$(SIM_PROC): $(HDR) $(VSRC)
-ifneq ($(HARDWARE_TEST),)
-	@mkdir -p test/$(HARDWARE_TEST)
+ifneq ($(TEST),)
+	@mkdir -p test/$(TEST)
 endif
 	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILATOR_INPUT)
-ifeq ($(HARDWARE_TEST),)
+ifeq ($(TEST),)
 	cp obj_dir/Vsystem_top ./
 else
-	cp obj_dir/Vsystem_top ./test/$(HARDWARE_TEST)/
-	#cp boot.hex ./$(HARDWARE_TEST)/
-	#cp firmware.hex ./$(HARDWARE_TEST)/
+	cp obj_dir/Vsystem_top ./test/$(TEST)/
+	#cp boot.hex ./$(TEST)/
+	#cp firmware.hex ./$(TEST)/
 endif
 
 #run the simulator
@@ -90,6 +90,6 @@ iob_uart_swreg.h: $(FIRM_DIR)/iob_uart_swreg.h
 
 clean: clean-remote
 	@rm -f $(SIM_PROC) $(HDR)
-	@rm -rf obj_dir
+	@rm -rf obj_dir test
 
 .PHONY: comp exec clean

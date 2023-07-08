@@ -101,21 +101,21 @@ file mkdir checkpoints
 
 synth_design -include_dirs $INCLUDE -verilog_define $DEFINE -part $DEVICE -top $TOP -debug_log -verbose
 report_utilization -hierarchical -file reports/synth_utilization.txt
-write_checkpoint -force checkpoints/post_synth
+#write_checkpoint -force checkpoints/post_synth
 
 #start_gui
 
 opt_design -debug_log -verbose
 power_opt_design -verbose
-report_timing_summary -file reports/opt_timing.txt -max_paths 3000
+report_timing_summary -file reports/opt_timing.txt
 
 place_design
-write_checkpoint -force checkpoints/post_place
+#write_checkpoint -force checkpoints/post_place
 
 route_design
-write_checkpoint -force checkpoints/post_route
+#write_checkpoint -force checkpoints/post_route
 
-report_timing -file reports/timing.txt -max_paths 3000
+report_timing -file reports/timing.txt
 report_clocks -file reports/clocks.txt
 report_clock_interaction -file reports/clock_interaction.txt
 report_cdc -details -file reports/cdc.txt

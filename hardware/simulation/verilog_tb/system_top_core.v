@@ -240,6 +240,7 @@ module system_top (
     // System Memory Macros
     //
 
+    `include "iob_eth_buffer_inst.vh"
     `include "versat_external_memory_inst.vh"
 
    //

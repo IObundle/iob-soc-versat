@@ -1,6 +1,5 @@
 include $(ROOT_DIR)/hardware/hardware.mk
 
-
 #axi portmap for axi ram
 VHDR+=s_axi_portmap.vh
 s_axi_portmap.vh:
@@ -30,12 +29,12 @@ ifeq ($(INIT_MEM),0)
 CONSOLE_CMD+=-f
 endif
 
-ifeq ($(HARDWARE_TEST),)
-OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
+ifeq ($(TEST),)
 INPUT_FIRM_FOLDER := $(FIRM_DIR)
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
 else
-INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(HARDWARE_TEST)
-OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(HARDWARE_TEST)
+INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(TEST)
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(TEST)
 endif
 
 ifneq ($(wildcard  $(OUTPUT_SIM_FOLDER)/firmware.hex),)
@@ -51,6 +50,7 @@ TB_DIR:=$(HW_DIR)/simulation/verilog_tb
 
 #axi memory
 include $(AXI_DIR)/hardware/axiram/hardware.mk
+include $(AXI_DIR)/hardware/axiinterconnect/hardware.mk
 
 VSRC+=system_top.v
 
@@ -58,6 +58,9 @@ VSRC+=system_top.v
 ifneq ($(SIMULATOR),verilator)
 VSRC+=system_tb.v
 endif
+
+SOC_IN_BIN=firmware.bin
+SOC_OUT_BIN:=soc-out.bin
 
 #RULES
 build: $(VSRC) $(VHDR) $(HEXPROGS)
@@ -69,25 +72,26 @@ else
 	ssh $(SIM_SSH_FLAGS) $(SIM_USER)@$(SIM_SERVER) 'make -C $(REMOTE_ROOT_DIR) sim-build SIMULATOR=$(SIMULATOR) INIT_MEM=$(INIT_MEM) USE_DDR=$(USE_DDR) RUN_EXTMEM=$(RUN_EXTMEM) VCD=$(VCD) TEST_LOG=\"$(TEST_LOG)\"'
 endif
 
-run: systemRedux.fst
+run: $(OUTPUT_SIM_FOLDER)/systemRedux.fst
 ifeq ($(VCD),1)
-	if [ ! `pgrep -u $(USER) gtkwave` ]; then gtkwave systemRedux.fst; fi &
+	if [ ! `pgrep -u $(USER) gtkwave` ]; then gtkwave $(OUTPUT_SIM_FOLDER)/systemRedux.fst; fi &
 endif
 
-systemRedux.vcd: sim
-	cat system.vcd | vcdCut versat > systemRedux.vcd
+$(OUTPUT_SIM_FOLDER)/systemRedux.vcd: sim
+	cat $(OUTPUT_SIM_FOLDER)/system.vcd | vcdCut versat > $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
 
-systemRedux.fst: systemRedux.vcd
-	vcd2fst -v systemRedux.vcd -f systemRedux.fst
+$(OUTPUT_SIM_FOLDER)/systemRedux.fst: $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
+	vcd2fst -v $(OUTPUT_SIM_FOLDER)/systemRedux.vcd -f $(OUTPUT_SIM_FOLDER)/systemRedux.fst
 
 sim:
 ifeq ($(SIM_SERVER),)
 	cp $(INPUT_FIRM_FOLDER)/firmware.bin .
 	@rm -f soc2cnsl cnsl2soc
-ifeq ($(HARDWARE_TEST),)
-	$(CONSOLE_CMD) $(TEST_LOG) &
+ifeq ($(TEST),)
+	$(CONSOLE_CMD) &
 else
 	cd $(OUTPUT_SIM_FOLDER); ../../$(CONSOLE_CMD) $(TEST_LOG) &
+	#$(CONSOLE_CMD) &
 endif
 	bash -c "trap 'make kill-cnsl' INT TERM KILL EXIT; make exec"
 else
@@ -113,7 +117,7 @@ system_tb.v:
 #create  simulation top module
 system_top.v: $(TB_DIR)/system_top_core.v
 	cp $< $@
-	$(foreach p, $(PERIPHERALS), $(eval HFILES=$(shell echo `ls $($p_DIR)/hardware/include/*.vh | grep -v pio | grep -v inst | grep -v swreg`)) \
+	$(foreach p, $(PERIPHERALS), $(eval HFILES=$(shell echo `ls $($p_DIR)/hardware/include/*.vh | grep -v pio | grep -v inst | grep -v swreg | grep -v port`)) \
 	$(eval HFILES+=$(notdir $(filter %swreg_def.vh, $(VHDR)))) \
 	$(if $(HFILES), $(foreach f, $(HFILES), sed -i '/PHEADER/a `include \"$f\"' $@;),)) # insert header files
 	$(foreach p, $(PERIPHERALS), if test -f $($p_DIR)/hardware/include/pio.vh; then sed s/input/wire/ $($p_DIR)/hardware/include/pio.vh | sed s/output/wire/  | sed s/\,/\;/ > wires_tb.vh; sed -i '/PWIRES/r wires_tb.vh' $@; fi;) # declare and insert wire declarations

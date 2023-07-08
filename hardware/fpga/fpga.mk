@@ -30,6 +30,12 @@ endif
 # Use
 #
 
+ifeq ($(TEST),)
+BIN_DIR:=$(FIRM_DIR)
+else
+BIN_DIR:=$(FIRM_DIR)/test/$(TEST)
+endif
+
 # Board grab
 BOARD_GRAB_CMD=$(SW_DIR)/python/board_client.py grab 600
 FPGA_PROG=../prog.sh
@@ -39,7 +45,7 @@ FORCE ?= 1
 run:
 ifeq ($(NORUN),0)
 ifeq ($(BOARD_SERVER),)
-	cp $(FIRM_DIR)/firmware.bin .
+	cp $(BIN_DIR)/firmware.bin .
 	if [ ! -f $(LOAD_FILE) ]; then touch $(LOAD_FILE); chown $(USER):dialout $(LOAD_FILE); chmod 664 $(LOAD_FILE); fi;\
 	$(BOARD_GRAB_CMD) -p '$(FPGA_PROG)' -c '$(CONSOLE_CMD) $(TEST_LOG)'
 	cp $(SW_DIR)/python/$(SOC_OUT_BIN) .
