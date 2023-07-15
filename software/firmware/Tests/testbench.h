@@ -15,10 +15,18 @@
 #include "periphs.h"
 #include "string.h"
 
+#if defined(__cplusplus) && defined(PC)
+extern "C" {
+#endif
+
 #include "iob-uart.h"
 #include "iob-timer.h"
 #include "iob-ila.h"
 #include "iob-eth.h"
+
+#if defined(__cplusplus) && defined(PC)
+}
+#endif
 
 #ifndef __cplusplus
 #define bool unsigned char
@@ -39,11 +47,13 @@ static const int TEST = 5;
 
 static bool error = false; // Global keep track if a error occurred. Do not want to print error messages more than once
 
-static char expectedBuffer[16*1024];
-static char gotBuffer[16*1024];
+#ifdef PC
+static char expectedBuffer[1024*1024];
+static char gotBuffer[1024*1024];
 
 static char* expectedPtr = expectedBuffer;
 static char* gotPtr = gotBuffer;
+#endif
 
 #ifndef __cplusplus // C++ code already has access to these functions
 typedef union {
@@ -65,35 +75,50 @@ static float PackFloat(int i){
 #endif
 
 static void ResetTestBuffers(){
+#ifdef PC
    expectedPtr = expectedBuffer;
    gotPtr = gotBuffer;
+#endif
 }
 
 static void PushExpectedI(int val){
+#ifdef PC
    expectedPtr += sprintf(expectedPtr,"0x%x ",val);
+#endif
 }
 
 static void PushGotI(int val){
+#ifdef PC
    gotPtr += sprintf(gotPtr,"0x%x ",val);
+#endif
 }
 
 static void PushExpectedF(float val){ // NOTE: Floating point rounding can make these fail. If so, just push a certain amount of decimal places
+#ifdef PC
    expectedPtr += sprintf(expectedPtr,"%f ",val);
+#endif
 }
 
 static void PushGotF(float val){
+#ifdef PC
    gotPtr += sprintf(gotPtr,"%f ",val);
+#endif
 }
 
 static void PushExpectedS(const char* str){
+#ifdef PC
    expectedPtr += sprintf(expectedPtr,"%s ",str);
+#endif
 }
 
 static void PushGotS(const char* str){
+#ifdef PC
    gotPtr += sprintf(gotPtr,"%s ",str);
+#endif
 }
 
 static void PrintError(){
+#ifdef PC
    char* expected = expectedBuffer;
    char* got = gotBuffer;
 
@@ -115,6 +140,7 @@ static void PrintError(){
    }
 
    printf("\n");
+#endif
 }
 
 static void Assert_Eq(int val1,int val2){
@@ -170,9 +196,7 @@ static void ExpectMemory(int* expected,int size, int* output){
    }
 }
 
-void SingleTest();
-
-#define OUTPUT_ALL 1
+void SingleTest(Arena* arena);
 
 int main(int argc,char* argv[]){
    uart_init(UART_BASE,FREQ/BAUD);
@@ -180,30 +204,49 @@ int main(int argc,char* argv[]){
    ila_init(ILA_BASE);
 
    versat_init(VERSAT_BASE);
-
-   #if 0
-   eth_init(ETHERNET_BASE);
-   char* buffer = (char*) malloc(1024 * 1024);
-
-   printf("Waiting for file receive\n");
    
-   int size = eth_rcv_variable_file(buffer);
+   Arena arenaInst = InitArena(Megabyte(16));
+   Arena* arena = &arenaInst;
 
-   printf("Received: %d\n",size);
-   #endif
-   
-   SingleTest();
+   SingleTest(arena);
 
+#ifdef PC
    if(error){
       PrintError();
    } else {
-      printf("%s: OK\n",acceleratorTypeName);
+      int expectedDiff = (expectedPtr - expectedBuffer);
+      int gotDiff = (gotPtr - gotBuffer);
 
-      #ifdef OUTPUT_ALL
-      printf("Exp:%s\n",expectedBuffer);
-      printf("Got:%s\n",gotBuffer);
-      #endif
+      bool passed = true;
+      if(expectedDiff != gotDiff){
+         passed = false;
+      } else {
+         for(int i = 0; i < expectedDiff; i++){
+            if(expectedBuffer[i] != gotBuffer[i]){
+               passed = false;
+               break;
+            }
+         }
+      }         
+
+      if(passed){
+         printf("%s: OK\n",acceleratorTypeName);
+      } else {
+         printf("%s: ERROR\n",acceleratorTypeName);
+#if 0
+         printf("Exp:%s\n",expectedBuffer);
+         printf("Got:%s\n",gotBuffer);
+#endif
+      }         
+      
+#if 0
+      if(passed){
+         printf("Exp:%s\n",expectedBuffer);
+         printf("Got:%s\n",gotBuffer);
+      }
+#endif
    }
+#endif
    
    uart_finish();
 
@@ -211,15 +254,3 @@ int main(int argc,char* argv[]){
 }
 
 #endif // INCLUDED_TESTBENCH
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-#include "SMVM.h"
+#include "SMVM.hpp"
 
 void PrintReceived(){
    int received = ACCEL_TOP_output_stored;
@@ -10,22 +10,18 @@ void PrintReceived(){
    printf("\n");
 }
 
-void SingleTest(){
-   Arena tempInst = InitArena(Megabyte(1));
-   Arena* temp = &tempInst;
-
-   Array<int> mat = ExampleMatrix(temp);
-   FormatCSR res = ConvertCSR(mat,5,temp);
-
-   int digitSize = std::max(DigitSize(res.row),
-                            std::max(DigitSize(res.column),DigitSize(res.values)));
-
+void SingleTest(Arena* arena){
+   InitializeSMVM(arena,Type::COO);
+   
+   int digitSize = std::max(DigitSize(coo.row),
+                            std::max(DigitSize(coo.column),DigitSize(coo.values)));
+   
    ACCEL_TOP_cycler_amount = size + 24;
-
-   //ConfigureGenerator(gen,0,res.values.size + 2,1);
+   
+   //ConfigureGenerator(gen,0,coo.values.size + 2,1);
    {
       int start = 0;
-      int range = res.values.size + 2;
+      int range = coo.values.size + 2;
       int increment = 1;
 
       ACCEL_TOP_gen_iterations = 1;
@@ -36,11 +32,12 @@ void SingleTest(){
       ACCEL_TOP_gen_incr = increment;
    }
    
-   //ConfigureSimpleVRead(col,res.column.size,res.column.data);
+   //ConfigureSimpleVRead(col,coo.column.size,coo.column.data);
    // Memory side
    {
-      int numberItems = res.column.size;
-      int* data = res.column.data;
+      printf("Col: %p\n",coo.column.data);
+      int numberItems = coo.column.size;
+      int* data = coo.column.data;
 
       ACCEL_TOP_col_incrA = 1;
       ACCEL_TOP_col_iterA = 1;
@@ -59,19 +56,37 @@ void SingleTest(){
       ACCEL_TOP_col_length = numberItems - 1; // AXI requires length of len - 1
    }
    
+   //ConfigureSimpleVRead(row,coo.row.size,coo.row.data);
    // Memory side
    {
-      ACCEL_TOP_row_amount = size;
-      for(int i = 0; i < res.row.size; i++){
-         VersatUnitWrite(TOP_row_addr + i,res.row[i]);
-      }
+      printf("Row: %p\n",coo.row.data);
+      int numberItems = coo.row.size;
+      int* data = coo.row.data;
+
+      ACCEL_TOP_row_incrA = 1;
+      ACCEL_TOP_row_iterA = 1;
+      ACCEL_TOP_row_perA = numberItems;
+      ACCEL_TOP_row_dutyA = numberItems;
+      ACCEL_TOP_row_size = 8;
+      ACCEL_TOP_row_int_addr = 0;
+      ACCEL_TOP_row_pingPong = 1;
+
+      // B - versat side
+      ACCEL_TOP_row_iterB = numberItems;
+      ACCEL_TOP_row_incrB = 1;
+      ACCEL_TOP_row_perB = 1;
+      ACCEL_TOP_row_dutyB = 1;
+      ACCEL_TOP_row_ext_addr = (iptr) data;
+      ACCEL_TOP_row_length = numberItems - 1; // AXI requires length of len - 1
+
+      Assert(numberItems - 1 <= 0xff);
    }
 
-   //ConfigureSimpleVRead(val,res.values.size,res.values.data);
+   //ConfigureSimpleVRead(val,coo.values.size,coo.values.data);
    // Memory side
    {
-      int numberItems = res.values.size;
-      int* data = res.values.data;
+      int numberItems = coo.values.size;
+      int* data = coo.values.data;
 
       ACCEL_TOP_val_incrA = 1;
       ACCEL_TOP_val_iterA = 1;
@@ -88,9 +103,11 @@ void SingleTest(){
       ACCEL_TOP_val_dutyB = 1;
       ACCEL_TOP_val_ext_addr = (iptr) data;
       ACCEL_TOP_val_length = numberItems - 1; // AXI requires length of len - 1
+
+      Assert(numberItems - 1 <= 0xff);
    }
 
-   //ConfigureSimpleVRead(vec,vector.size,vector.data);
+   //ConfigureSimpleVRead(vec,vec.size,vec.data);
    // Memory side
    {
       int numberItems = vec.size;
@@ -111,23 +128,17 @@ void SingleTest(){
       ACCEL_TOP_vector_dutyB = 1;
       ACCEL_TOP_vector_ext_addr = (iptr) data;
       ACCEL_TOP_vector_length = numberItems - 1; // AXI requires length of len - 1
-   }
 
-   RunAccelerator(1); // Load initial data
+      Assert(numberItems - 1 <= 0xff);
+   }
 
    RunAccelerator(1);
+  
+   RunAccelerator(1);
 
-   #if 1
-   {
-      Array<int> arr = MultiplyCSR(res,vec,temp);
-
-      printf("Expected: ");
-      Print(arr);
-      printf("\n");
-      
-      PrintReceived();
+   int received = ACCEL_TOP_output_stored;
+   for(int i = 0; i < received; i++){
+      PushGotI(VersatUnitRead(TOP_output_addr,i));
    }
-   #endif
+      
 }
-
-   

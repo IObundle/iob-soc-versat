@@ -1,4 +1,4 @@
-#include "SMVM.h"
+#include "SMVM.hpp"
 
 void PrintReceived(){
    int received = ACCEL_TOP_output_stored;
@@ -10,22 +10,18 @@ void PrintReceived(){
    printf("\n");
 }
 
-void SingleTest(){
-   Arena tempInst = InitArena(Megabyte(1));
-   Arena* temp = &tempInst;
-
-   Array<int> mat = ExampleMatrix(temp);
-   FormatCSR res = ConvertCSR(mat,5,temp);
+void SingleTest(Arena* arena){
+   InitializeSMVM(arena,Type::CSR);
    
-   int digitSize = std::max(DigitSize(res.row),
-                            std::max(DigitSize(res.column),DigitSize(res.values)));
+   int digitSize = std::max(DigitSize(csr.row),
+                            std::max(DigitSize(csr.column),DigitSize(csr.values)));
      
    ACCEL_TOP_cycler_amount = size + 24;
 
-   //ConfigureGenerator(gen,0,res.values.size + 2,1);
+   //ConfigureGenerator(gen,0,csr.values.size + 2,1);
    {
       int start = 0;
-      int range = res.values.size + 2;
+      int range = csr.values.size;
       int increment = 1;
 
       ACCEL_TOP_gen_iterations = 1;
@@ -36,11 +32,11 @@ void SingleTest(){
       ACCEL_TOP_gen_incr = increment;
    }
    
-   //ConfigureSimpleVRead(col,res.column.size,res.column.data);
+   //ConfigureSimpleVRead(col,csr.column.size,csr.column.data);
    // Memory side
    {
-      int numberItems = res.column.size;
-      int* data = res.column.data;
+      int numberItems = csr.column.size;
+      int* data = csr.column.data;
 
       ACCEL_TOP_col_incrA = 1;
       ACCEL_TOP_col_iterA = 1;
@@ -62,16 +58,16 @@ void SingleTest(){
    // Memory side
    {
       ACCEL_TOP_row_amount = size;
-      for(int i = 0; i < res.row.size; i++){
-         VersatUnitWrite(TOP_row_addr + i,res.row[i]);
+      for(int i = 0; i < csr.row.size; i++){
+         VersatUnitWrite(TOP_row_addr + i,csr.row[i]);
       }
    }
 
-   //ConfigureSimpleVRead(val,res.values.size,res.values.data);
+   //ConfigureSimpleVRead(val,csr.values.size,csr.values.data);
    // Memory side
    {
-      int numberItems = res.values.size;
-      int* data = res.values.data;
+      int numberItems = csr.values.size;
+      int* data = csr.values.data;
 
       ACCEL_TOP_val_incrA = 1;
       ACCEL_TOP_val_iterA = 1;
@@ -117,17 +113,12 @@ void SingleTest(){
 
    RunAccelerator(1);
 
-   #if 1
-   {
-      Array<int> arr = MultiplyCSR(res,vec,temp);
+   int received = ACCEL_TOP_output_stored;
+   printf("Received: %d\n",received);
 
-      printf("Expected: ");
-      Print(arr);
-      printf("\n");
-      
-      PrintReceived();
-   }
-   #endif
+   for(int i = 0; i < received; i++){
+      PushGotI(VersatUnitRead(TOP_output_addr,i));
+   }   
 }
 
    

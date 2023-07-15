@@ -3,12 +3,18 @@ SHELL:=/bin/bash
 ROOT_DIR:=../..
 include $(ROOT_DIR)/config.mk
 
-ETH_INPUT_BIN = $(basename $(TEST_VECTOR_RSP))_d_in.bin
-SOC_OUT_BIN?=soc-out.bin
+#ETH_INPUT_BIN = $(basename $(TEST_VECTOR_RSP))_d_in.bin
+#SOC_OUT_BIN?=soc-out.bin
 
-run-eth-scripts: $(ETH_INPUT_BIN)
-	$(eval RMAC := $(shell ethtool -P $(RMAC_INTERFACE) | awk '{print $$3}' | sed 's/://g'))
-	source /opt/pyeth3/bin/activate; python3 ./sha256_test.py $(RMAC_INTERFACE) $(RMAC) ./$(ETH_INPUT_BIN) $(SOC_OUT_BIN); deactivate;
+ETH_INPUT_BIN := $(ROOT_DIR)/software/pc-emul/example1
+SOC_OUT_BIN := $(ROOT_DIR)
+
+#run-eth-scripts: $(ETH_INPUT_BIN)
+#	$(eval RMAC := $(shell ethtool -P $(RMAC_INTERFACE) | awk '{print $$3}' | sed 's/://g'))
+#	source /opt/pyeth3/bin/activate; python3 ./sha256_test.py $(RMAC_INTERFACE) $(RMAC) ./$(ETH_INPUT_BIN) $(SOC_OUT_BIN); deactivate;
+
+fpga-eth:
+	source /opt/pyeth3/bin/activate; python3 ./sha256_test.py $(RMAC_INTERFACE) $(RMAC) $(ETH_INPUT_BIN) $(SOC_OUT_BIN); deactivate;
 
 $(ETH_INPUT_BIN):
 	$(eval ETH_INPUT_BIN_PATH = $(shell find $(ROOT_DIR) -name "$@"))

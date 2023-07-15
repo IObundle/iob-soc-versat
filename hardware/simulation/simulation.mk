@@ -86,6 +86,7 @@ $(OUTPUT_SIM_FOLDER)/systemRedux.fst: $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
 sim:
 ifeq ($(SIM_SERVER),)
 	cp $(INPUT_FIRM_FOLDER)/firmware.bin .
+	cp $(INPUT_FIRM_FOLDER)/firmware.bin $(OUTPUT_SIM_FOLDER)
 	@rm -f soc2cnsl cnsl2soc
 ifeq ($(TEST),)
 	$(CONSOLE_CMD) &

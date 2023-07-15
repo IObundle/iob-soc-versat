@@ -97,8 +97,15 @@ module system
    wire [`RESP_W-1:0] cpu_d_resp;
    
    //instantiate the cpu
-   iob_picorv32 cpu
+   
+   //iob_picorv32 cpu
+   iob_VexRiscv cpu
        (
+        // VexRiscv
+        //.timerInterrupt(1'b0),
+        //.softwareInterrupt(1'b0),
+        //.externalInterrupt(1'b0),
+
         .clk (clk),
         .rst (cpu_reset),
         .boot (boot),
@@ -112,7 +119,6 @@ module system
         .dbus_req (cpu_d_req),
         .dbus_resp (cpu_d_resp)
         );
-
 
    //   
    // SPLIT CPU BUSES TO ACCESS INTERNAL OR EXTERNAL MEMORY

@@ -17,10 +17,10 @@ DATA_W := 32
 ADDR_W := 32
 
 #FIRMWARE SIZE (LOG2)
-FIRM_ADDR_W ?=17
+FIRM_ADDR_W ?=18
 
 #SRAM SIZE (LOG2)
-SRAM_ADDR_W ?=17
+SRAM_ADDR_W ?=18
 
 #DDR
 USE_DDR ?=1
@@ -88,6 +88,7 @@ endif
 
 #submodule paths
 PICORV32_DIR=$(ROOT_DIR)/submodules/PICORV32
+VEXRISCV_DIR=$(ROOT_DIR)/submodules/VEXRISCV
 CACHE_DIR=$(ROOT_DIR)/submodules/CACHE
 UART_DIR=$(ROOT_DIR)/submodules/UART
 LIB_DIR=$(ROOT_DIR)/submodules/LIB

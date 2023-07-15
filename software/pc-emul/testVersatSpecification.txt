@@ -1,11 +1,112 @@
 
 module SMVMCPU(x,y){
-   FloatMul mul;
+   SignalMulAdd mul;
 #
    x -> mul:0;
    y -> mul:1;
 
    mul -> out;
+}
+
+module SMVMCOO(){
+   Generator gen;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
+   Mul mul;
+
+   ChangeDetect change;
+   SignalAccum accum;
+   SignalMemStorage output;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   gen -> row;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   row -> change:0;
+   row -> change:1;
+
+   mul    -> accum:0;
+   change -> accum:1;
+
+   accum:0 -> output:0;
+   accum:1 -> output:1;
+}
+
+module SMVMBlock(){
+   Generator gen;
+   IncrementFlag flag;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
+   Mul mul;
+
+   ChangeDetect change;
+   SignalAccum accum;
+   SignalMemStorage output;
+   SignalMemStorage pos;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   gen -> row;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   row -> change:0;
+   row -> change:1;
+   row -> flag;
+
+   mul    -> accum:0;
+   change -> accum:1;
+   //flag -> accum:1;
+
+   accum:0 -> output:0;
+   accum:1 -> output:1;
+   //flag -> output:1;
+
+   row  -> pos:0;
+   //change -> pos:1;
+   flag -> pos:1;
+}
+
+module SMVMCSR(){
+   Generator gen;
+   TimedFlag row;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
+   Mul mul;
+
+   ChangeDetect change;
+   SignalAccum accum;
+   SignalMemStorage output;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   //row -> change:0;
+   //row -> change:1;
+
+   mul    -> accum:0;
+   change -> accum:1;
+
+   accum:0 -> output:0;
+   accum:1 -> output:1;
 }
 
 module TripleAdd(x,y,z){
@@ -739,67 +840,6 @@ module SHA(){
    M1 -> M2;
    
    F3:0..7 -> State:0..7;
-}
-
-module SMVM(){
-   Generator gen;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-
-   mul    -> accum:0;
-   change -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
-}
-
-module SMVMCSR(){
-   Generator gen;
-   //TimedFlag row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   //row -> change:0;
-   //row -> change:1;
-
-   mul    -> accum:0;
-   change -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
 }
 
 module SBox(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
