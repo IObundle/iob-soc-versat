@@ -25,6 +25,6 @@ boot.elf: ../template.lds  $(HDR) $(SRC)
 	$(TOOLCHAIN_PREFIX)objcopy -O binary boot.elf boot.bin
 
 clean:
-	@rm -rf boot.bin boot.elf boot.map *.hex *swreg*.h *swreg*.c
+	@rm -rf boot.bin boot.elf boot.map *.hex *swreg*.h *swreg*.c *.h
 
 .PHONY: build clean

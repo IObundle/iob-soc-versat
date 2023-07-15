@@ -81,7 +81,7 @@ endif
 	$(TOOLCHAIN_PREFIX)objcopy -O binary $(OUTPUT_DIR)/firmware.elf firmware.bin
 
 clean:
-	@rm -rf firmware.bin firmware.elf firmware.map *.hex periphs.h UARTsw_reg.h TIMERsw_reg.h *swreg.h \
+	@rm -rf firmware.bin firmware.elf firmware.map *.hex periphs.h periphs_tmp.h eth_frame_struct.h UARTsw_reg.h TIMERsw_reg.h *swreg.h \
 		*swreg_emb.c \
 		*d_in.bin *d_out.bin generated src test
 
