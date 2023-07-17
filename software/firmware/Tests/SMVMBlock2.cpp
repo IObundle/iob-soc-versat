@@ -288,10 +288,10 @@ void SingleTest(Arena* arena){
       ConfigAccelerator(toLoad,toRun); // Accelerator is configured to load 1 and run 0
 
       while(1){
-         Block& runBlock = blocks[toRun]; // toRun is 0
-         
+         // Ila start recording
          StartAccelerator(); // Accelerator is loading 1 and running 0
 
+         Block& runBlock = blocks[toRun]; // toRun is 0
          int currentRun = toRun; // currentRun is 0
          toRun = toLoad; // Next toRun is 1
 
@@ -345,6 +345,8 @@ void SingleTest(Arena* arena){
             break;
          }
          //break;
+         
+         // Ila stop recording
       }
    }
 

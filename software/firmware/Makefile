@@ -60,10 +60,10 @@ endif
 
 #build: firmware.elf
 
-EXTRA_SOURCES:=$(foreach file,$(VSRC) $(VERSAT_VSRC),-S $(file))
+EXTRA_SOURCES:=$(foreach file,$(EXTRA_VERSAT_SRC),-S $(file))
 
 $(GENERATED)/versat_accel.h: $(VERSAT_EXE)
-	$(VERSAT_EXE) -d -s -x32 $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) $(EXTRA_SOURCES) $(V_INCLUDE) -I $(HW_DIR)/include -I $(VERSAT_DIR)/hardware/include $(FIRM_DIR)/../pc-emul/testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(GENERATED)
+	$(VERSAT_EXE) -d -s -x32 $(VERSAT_THIS_HARDWARE) $(EXTRA_SOURCES) $(V_INCLUDE) $(VERSAT_THIS_INCLUDE) $(FIRM_DIR)/../pc-emul/testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(GENERATED)
 
 #firmware.elf: ../template.lds $(HDR) $(SRC) gen_data
 #	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions

@@ -81,13 +81,13 @@ INCLUDE+=$(incdir)$(OUTPUT_FOLDER)
 temp := $(shell mkdir -p $(OUTPUT_FOLDER))
 temp2 := $(shell mkdir -p ./build)
 
-EXTRA_SOURCES:=$(foreach file,$(VSRC) $(VERSAT_VSRC),-S $(file))
+EXTRA_SOURCES:=$(foreach file,$(EXTRA_VERSAT_SRC),-S $(file))
 HDR+=$(FIRM_DIR)/Tests/testbench.h # Header but contains code common to all testbenches
 
 LIBS+=$(OUTPUT_FOLDER)/libaccel.a
 
-$(OUTPUT_FOLDER)/versat_accel.h: $(VERSAT_EXE) $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) testVersatSpecification.txt
-	$(VERSAT_EXE) $(SHARED_HARDWARE) $(wildcard $(HW_DIR)/src/units/*.v) $(EXTRA_SOURCES) $(V_INCLUDE) -I $(VERSAT_DIR)/hardware/include -I $(HW_DIR)/include testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(OUTPUT_FOLDER)
+$(OUTPUT_FOLDER)/versat_accel.h: $(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_VERSAT_SRC) testVersatSpecification.txt
+	$(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_SOURCES) $(V_INCLUDE) $(VERSAT_THIS_INCLUDE) testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(OUTPUT_FOLDER)
 	$(MAKE) -C $(OUTPUT_FOLDER) all
 
 $(FW_NAME): $(OUTPUT_FOLDER)/versat_accel.h $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(FIRMWARE) $(OBJ) $(wildcard $(OUTPUT_FOLDER)/*.o) $(FIRMWARE) 
