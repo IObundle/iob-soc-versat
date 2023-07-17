@@ -486,9 +486,12 @@ enum Type {COO,CSR,BLOCK};
 
 void InitializeSMVM(Arena* arena,Type type){
    // Read from file
-   if(0){
+   int val = 0;
+
+   printf("here %d\n",val);
+   if(val){
 #ifdef PC
-      String content = PushFile(arena,"../../example3");
+      String content = PushFile(arena,"../../example1");
       block = UnpackMatrixBlock((void*) content.data);
 #else
       eth_init(ETHERNET_BASE);

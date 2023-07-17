@@ -208,6 +208,7 @@ int main(int argc,char* argv[]){
    Arena arenaInst = InitArena(Megabyte(16));
    Arena* arena = &arenaInst;
 
+   printf("Single test\n");
    SingleTest(arena);
 
 #ifdef PC

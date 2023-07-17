@@ -108,17 +108,13 @@ module SMVMBlock2(){
 
    mul    -> accum:0;
    change -> accum:1;
-   //flag -> accum:1;
 
    accum:0 -> output:0;
    accum:1 -> output:1;
-   //flag -> output:1;
 
    row  -> pos:0;
-   //change -> pos:1;
    flag -> pos:1;
 }
-
 
 module SMVMCSR(){
    Generator gen;

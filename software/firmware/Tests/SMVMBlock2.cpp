@@ -3,7 +3,8 @@
 #include "SMVM.hpp"
 
 #define CHANGE
-
+//#define PRINT
+//#define TEST
 
 void InitializeBaseAccelerator(){
    //ACCEL_TOP_cycler_amount = size + 24;
@@ -57,12 +58,19 @@ void InitializeBaseAccelerator(){
    ACCEL_TOP_vector_perB = 1;
    ACCEL_TOP_vector_dutyB = 1;
 
+   ACCEL_TOP_output_pingPong = 1;
+   ACCEL_TOP_pos_pingPong = 1;
+   
 #ifndef CHANGE
    ACCEL_TOP_vector_pingPong = 1;
 #endif
 }
 
 static int lastLoadedX = -1;
+
+#ifdef TEST
+static int vectorLoads = 0;
+#endif
 
 void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockSize){
    if(toRun){
@@ -137,7 +145,6 @@ void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockS
    // Memory side
 #ifdef CHANGE
    if(lastLoadedX == xPos){
-      ACCEL_TOP_vector_disabled = 1;
       ACCEL_TOP_vector_disabled = 0;
    }
    else
@@ -153,6 +160,10 @@ void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockS
 #ifdef CHANGE
       ACCEL_TOP_vector_disabled = 0;
 
+#ifdef TEST
+      vectorLoads += 1;
+#endif
+      
       if(xPos > 0)
          ACCEL_TOP_vector_pingPong = 1;
 #endif
@@ -252,6 +263,10 @@ static inline void ConfigAccelerator(int toLoad,int toRun){
    ConfigureAccelerator(load.coo,runCOO,load.x,blockSize);
 }
 
+#ifndef PC
+extern int timesWaiting;
+#endif
+
 void SingleTest(Arena* arena){
    InitializeSMVM(arena,Type::BLOCK);
 
@@ -262,6 +277,11 @@ void SingleTest(Arena* arena){
       PushExpected(expected);
    }
 
+   // Initialize ILA
+   ila_set_different_signal_storing(1);
+   ila_set_time_offset(-1);
+   ila_set_trigger_type(1,ILA_TRIGGER_TYPE_CONTINUOUS);
+   
    Array<int> test = PushArray<int>(arena,size);
    Array<int> res = PushArray<int>(arena,size);
    Memset(res,0);
@@ -287,8 +307,15 @@ void SingleTest(Arena* arena){
       int toRun = startFrame;
       ConfigAccelerator(toLoad,toRun); // Accelerator is configured to load 1 and run 0
 
-      while(1){
+      for(int index = 0; index < loops; index++){
          // Ila start recording
+         
+         EndAccelerator(); // Wait for accelerator to terminate (loading 0)
+         
+         if(index == 0){
+            ila_set_trigger_enabled(1,true);
+         }
+         
          StartAccelerator(); // Accelerator is loading 1 and running 0
 
          Block& runBlock = blocks[toRun]; // toRun is 0
@@ -305,50 +332,83 @@ void SingleTest(Arena* arena){
 #ifdef TEST
          Memset(test,0); // NOTE: DO NOT FORGET TO REMOVE AFTER
 #endif
-         
-         int yOffset = runBlock.y * blockSize; // run block from 0
 
-         EndAccelerator(); // Wait for accelerator
+         if(currentRun >= 1){
+            Block& toSave = blocks[currentRun-1];
+            int yOffset = toSave.y * blockSize; // run block from 0
+            int amountGot = ACCEL_TOP_output_stored;
+#ifdef PRINT
+            printf("Got:%d\n",amountGot);
+#endif
 
-         int amountGot = ACCEL_TOP_output_stored;
-         //printf("Got:%d\n",amountGot);
-         for(int ii = 0; ii < amountGot; ii++){
+            for(int ii = 0; ii < amountGot; ii++){
             int addr = VersatUnitRead(TOP_pos_addr,ii);
             int value = VersatUnitRead(TOP_output_addr,ii);
 
 #ifdef PRINT
-            printf("%x\n",value);
+            printf("%x %x\n",value,addr);
 #endif
             test[yOffset + addr] = value;
             res[yOffset + addr] += value;
             //printf("%d %d %d\n",addr,yOffset + addr,res[yOffset + addr]);
+            }
          }
 
 #ifdef TEST
+         if(currentRun >= 1){
          region(arena){
-            Array<int> good = DoOneFullyTest(currentRun,arena);
+            Array<int> good = DoOneFullyTest(currentRun - 1,arena);
 
             for(int i = 0; i < good.size; i++){
                if(good[i] || test[i]){
                   //Assert_Eq(good[i],test[i]);
                   if(good[i] != test[i]){
                      //printf("%d\n",currentRun);
-                     printf("ERROR: %d %d %d %d\n",currentRun,good[i],test[i],i);
+                     printf("ERROR: %d %x %x %d\n",currentRun,good[i],test[i],i);
                      exit(0);
                   }
                   //printf("%d %d\n",good[i],test[i]);
                }
             }
          }
-#endif
-         if(currentRun >= loops - 1){
-            break;
          }
-         //break;
-         
-         // Ila stop recording
+#endif
       }
    }
 
+   EndAccelerator(); // Wait for accelerator to terminate (loading 0)
+   StartAccelerator(); // Accelerator is loading 1 and running 0
+   
+   {
+   Block& toSave = blocks[blocks.size-1];
+   int yOffset = toSave.y * blockSize; // run block from 0
+   int amountGot = ACCEL_TOP_output_stored;
+#ifdef PRINT
+   printf("Got:%d\n",amountGot);
+#endif
+
+   for(int ii = 0; ii < amountGot; ii++){
+      int addr = VersatUnitRead(TOP_pos_addr,ii);
+      int value = VersatUnitRead(TOP_output_addr,ii);
+
+#ifdef PRINT
+      printf("%x %x\n",value,addr);
+#endif
+      test[yOffset + addr] = value;
+      res[yOffset + addr] += value;
+      //printf("%d %d %d\n",addr,yOffset + addr,res[yOffset + addr]);
+   }
+   }
+
+   //ila_output_everything();
+   
    PushGot(res);
+
+#ifdef TEST
+   printf("VecLoads: %d/%d\n",vectorLoads,blocks.size);
+#endif 
+
+#ifndef PC
+   printf("Times waiting: %d\n",timesWaiting);
+#endif
 }

@@ -35,6 +35,9 @@ OBJ_SOURCES:=$(foreach file,$(OBJ_SOURCES),$(realpath $(file)))
 OBJ_SOURCES+=iob_ila_swreg_emb.c
 SRC:=$(filter-out $(OBJ_SOURCES),$(SRC))
 
+
+OBJ_SOURCES+=ila.c
+
 OBJ += ./build/iob-uart.o
 OBJ += ./build/iob_uart_swreg_pc_emul.o
 OBJ += ./build/iob-timer.o
@@ -42,6 +45,8 @@ OBJ += ./build/iob_timer_swreg_pc_emul.o
 OBJ += ./build/iob-ila.o
 OBJ += ./build/iob_ila_swreg_emb.o
 OBJ += ./build/printf.o
+
+OBJ += ./build/ila.o
 
 ./build/iob-uart.o : ../../submodules/UART/software/iob-uart.c 
 	gcc $(LOCAL_CFLAGS) -c -o ./build/iob-uart.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
@@ -57,6 +62,8 @@ OBJ += ./build/printf.o
 	gcc $(LOCAL_CFLAGS) -c -o ./build/iob_ila_swreg_emb.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 ./build/printf.o : ../../submodules/UART/software/printf.c 
 	gcc $(LOCAL_CFLAGS) -c -o ./build/printf.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
+./build/ila.o : ila.c 
+	gcc $(LOCAL_CFLAGS) -c -o ./build/ila.o $(DEFINE) $(INCLUDE) $< -I $(VERSAT_SW_DIR) -I $(VERILATOR_INCLUDE) -I ./build/ 
 
 SOC_OUT_BIN:=soc-out.bin
 
@@ -81,12 +88,12 @@ INCLUDE+=$(incdir)$(OUTPUT_FOLDER)
 temp := $(shell mkdir -p $(OUTPUT_FOLDER))
 temp2 := $(shell mkdir -p ./build)
 
-EXTRA_SOURCES:=$(foreach file,$(EXTRA_VERSAT_SRC),-S $(file))
+#EXTRA_SOURCES:=$(foreach file,$(EXTRA_VSRC),-S $(file))
 HDR+=$(FIRM_DIR)/Tests/testbench.h # Header but contains code common to all testbenches
 
 LIBS+=$(OUTPUT_FOLDER)/libaccel.a
 
-$(OUTPUT_FOLDER)/versat_accel.h: $(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_VERSAT_SRC) testVersatSpecification.txt
+$(OUTPUT_FOLDER)/versat_accel.h: $(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_VSRC) testVersatSpecification.txt
 	$(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_SOURCES) $(V_INCLUDE) $(VERSAT_THIS_INCLUDE) testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(OUTPUT_FOLDER)
 	$(MAKE) -C $(OUTPUT_FOLDER) all
 

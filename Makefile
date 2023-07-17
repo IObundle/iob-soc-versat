@@ -36,7 +36,7 @@ gen-versat:
 # EMULATE ON PC
 #
 
-pc-emul-build:
+pc-emul-build: ila-build
 	$(MAKE) -C $(PC_DIR) build
 
 pc-emul-force-build:

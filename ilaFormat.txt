@@ -1,7 +1,5 @@
-/*
 $buffer 14
 
-$trigger (versat.xversat.addr == 5)
 $trigger versat.xversat.done
 $trigger versat.xversat.run
 
@@ -9,12 +7,12 @@ ext_mem0.dcache.cache_control.read_hit_cnt    32
 ext_mem0.dcache.cache_control.read_miss_cnt   32
 ext_mem0.dcache.cache_control.write_hit_cnt   32
 ext_mem0.dcache.cache_control.write_miss_cnt  32
-ext_mem0.dcache.back_end.mem_valid  1
-ext_mem0.dcache.back_end.mem_ready  1
 ext_mem0.icache.cache_control.read_hit_cnt    32
 ext_mem0.icache.cache_control.read_miss_cnt   32
 ext_mem0.icache.cache_control.write_hit_cnt   32
 ext_mem0.icache.cache_control.write_miss_cnt  32
+ext_mem0.dcache.back_end.mem_valid  1
+ext_mem0.dcache.back_end.mem_ready  1
 ext_mem0.icache.back_end.mem_valid  1
 ext_mem0.icache.back_end.mem_ready  1
 ext_mem0.l2cache.back_end.m_axi_awready 1
@@ -27,12 +25,6 @@ ext_mem0.l2cache.back_end.m_axi_rready 1
 ext_mem0.l2cache.back_end.m_axi_rvalid 1
 ext_mem0.l2cache.back_end.m_axi_arlen 8
 ext_mem0.l2cache.back_end.m_axi_awlen 8
-cpu.picorv32_core.reg_pc 32
-cpu.picorv32_core.cached_insn_opcode 32
-cpu.picorv32_core.mem_do_rinst 1
-cpu.picorv32_core.mem_do_rdata 1
-cpu.picorv32_core.mem_valid 1
-cpu.picorv32_core.mem_ready 1
 versat.m_axi_arlen 8
 versat.m_axi_awlen 8
 versat.m_axi_awready 1
@@ -43,5 +35,12 @@ versat.m_axi_arready 1
 versat.m_axi_arvalid 1
 versat.m_axi_rready 1
 versat.m_axi_rvalid 1
-*/
+versat.address 32
+versat.rdata 32
+versat.wdata 32
+versat.wstrb 4
+versat.valid 1
+versat.ready 1
+versat.xversat.run 1
+versat.xversat.done 1
 
