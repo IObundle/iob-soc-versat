@@ -79,6 +79,47 @@ module SMVMBlock(){
    flag -> pos:1;
 }
 
+module SMVMBlock2(){
+   Generator gen;
+   IncrementFlag flag;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
+   Mul mul;
+
+   ChangeDetect change;
+   SignalAccum accum;
+   SignalMemStorage output;
+   SignalMemStorage pos;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   gen -> row;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   row -> change:0;
+   row -> change:1;
+   row -> flag;
+
+   mul    -> accum:0;
+   change -> accum:1;
+   //flag -> accum:1;
+
+   accum:0 -> output:0;
+   accum:1 -> output:1;
+   //flag -> output:1;
+
+   row  -> pos:0;
+   //change -> pos:1;
+   flag -> pos:1;
+}
+
+
 module SMVMCSR(){
    Generator gen;
    TimedFlag row;

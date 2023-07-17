@@ -375,8 +375,13 @@ MatrixBlock* ConvertMatBlock(Array<int> mat,int size,Arena* arena){
    Array<Block> blocks = PushArray<Block>(arena,numberOfBlocks);
 
    int blockIndex = 0;
+#ifdef BLOCK_XY
+   for(int xStart = 0; xStart < size; xStart += blockSize){
+      for(int yStart = 0; yStart < size; yStart += blockSize){
+#else
    for(int yStart = 0; yStart < size; yStart += blockSize){
       for(int xStart = 0; xStart < size; xStart += blockSize){
+#endif
          int nonZeros = 0;
          for(int y = yStart; y < std::min(yStart+blockSize,size); y++){
             for(int x = xStart; x < std::min(xStart+blockSize,size); x++){
@@ -481,7 +486,7 @@ enum Type {COO,CSR,BLOCK};
 
 void InitializeSMVM(Arena* arena,Type type){
    // Read from file
-   if(1){
+   if(0){
 #ifdef PC
       String content = PushFile(arena,"../../example3");
       block = UnpackMatrixBlock((void*) content.data);
