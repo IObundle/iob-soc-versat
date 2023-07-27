@@ -16,6 +16,9 @@ TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVM VReadToVWrite SMVMCPU
 DATA_W := 32
 ADDR_W := 32
 
+DDR_ADDR_W := 30
+MIG_BUS_W := 32
+
 #FIRMWARE SIZE (LOG2)
 FIRM_ADDR_W ?=18
 
@@ -80,6 +83,8 @@ endif
 
 ifeq ($(USE_DDR),1)
 DEFINE+=$(defmacro)USE_DDR
+DEFINE+=$(defmacro)DDR_ADDR_W=$(DDR_ADDR_W)
+DEFINE+=$(defmacro)MIG_BUS_W=$(MIG_BUS_W)
 endif
 
 ifeq ($(INIT_MEM),1)

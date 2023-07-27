@@ -110,14 +110,17 @@ $(OUTPUT_SIM_FOLDER)/boot.hex: $(BOOT_DIR)/boot.bin
 $(OUTPUT_SIM_FOLDER)/firmware.hex: $(INPUT_FIRM_FOLDER)/firmware.bin
 	@mkdir -p $(OUTPUT_SIM_FOLDER)
 	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > $@
-	$(PYTHON_DIR)/hex_split.py $(OUTPUT_SIM_FOLDER)/firmware .
+ifeq ($(MIG_BUS_W),64)
+	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > firmwareBase.hex
+	$(SW_DIR)/python/convertFirmware.py firmwareBase.hex > $@
+endif
 
 boot.hex: $(BOOT_DIR)/boot.bin
 	$(PYTHON_DIR)/makehex.py $< $(BOOTROM_ADDR_W) > $@
 
 firmware.hex: $(FIRM_DIR)/firmware.bin
 	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > $@
-	$(PYTHON_DIR)/hex_split.py firmware .
+#	$(PYTHON_DIR)/hex_split.py firmware .
 
 #clean general hardware files
 hw-clean: gen-clean

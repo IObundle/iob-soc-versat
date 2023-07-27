@@ -28,7 +28,7 @@ module system_top (
    initial begin
 
 `ifdef VCD
-      $dumpfile("system.vcd");
+      $dumpfile("system.fst");
       $dumpvars();
 `endif
 
@@ -51,8 +51,8 @@ module system_top (
    wire [2*1-1:0]     sys_awvalid;
    wire [2*1-1:0]     sys_awready;
    //Write data
-   wire [2*32-1:0]   sys_wdata;
-   wire [2*32/8-1:0] sys_wstrb;
+   wire [2*`MIG_BUS_W-1:0]   sys_wdata;
+   wire [2*(`MIG_BUS_W/8)-1:0] sys_wstrb;
    wire [2*1-1:0]        sys_wlast;
    reg [2*1-1:0]       sys_wuser_reg = 2'b0;
    wire [2*1-1:0]        sys_wvalid;
@@ -77,7 +77,7 @@ module system_top (
    wire [2*1-1:0]        sys_arready;
    //Read data
    wire [2*1-1:0]        sys_rid;
-   wire [2*32-1:0]   sys_rdata;
+   wire [2*`MIG_BUS_W-1:0]   sys_rdata;
    wire [2*2-1:0]        sys_rresp;
    wire [2*1-1:0]        sys_rlast;
    wire [2*1-1:0]        sys_rvalid;
@@ -98,15 +98,15 @@ module system_top (
    wire                    ddr_awvalid;
    wire                    ddr_awready;
    //Write data
-   wire [32-1:0]   ddr_wdata;
-   wire [32/8-1:0] ddr_wstrb;
+   wire [`MIG_BUS_W-1:0]   ddr_wdata;
+   wire [`MIG_BUS_W/8-1:0] ddr_wstrb;
    wire                    ddr_wlast;
    wire                    ddr_wvalid;
    wire                    ddr_wready;
    //Write response
    wire [7:0]              ddr_bid;
    wire [1:0]              ddr_bresp;
-   reg         ddr_buser_reg = 1'b0;
+   reg                     ddr_buser_reg = 1'b0;
    wire                    ddr_bvalid;
    wire                    ddr_bready;
    //Read address
@@ -123,7 +123,7 @@ module system_top (
    wire                    ddr_arready;
    //Read data
    wire [7:0]              ddr_rid;
-   wire [32-1:0]             ddr_rdata;
+   wire [`MIG_BUS_W-1:0]             ddr_rdata;
    wire [1:0]              ddr_rresp;
    wire                    ddr_rlast;
    reg         ddr_ruser_reg = 1'b0;
@@ -134,7 +134,7 @@ module system_top (
    axi_interconnect #(
             .S_COUNT(2),
             .M_COUNT(1),
-            .DATA_WIDTH(32),
+            .DATA_WIDTH(`MIG_BUS_W),
             .ADDR_WIDTH(`DDR_ADDR_W),
             .ID_WIDTH(1)
             )
@@ -312,7 +312,7 @@ module system_top (
        .FILE("firmware.hex"),
        .FILE_SIZE(`FW_SIZE),
  `endif
-       .DATA_WIDTH (`DATA_W),
+       .DATA_WIDTH (`MIG_BUS_W),
        .ADDR_WIDTH (`DDR_ADDR_W)
        )
    ddr_model_mem(

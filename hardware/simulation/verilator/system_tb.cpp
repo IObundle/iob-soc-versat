@@ -3,7 +3,7 @@
 
 #include "Vsystem_top.h"
 #include "verilated.h"
-#include "verilated_vcd_c.h"
+#include "verilated_fst_c.h"
 
 #include "iob_uart_swreg.h"
 
@@ -11,7 +11,7 @@
 #define CLK_PERIOD 1000000000/FREQ // 1/100MHz*10^9 = 10 ns
 
 vluint64_t main_time = 0;
-VerilatedVcdC* tfp = NULL;
+VerilatedFstC* tfp = NULL;
 Vsystem_top* dut = NULL;
 
 double sc_time_stamp () {
@@ -84,10 +84,10 @@ int main(int argc, char **argv, char **env){
   dut = new Vsystem_top;
 
 #ifdef VCD
-  tfp = new VerilatedVcdC;
+  tfp = new VerilatedFstC;
 
-  dut->trace(tfp, 1);
-  tfp->open("system.vcd");
+  dut->trace(tfp, 99);
+  tfp->open("system.fst");
 #endif
 
   dut->clk = 0;

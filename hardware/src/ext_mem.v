@@ -177,7 +177,7 @@ module ext_mem
       .AXI_ID_W(AXI_ID_W),
       .FE_ADDR_W(`DCACHE_ADDR_W),
       .BE_ADDR_W(`DDR_ADDR_W),
-      .BE_DATA_W(`DDR_DATA_W),
+      .BE_DATA_W(AXI_DATA_W),
       .N_WAYS(4),        //Number of Ways
       .LINE_OFF_W(7),    //Cache Line Offset (number of lines)
       .WORD_OFF_W(3),    //Word Offset (number of words per line)

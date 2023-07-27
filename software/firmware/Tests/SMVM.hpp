@@ -467,8 +467,8 @@ void Print(MatrixBlock* block){
    }
 }
 
-int size = 100;
-int amountNZ = 1000;
+int size = 50;
+int amountNZ = 100;
 Array<int> vec;
 Array<int> mat;
 FormatCSR csr;
@@ -491,7 +491,7 @@ void InitializeSMVM(Arena* arena,Type type){
    printf("here %d\n",val);
    if(val){
 #ifdef PC
-      String content = PushFile(arena,"../../example1");
+      String content = PushFile(arena,"../../../../PWTK");
       block = UnpackMatrixBlock((void*) content.data);
 #else
       eth_init(ETHERNET_BASE);
@@ -546,8 +546,8 @@ void InitializeSMVM(Arena* arena,Type type){
       }
 
       region(arena){
-         //Array<int> expected = Multiply(mat,size,vec,arena);
-         //PushExpected(expected);
+         Array<int> expected = Multiply(mat,size,vec,arena);
+         PushExpected(expected);
       }
       printf("Finished SMVM init\n");
    }

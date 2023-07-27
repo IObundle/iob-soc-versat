@@ -3,28 +3,6 @@ $buffer 14
 $trigger versat.xversat.done
 $trigger versat.xversat.run
 
-ext_mem0.dcache.cache_control.read_hit_cnt    32
-ext_mem0.dcache.cache_control.read_miss_cnt   32
-ext_mem0.dcache.cache_control.write_hit_cnt   32
-ext_mem0.dcache.cache_control.write_miss_cnt  32
-ext_mem0.icache.cache_control.read_hit_cnt    32
-ext_mem0.icache.cache_control.read_miss_cnt   32
-ext_mem0.icache.cache_control.write_hit_cnt   32
-ext_mem0.icache.cache_control.write_miss_cnt  32
-ext_mem0.dcache.back_end.mem_valid  1
-ext_mem0.dcache.back_end.mem_ready  1
-ext_mem0.icache.back_end.mem_valid  1
-ext_mem0.icache.back_end.mem_ready  1
-ext_mem0.l2cache.back_end.m_axi_awready 1
-ext_mem0.l2cache.back_end.m_axi_awvalid 1
-ext_mem0.l2cache.back_end.m_axi_wready 1
-ext_mem0.l2cache.back_end.m_axi_wvalid 1
-ext_mem0.l2cache.back_end.m_axi_arready 1
-ext_mem0.l2cache.back_end.m_axi_arvalid 1
-ext_mem0.l2cache.back_end.m_axi_rready 1
-ext_mem0.l2cache.back_end.m_axi_rvalid 1
-ext_mem0.l2cache.back_end.m_axi_arlen 8
-ext_mem0.l2cache.back_end.m_axi_awlen 8
 versat.m_axi_arlen 8
 versat.m_axi_awlen 8
 versat.m_axi_awready 1
@@ -43,4 +21,3 @@ versat.valid 1
 versat.ready 1
 versat.xversat.run 1
 versat.xversat.done 1
-

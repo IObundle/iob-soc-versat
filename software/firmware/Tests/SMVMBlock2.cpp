@@ -4,9 +4,9 @@
 
 #define CHANGE
 //#define PRINT
-//#define TEST
+#define TEST
 
-void InitializeBaseAccelerator(){
+static void InitializeBaseAccelerator(){
    //ACCEL_TOP_cycler_amount = size + 24;
 
    ACCEL_TOP_gen_iterations = 1;
@@ -72,7 +72,7 @@ static int lastLoadedX = -1;
 static int vectorLoads = 0;
 #endif
 
-void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockSize){
+static void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockSize){
    if(toRun){
       ACCEL_TOP_cycler_amount = 9 + toRun->nonZeros;
    }
@@ -92,25 +92,25 @@ void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockS
    //ConfigureSimpleVRead(col,toLoad.column.size,toLoad.column.data);
    // Memory side
    {
-      //printf("Col: %p %d\n",toLoad.column.data,toLoad.column.size);
       int numberItems = toLoad.nonZeros;
       int* data = COOColumn(&toLoad);
-
+      //printf("Col: %x, %x, %x\n",data,data[0],data[1]);
+      
       ACCEL_TOP_col_perA = numberItems;
       ACCEL_TOP_col_dutyA = numberItems;
 
       // B - versat side
       ACCEL_TOP_col_iterB = numberItems;
       ACCEL_TOP_col_ext_addr = (iptr) data;
-      ACCEL_TOP_col_length = numberItems - 1; // AXI requires length of len - 1
+      ACCEL_TOP_col_length = numberItems * sizeof(int); // AXI requires length of len - 1
    }
 
    //ConfigureSimpleVRead(row,toLoad.row.size,toLoad.row.data);
    // Memory side
    {
-      //printf("Row: %p %d\n",toLoad.row.data,toLoad.row.size);
       int numberItems = toLoad.nonZeros + 1;
       int* data = COORow(&toLoad);
+      //printf("Row: %x\n",data);
 
       ACCEL_TOP_row_perA = numberItems;
       ACCEL_TOP_row_dutyA = numberItems;
@@ -118,27 +118,23 @@ void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockS
       // B - versat side
       ACCEL_TOP_row_iterB = numberItems;
       ACCEL_TOP_row_ext_addr = (iptr) data;
-      ACCEL_TOP_row_length = numberItems - 1; // AXI requires length of len - 1
-
-      Assert(numberItems - 1 <= 0xff);
+      ACCEL_TOP_row_length = numberItems * sizeof(int); // AXI requires length of len - 1
    }
 
    //ConfigureSimpleVRead(val,toLoad.values.size,toLoad.values.data);
    // Memory side
    {
-      //printf("Val: %p %d\n",toLoad.values.data,toLoad.values.size);
       int numberItems = toLoad.nonZeros;
       int* data = COOValue(&toLoad);
-
+      //printf("Val: %x\n",data);
+      
       ACCEL_TOP_val_perA = numberItems;
       ACCEL_TOP_val_dutyA = numberItems;
 
       // B - versat side
       ACCEL_TOP_val_iterB = numberItems;
       ACCEL_TOP_val_ext_addr = (iptr) data;
-      ACCEL_TOP_val_length = numberItems - 1; // AXI requires length of len - 1
-
-      Assert(numberItems - 1 <= 0xff);
+      ACCEL_TOP_val_length = numberItems * sizeof(int); // AXI requires length of len - 1
    }
 
    //ConfigureSimpleVRead(vec,vec.size,vec.data);
@@ -174,15 +170,13 @@ void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockS
       // B - versat side
       ACCEL_TOP_vector_iterB = numberItems;
       ACCEL_TOP_vector_ext_addr = (iptr) data;
-      ACCEL_TOP_vector_length = numberItems - 1; // AXI requires length of len - 1
-
-      Assert(numberItems - 1 <= 0xff);
+      ACCEL_TOP_vector_length = numberItems * sizeof(int); // AXI requires length of len - 1
       
       lastLoadedX = xPos;
    }
 }
 
-void DoOneFully(Array<int> res,int index){
+static void DoOneFully(Array<int> res,int index){
    Block& b = MatrixBlock(block)[index];
    FormatCOO coo = b.coo;
 
@@ -236,7 +230,7 @@ void DoOneFully(Array<int> res,int index){
 #endif
 }
 
-Array<int> DoOneFullyTest(int index,Arena* out){
+static Array<int> DoOneFullyTest(int index,Arena* out){
    Array<int> res = PushArray<int>(out,size);
    Memset(res,0);
 
@@ -245,7 +239,7 @@ Array<int> DoOneFullyTest(int index,Arena* out){
    return res;
 }
 
-static inline void ConfigAccelerator(int toLoad,int toRun){
+static void ConfigAccelerator(int toLoad,int toRun){
    Assert(toRun >= 0);
    
    int blockSize = block->blockSize;
@@ -272,10 +266,14 @@ void SingleTest(Arena* arena){
 
    InitializeBaseAccelerator();
 
+   Array<int> expected = {};
    timeRegion("CPU multiply"){
-      Array<int> expected = MultiplyBlock(block,vec,arena);
-      PushExpected(expected);
+      expected = MultiplyBlock(block,vec,arena);
+#ifdef TEST
+      //PushExpected(expected);
+#endif
    }
+   printf("Make sure compiler does not optimize away: %d\n",expected[0]);
 
    // Initialize ILA
    ila_set_different_signal_storing(1);
@@ -292,119 +290,83 @@ void SingleTest(Arena* arena){
    {
       TIME_IT("Accelerator Run");
 
-      int startFrame = 0;
-      int toLoad = startFrame;
+#define START_FRAME 0
 
-      // Start the initial load of data
-      Block& load = blocks[toLoad];
-      ConfigureAccelerator(load.coo,nullptr,load.x,blockSize);
-      StartAccelerator(); // Accelerator is loading 0 in the background
-
-      // Logic for next load
-      toLoad += 1;
-      toLoad = std::min(toLoad,loops - 1);
-
-      int toRun = startFrame;
-      ConfigAccelerator(toLoad,toRun); // Accelerator is configured to load 1 and run 0
-
-      for(int index = 0; index < loops; index++){
-         // Ila start recording
+      {
+         Block& load = blocks.data[START_FRAME]; // toLoad is 0
+         ConfigureAccelerator(load.coo,nullptr,load.x,blockSize); // 0 - nullptr
+         StartAccelerator(); // Accelerator is loading 0 in the background
+      }
+      
+      {
+         Block& load = blocks.data[1];  // toLoad is 1
+         Block& run = blocks.data[START_FRAME];  // toRun is 0
          
+         ConfigureAccelerator(load.coo,&run.coo,load.x,blockSize); // 1 - 0 - 0
+
          EndAccelerator(); // Wait for accelerator to terminate (loading 0)
+         StartAccelerator(); // Accelerator is loading 1 and running 0
+      }
          
-         if(index == 0){
-            ila_set_trigger_enabled(1,true);
-         }
-         
+      {
+         Block& load = blocks[2]; // toLoad is 2
+         Block& runBlock = blocks[1]; // toRun is 1
+
+         ConfigureAccelerator(load.coo,&runBlock.coo,load.x,blockSize); // 2 - 1 - 
+
+         EndAccelerator(); // Wait for accelerator to terminate (loading 0)
+      }
+      
+      int toLoad = 3;
+      int toRun = 2;
+      
+      ila_set_trigger_enabled(1,true); // Ila start recording. Only a small overhead cost anyway
+
+      for(int currentRun = 1; currentRun < loops; currentRun++){
          StartAccelerator(); // Accelerator is loading 1 and running 0
 
          Block& runBlock = blocks[toRun]; // toRun is 0
-         int currentRun = toRun; // currentRun is 0
+         Block& load = blocks[toLoad];
+
          toRun = toLoad; // Next toRun is 1
+         toLoad = std::min(toLoad + 1,loops - 1); // Bound toLoad to maximum value
 
-         // Find value for next iteration
-         toLoad += 1;
-         toLoad = std::min(toLoad,loops - 1); // Bound toLoad to maximum value
+         ConfigureAccelerator(load.coo,&runBlock.coo,load.x,blockSize); // 3 - 2
 
-         ConfigAccelerator(toLoad,toRun); // Accelerator is configured to load 2 and run 1
+         Block& toSave = blocks[currentRun-1];
+         int yOffset = toSave.y * blockSize; // run block from 0
+         int amountGot = ACCEL_TOP_output_stored;
 
-         //#define TEST
-#ifdef TEST
-         Memset(test,0); // NOTE: DO NOT FORGET TO REMOVE AFTER
-#endif
+         for(int ii = 0; ii < amountGot; ii++){
+            int addr = VersatUnitRead(TOP_pos_addr,ii);
+            int value = VersatUnitRead(TOP_output_addr,ii);
+            res[yOffset + addr] += value;
+         }
 
-         if(currentRun >= 1){
-            Block& toSave = blocks[currentRun-1];
-            int yOffset = toSave.y * blockSize; // run block from 0
-            int amountGot = ACCEL_TOP_output_stored;
-#ifdef PRINT
-            printf("Got:%d\n",amountGot);
-#endif
+         EndAccelerator(); // Wait for accelerator to terminate (loading 0)
+      }
 
-            for(int ii = 0; ii < amountGot; ii++){
+      EndAccelerator(); // Wait for accelerator to terminate (loading 0)
+      StartAccelerator(); // Pretty much only job is to change pingpongState to allow CPU to read data
+
+      {
+         Block& toSave = blocks[blocks.size-1];
+         int yOffset = toSave.y * blockSize; // run block from 0
+         int amountGot = ACCEL_TOP_output_stored;
+
+         for(int ii = 0; ii < amountGot; ii++){
             int addr = VersatUnitRead(TOP_pos_addr,ii);
             int value = VersatUnitRead(TOP_output_addr,ii);
 
-#ifdef PRINT
-            printf("%x %x\n",value,addr);
-#endif
-            test[yOffset + addr] = value;
             res[yOffset + addr] += value;
-            //printf("%d %d %d\n",addr,yOffset + addr,res[yOffset + addr]);
-            }
          }
-
-#ifdef TEST
-         if(currentRun >= 1){
-         region(arena){
-            Array<int> good = DoOneFullyTest(currentRun - 1,arena);
-
-            for(int i = 0; i < good.size; i++){
-               if(good[i] || test[i]){
-                  //Assert_Eq(good[i],test[i]);
-                  if(good[i] != test[i]){
-                     //printf("%d\n",currentRun);
-                     printf("ERROR: %d %x %x %d\n",currentRun,good[i],test[i],i);
-                     exit(0);
-                  }
-                  //printf("%d %d\n",good[i],test[i]);
-               }
-            }
-         }
-         }
-#endif
       }
    }
 
-   EndAccelerator(); // Wait for accelerator to terminate (loading 0)
-   StartAccelerator(); // Accelerator is loading 1 and running 0
-   
-   {
-   Block& toSave = blocks[blocks.size-1];
-   int yOffset = toSave.y * blockSize; // run block from 0
-   int amountGot = ACCEL_TOP_output_stored;
-#ifdef PRINT
-   printf("Got:%d\n",amountGot);
-#endif
-
-   for(int ii = 0; ii < amountGot; ii++){
-      int addr = VersatUnitRead(TOP_pos_addr,ii);
-      int value = VersatUnitRead(TOP_output_addr,ii);
-
-#ifdef PRINT
-      printf("%x %x\n",value,addr);
-#endif
-      test[yOffset + addr] = value;
-      res[yOffset + addr] += value;
-      //printf("%d %d %d\n",addr,yOffset + addr,res[yOffset + addr]);
-   }
-   }
-
    //ila_output_everything();
-   
-   PushGot(res);
 
 #ifdef TEST
+   PushGot(res);
    printf("VecLoads: %d/%d\n",vectorLoads,blocks.size);
 #endif 
 

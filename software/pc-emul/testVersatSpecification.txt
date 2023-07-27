@@ -82,10 +82,10 @@ module SMVMBlock(){
 module SMVMBlock2(){
    Generator gen;
    IncrementFlag flag;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
+   LookupTableRead col;
+   LookupTableRead row;
+   LookupTableRead val;
+   LookupTableRead vector;
    Mul mul;
 
    ChangeDetect change;

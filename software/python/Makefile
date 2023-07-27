@@ -6,7 +6,7 @@ include $(ROOT_DIR)/config.mk
 #ETH_INPUT_BIN = $(basename $(TEST_VECTOR_RSP))_d_in.bin
 #SOC_OUT_BIN?=soc-out.bin
 
-ETH_INPUT_BIN := $(ROOT_DIR)/software/pc-emul/example1
+ETH_INPUT_BIN := $(ROOT_DIR)/$(TEST_NAME)
 SOC_OUT_BIN := $(ROOT_DIR)
 
 #run-eth-scripts: $(ETH_INPUT_BIN)

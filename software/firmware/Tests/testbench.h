@@ -47,13 +47,12 @@ static const int TEST = 5;
 
 static bool error = false; // Global keep track if a error occurred. Do not want to print error messages more than once
 
-#ifdef PC
-static char expectedBuffer[1024*1024];
-static char gotBuffer[1024*1024];
+static const int TEST_BUFFER_SIZE = 1024 * 8;
 
-static char* expectedPtr = expectedBuffer;
-static char* gotPtr = gotBuffer;
-#endif
+static char* expectedBuffer = nullptr;
+static char* gotBuffer = nullptr;
+static char* expectedPtr = nullptr;
+static char* gotPtr = nullptr;
 
 #ifndef __cplusplus // C++ code already has access to these functions
 typedef union {
@@ -75,50 +74,35 @@ static float PackFloat(int i){
 #endif
 
 static void ResetTestBuffers(){
-#ifdef PC
    expectedPtr = expectedBuffer;
    gotPtr = gotBuffer;
-#endif
 }
 
 static void PushExpectedI(int val){
-#ifdef PC
    expectedPtr += sprintf(expectedPtr,"0x%x ",val);
-#endif
 }
 
 static void PushGotI(int val){
-#ifdef PC
    gotPtr += sprintf(gotPtr,"0x%x ",val);
-#endif
 }
 
 static void PushExpectedF(float val){ // NOTE: Floating point rounding can make these fail. If so, just push a certain amount of decimal places
-#ifdef PC
    expectedPtr += sprintf(expectedPtr,"%f ",val);
-#endif
 }
 
 static void PushGotF(float val){
-#ifdef PC
    gotPtr += sprintf(gotPtr,"%f ",val);
-#endif
 }
 
 static void PushExpectedS(const char* str){
-#ifdef PC
    expectedPtr += sprintf(expectedPtr,"%s ",str);
-#endif
 }
 
 static void PushGotS(const char* str){
-#ifdef PC
    gotPtr += sprintf(gotPtr,"%s ",str);
-#endif
 }
 
 static void PrintError(){
-#ifdef PC
    char* expected = expectedBuffer;
    char* got = gotBuffer;
 
@@ -140,7 +124,6 @@ static void PrintError(){
    }
 
    printf("\n");
-#endif
 }
 
 static void Assert_Eq(int val1,int val2){
@@ -204,6 +187,12 @@ int main(int argc,char* argv[]){
    ila_init(ILA_BASE);
 
    versat_init(VERSAT_BASE);
+
+   // Init testing buffers
+   expectedBuffer = (char*) malloc(TEST_BUFFER_SIZE);
+   gotBuffer      = (char*) malloc(TEST_BUFFER_SIZE);
+   expectedPtr = expectedBuffer;
+   gotPtr      = gotBuffer;
    
    Arena arenaInst = InitArena(Megabyte(16));
    Arena* arena = &arenaInst;
@@ -211,7 +200,6 @@ int main(int argc,char* argv[]){
    printf("Single test\n");
    SingleTest(arena);
 
-#ifdef PC
    if(error){
       PrintError();
    } else {
@@ -247,7 +235,6 @@ int main(int argc,char* argv[]){
       }
 #endif
    }
-#endif
    
    uart_finish();
 

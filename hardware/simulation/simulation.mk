@@ -51,6 +51,7 @@ TB_DIR:=$(HW_DIR)/simulation/verilog_tb
 #axi memory
 include $(AXI_DIR)/hardware/axiram/hardware.mk
 include $(AXI_DIR)/hardware/axiinterconnect/hardware.mk
+include $(AXI_DIR)/hardware/axiadapter/hardware.mk
 
 VSRC+=system_top.v
 
@@ -72,16 +73,19 @@ else
 	ssh $(SIM_SSH_FLAGS) $(SIM_USER)@$(SIM_SERVER) 'make -C $(REMOTE_ROOT_DIR) sim-build SIMULATOR=$(SIMULATOR) INIT_MEM=$(INIT_MEM) USE_DDR=$(USE_DDR) RUN_EXTMEM=$(RUN_EXTMEM) VCD=$(VCD) TEST_LOG=\"$(TEST_LOG)\"'
 endif
 
-run: $(OUTPUT_SIM_FOLDER)/systemRedux.fst
+run: $(OUTPUT_SIM_FOLDER)/system.fst
 ifeq ($(VCD),1)
-	if [ ! `pgrep -u $(USER) gtkwave` ]; then gtkwave $(OUTPUT_SIM_FOLDER)/systemRedux.fst; fi &
+	if [ ! `pgrep -u $(USER) gtkwave` ]; then gtkwave $(OUTPUT_SIM_FOLDER)/system.fst; fi &
 endif
 
-$(OUTPUT_SIM_FOLDER)/systemRedux.vcd: sim
-	cat $(OUTPUT_SIM_FOLDER)/system.vcd | vcdCut versat > $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
+$(OUTPUT_SIM_FOLDER)/system.fst : sim
+#	vcd2fst -v $(OUTPUT_SIM_FOLDER)/system.vcd -f $(OUTPUT_SIM_FOLDER)/system.fst
 
-$(OUTPUT_SIM_FOLDER)/systemRedux.fst: $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
-	vcd2fst -v $(OUTPUT_SIM_FOLDER)/systemRedux.vcd -f $(OUTPUT_SIM_FOLDER)/systemRedux.fst
+#$(OUTPUT_SIM_FOLDER)/systemRedux.vcd: sim
+#	cat $(OUTPUT_SIM_FOLDER)/system.vcd | vcdCut versat > $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
+
+#$(OUTPUT_SIM_FOLDER)/systemRedux.fst: $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
+#	vcd2fst -v $(OUTPUT_SIM_FOLDER)/systemRedux.vcd -f $(OUTPUT_SIM_FOLDER)/systemRedux.fst
 
 sim:
 ifeq ($(SIM_SERVER),)
@@ -187,6 +191,8 @@ debug:
 	@echo $(UART_DIR)
 
 .PRECIOUS: system.vcd systemRedux.vcd test.log
+
+.INTERMEDIATE: soc2cnsl cnsl2soc
 
 .PHONY: build run sim \
 	kill-remote-sim clean-remote \
