@@ -364,8 +364,14 @@ MatrixBlock* UnpackMatrixBlock(void* base){
    return matrix;
 }
 
+static const int MAXIMUM_NZ_PER_BLOCK = 500;
+
+// Default values for random example
+static int size = 50;
+static int amountNZ = 500;
+
 MatrixBlock* ConvertMatBlock(Array<int> mat,int size,Arena* arena){
-   int blockSize = 32;
+   int blockSize = 50;
 
    int numberOfBlocks = ((size / blockSize) + 1) * ((size / blockSize) + 1);
 
@@ -395,8 +401,8 @@ MatrixBlock* ConvertMatBlock(Array<int> mat,int size,Arena* arena){
             continue;
          }
 
-         if(nonZeros > 255){
-            printf("Higher than 255\n");
+         if(nonZeros > MAXIMUM_NZ_PER_BLOCK){
+            printf("Higher than %d\n",MAXIMUM_NZ_PER_BLOCK);
          }
 
          FormatCOO coo = {};
@@ -467,8 +473,6 @@ void Print(MatrixBlock* block){
    }
 }
 
-int size = 50;
-int amountNZ = 100;
 Array<int> vec;
 Array<int> mat;
 FormatCSR csr;

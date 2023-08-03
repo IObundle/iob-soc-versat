@@ -17,6 +17,7 @@ static void InitializeBaseAccelerator(){
 
    ACCEL_TOP_col_incrA = 1;
    ACCEL_TOP_col_iterA = 1;
+   ACCEL_TOP_col_dutyA = ~0;
    ACCEL_TOP_col_size = 8;
    ACCEL_TOP_col_int_addr = 0;
    ACCEL_TOP_col_pingPong = 1;
@@ -28,6 +29,7 @@ static void InitializeBaseAccelerator(){
 
    ACCEL_TOP_row_incrA = 1;
    ACCEL_TOP_row_iterA = 1;
+   ACCEL_TOP_row_dutyA = ~0;
    ACCEL_TOP_row_size = 8;
    ACCEL_TOP_row_int_addr = 0;
    ACCEL_TOP_row_pingPong = 1;
@@ -39,6 +41,7 @@ static void InitializeBaseAccelerator(){
 
    ACCEL_TOP_val_incrA = 1;
    ACCEL_TOP_val_iterA = 1;
+   ACCEL_TOP_val_dutyA = ~0;
    ACCEL_TOP_val_size = 8;
    ACCEL_TOP_val_int_addr = 0;
    ACCEL_TOP_val_pingPong = 1;
@@ -50,6 +53,7 @@ static void InitializeBaseAccelerator(){
 
    ACCEL_TOP_vector_incrA = 1;
    ACCEL_TOP_vector_iterA = 1;
+   ACCEL_TOP_vector_dutyA = ~0;
    ACCEL_TOP_vector_size = 8;
    ACCEL_TOP_vector_int_addr = 0;
    
@@ -72,6 +76,13 @@ static int lastLoadedX = -1;
 static int vectorLoads = 0;
 #endif
 
+static void DisableReads(){
+   ACCEL_TOP_col_disabled = 1;
+   ACCEL_TOP_row_disabled = 1;
+   ACCEL_TOP_val_disabled = 1;
+   ACCEL_TOP_vector_disabled = 1;
+}
+   
 static void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int blockSize){
    if(toRun){
       ACCEL_TOP_cycler_amount = 9 + toRun->nonZeros;
@@ -97,12 +108,12 @@ static void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int
       //printf("Col: %x, %x, %x\n",data,data[0],data[1]);
       
       ACCEL_TOP_col_perA = numberItems;
-      ACCEL_TOP_col_dutyA = numberItems;
 
       // B - versat side
       ACCEL_TOP_col_iterB = numberItems;
       ACCEL_TOP_col_ext_addr = (iptr) data;
       ACCEL_TOP_col_length = numberItems * sizeof(int); // AXI requires length of len - 1
+      printf("%d %d\n",numberItems,numberItems * sizeof(int));
    }
 
    //ConfigureSimpleVRead(row,toLoad.row.size,toLoad.row.data);
@@ -113,7 +124,6 @@ static void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int
       //printf("Row: %x\n",data);
 
       ACCEL_TOP_row_perA = numberItems;
-      ACCEL_TOP_row_dutyA = numberItems;
 
       // B - versat side
       ACCEL_TOP_row_iterB = numberItems;
@@ -129,7 +139,6 @@ static void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int
       //printf("Val: %x\n",data);
       
       ACCEL_TOP_val_perA = numberItems;
-      ACCEL_TOP_val_dutyA = numberItems;
 
       // B - versat side
       ACCEL_TOP_val_iterB = numberItems;
@@ -165,7 +174,6 @@ static void ConfigureAccelerator(FormatCOO& toLoad,FormatCOO* toRun,int xPos,int
 #endif
       
       ACCEL_TOP_vector_perA = numberItems;
-      ACCEL_TOP_vector_dutyA = numberItems;
 
       // B - versat side
       ACCEL_TOP_vector_iterB = numberItems;
@@ -297,8 +305,9 @@ void SingleTest(Arena* arena){
          ConfigureAccelerator(load.coo,nullptr,load.x,blockSize); // 0 - nullptr
          StartAccelerator(); // Accelerator is loading 0 in the background
       }
-      
-      {
+
+#if 1
+      if(blocks.size > 1){
          Block& load = blocks.data[1];  // toLoad is 1
          Block& run = blocks.data[START_FRAME];  // toRun is 0
          
@@ -306,8 +315,17 @@ void SingleTest(Arena* arena){
 
          EndAccelerator(); // Wait for accelerator to terminate (loading 0)
          StartAccelerator(); // Accelerator is loading 1 and running 0
-      }
+      } else {
+         Block& run = blocks.data[START_FRAME];  // toRun is 0
+         ConfigureAccelerator(run.coo,&run.coo,run.x,blockSize); // 1 - 0 - 0
+         DisableReads();
          
+         EndAccelerator(); // Wait for accelerator to terminate (loading 0)
+         StartAccelerator(); // Accelerator is loading 1 and running 0
+      }
+#endif
+      
+#if 0
       {
          Block& load = blocks[2]; // toLoad is 2
          Block& runBlock = blocks[1]; // toRun is 1
@@ -319,6 +337,10 @@ void SingleTest(Arena* arena){
       
       int toLoad = 3;
       int toRun = 2;
+#else
+      int toLoad = 2;
+      int toRun = 1;
+#endif
       
       ila_set_trigger_enabled(1,true); // Ila start recording. Only a small overhead cost anyway
 
@@ -347,6 +369,7 @@ void SingleTest(Arena* arena){
       }
 
       EndAccelerator(); // Wait for accelerator to terminate (loading 0)
+      DisableReads(); // Stops uncessary work in embedded and makes sure that pc-emul does access bad pointer addresses
       StartAccelerator(); // Pretty much only job is to change pingpongState to allow CPU to read data
 
       {

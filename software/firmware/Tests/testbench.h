@@ -5,8 +5,8 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #ifdef __cplusplus
-#include "memory.hpp"
 #include "utils.hpp"
+#include "memory.hpp"
 #endif
 
 #include "versat_accel.h" // C++, include outside

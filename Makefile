@@ -171,7 +171,7 @@ test-clean: test-pc-emul-clean test-sim-clean test-fpga-clean test-doc-clean
 $(TESTS):
 	$(MAKE) -C $(PC_DIR) build TEST=$@
 
-test: $(TESTS)
+tests: $(TESTS)
 	$(foreach i, $(TESTS),$(MAKE) -s -C $(PC_DIR) run TEST=$i;)
 
 single-test:

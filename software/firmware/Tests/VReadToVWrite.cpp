@@ -1,11 +1,18 @@
 #include "testbench.h"
 
-void SingleTest(){
+void SingleTest(Arena* arena){
    #if 1
-   int input[] = {1000,200,30,4};
-   int output[ARRAY_SIZE(input)];
+   #define SIZE 512
 
-   int numberItems = ARRAY_SIZE(input);
+   int inputBuffer[SIZE * 2];
+   int output[SIZE * 2];
+
+   int* view = inputBuffer;
+   for(int i = 0; i < SIZE; i++){
+      *view = i + 1;
+   }
+
+   int numberItems = SIZE;
 
    // Memory side
    ACCEL_TOP_read_incrA = 1;
@@ -21,8 +28,8 @@ void SingleTest(){
    ACCEL_TOP_read_incrB = 1;
    ACCEL_TOP_read_perB = 1;
    ACCEL_TOP_read_dutyB = 1;
-   ACCEL_TOP_read_ext_addr = (iptr) input;
-   ACCEL_TOP_read_length = numberItems - 1; // AXI requires length of len - 1
+   ACCEL_TOP_read_ext_addr = (iptr) inputBuffer;
+   ACCEL_TOP_read_length = numberItems * sizeof(int);
 
    // Write side
    ACCEL_TOP_write_incrA = 1;
@@ -32,7 +39,7 @@ void SingleTest(){
    ACCEL_TOP_write_size = 4;
    ACCEL_TOP_write_int_addr = 0;
    ACCEL_TOP_write_pingPong = 1;
-   ACCEL_TOP_write_length = numberItems - 1;
+   ACCEL_TOP_write_length = numberItems * sizeof(int);
    ACCEL_TOP_write_ext_addr =(iptr)  output;
 
    // Memory side
@@ -44,7 +51,7 @@ void SingleTest(){
    RunAccelerator(3);
 
    for(int i = 0; i < numberItems; i++){
-      Assert_Eq(input[i],output[i]);
+      Assert_Eq(inputBuffer[i],output[i]);
    }
    #endif
 }

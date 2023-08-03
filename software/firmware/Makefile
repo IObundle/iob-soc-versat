@@ -75,7 +75,7 @@ $(OUTPUT_NAME): ../template.lds $(HDR) $(SRC) $(GENERATED)/versat_accel.h
 ifneq ($(HARDWARE_TEST),)
 	@mkdir -p $(OUTPUT_DIR)
 endif
-	$(TOOLCHAIN_PREFIX)$(COMPILER) -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions 
+	$(TOOLCHAIN_PREFIX)$(COMPILER) -std=c++17 -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions 
 	#$(TOOLCHAIN_PREFIX)objdump -drwC -S $@ > assembly.asm
 	$(TOOLCHAIN_PREFIX)objcopy -O binary $(OUTPUT_DIR)/firmware.elf $(OUTPUT_DIR)/firmware.bin
 	$(TOOLCHAIN_PREFIX)objcopy -O binary $(OUTPUT_DIR)/firmware.elf firmware.bin
