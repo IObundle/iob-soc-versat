@@ -31,10 +31,10 @@ endif
 
 ifeq ($(TEST),)
 INPUT_FIRM_FOLDER := $(FIRM_DIR)
-OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/$(SIMULATOR)
 else
 INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(TEST)
-OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(TEST)
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/$(SIMULATOR)/test/$(TEST)
 endif
 
 ifneq ($(wildcard  $(OUTPUT_SIM_FOLDER)/firmware.hex),)
@@ -79,13 +79,6 @@ ifeq ($(VCD),1)
 endif
 
 $(OUTPUT_SIM_FOLDER)/system.fst : sim
-#	vcd2fst -v $(OUTPUT_SIM_FOLDER)/system.vcd -f $(OUTPUT_SIM_FOLDER)/system.fst
-
-#$(OUTPUT_SIM_FOLDER)/systemRedux.vcd: sim
-#	cat $(OUTPUT_SIM_FOLDER)/system.vcd | vcdCut versat > $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
-
-#$(OUTPUT_SIM_FOLDER)/systemRedux.fst: $(OUTPUT_SIM_FOLDER)/systemRedux.vcd
-#	vcd2fst -v $(OUTPUT_SIM_FOLDER)/systemRedux.vcd -f $(OUTPUT_SIM_FOLDER)/systemRedux.fst
 
 sim:
 ifeq ($(SIM_SERVER),)

@@ -81,7 +81,7 @@ OUTPUT_FOLDER:=./test/$(TEST)
 FW_NAME:=./test/$(TEST)/fw_emul
 endif
 
-OPTS:=-s
+OPTS:=-s -b=$(MIG_BUS_W) -x64
 
 INCLUDE+=$(incdir)$(OUTPUT_FOLDER)
 
@@ -93,8 +93,12 @@ HDR+=$(FIRM_DIR)/Tests/testbench.h # Header but contains code common to all test
 
 LIBS+=$(OUTPUT_FOLDER)/libaccel.a
 
+OBJ += $(OUTPUT_FOLDER)/wrapper.o
+
 $(OUTPUT_FOLDER)/versat_accel.h: $(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_VSRC) testVersatSpecification.txt
 	$(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_SOURCES) $(V_INCLUDE) $(VERSAT_THIS_INCLUDE) testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(OUTPUT_FOLDER)
+
+$(OUTPUT_FOLDER)/wrapper.o: $(OUTPUT_FOLDER)/versat_accel.h
 	$(MAKE) -C $(OUTPUT_FOLDER) all
 
 $(FW_NAME): $(OUTPUT_FOLDER)/versat_accel.h $(HDR) $(SRC) $(UNIT_HDR) $(CPP_OBJ) $(FIRMWARE) $(OBJ) $(wildcard $(OUTPUT_FOLDER)/*.o) $(FIRMWARE) 

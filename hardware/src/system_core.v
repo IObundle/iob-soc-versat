@@ -12,7 +12,7 @@ module system
     parameter DATA_W=`DATA_W,
     parameter AXI_ID_W=0,
     parameter AXI_ADDR_W=`ADDR_W,
-    parameter AXI_DATA_W=`DATA_W
+    parameter AXI_DATA_W=`MIG_BUS_W
     )
   (
    //do not remove line below

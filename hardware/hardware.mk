@@ -70,14 +70,14 @@ VSRC+=$(SRC_DIR)/ext_mem.v
 endif
 
 ifeq ($(TEST),)
-OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/$(SIMULATOR)
 INPUT_FIRM_FOLDER := $(FIRM_DIR)/
 VSRC+=$(FIRM_DIR)/generated/versat_instance.v
 VSRC+=$(wildcard $(FIRM_DIR)/generated/src/*.v)
 INCLUDE+=$(incdir)$(FIRM_DIR)/generated
 INCLUDE+=$(incdir)$(FIRM_DIR)/src
 else
-OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/verilator/test/$(TEST)
+OUTPUT_SIM_FOLDER := $(HW_DIR)/simulation/$(SIMULATOR)/test/$(TEST)
 INPUT_FIRM_FOLDER := $(FIRM_DIR)/test/$(TEST)
 VSRC+=$(FIRM_DIR)/test/$(TEST)/versat_instance.v
 VSRC+=$(wildcard $(FIRM_DIR)/test/$(TEST)/src/*.v)
@@ -112,7 +112,11 @@ $(OUTPUT_SIM_FOLDER)/firmware.hex: $(INPUT_FIRM_FOLDER)/firmware.bin
 	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > $@
 ifeq ($(MIG_BUS_W),64)
 	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > firmwareBase.hex
-	$(SW_DIR)/python/convertFirmware.py firmwareBase.hex > $@
+	$(SW_DIR)/python/convertFirmware.py firmwareBase.hex 64 > $@
+endif
+ifeq ($(MIG_BUS_W),128)
+	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > firmwareBase.hex
+	$(SW_DIR)/python/convertFirmware.py firmwareBase.hex 128 > $@
 endif
 
 boot.hex: $(BOOT_DIR)/boot.bin

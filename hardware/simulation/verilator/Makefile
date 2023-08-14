@@ -77,8 +77,6 @@ ifeq ($(TEST),)
 	cp obj_dir/Vsystem_top ./
 else
 	cp obj_dir/Vsystem_top ./test/$(TEST)/
-	#cp boot.hex ./$(TEST)/
-	#cp firmware.hex ./$(TEST)/
 endif
 
 #run the simulator

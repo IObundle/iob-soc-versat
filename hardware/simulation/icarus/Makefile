@@ -10,19 +10,30 @@ SIM_PROC=a.out
 
 include ../simulation.mk
 
-#simulator flags
-VLOG = iverilog -pfileline=1 -ptrace=off -W all -g2005-sv $(INCLUDE) $(DEFINE)
+ifeq ($(TEST),)
+SIM_FOLDER:=.
+else
+SIM_FOLDER:=test/$(TEST)
+endif
 
-comp: $(SIM_PROC)
+#simulator flags
+VLOG = iverilog -pfileline=1 -W all -g2005-sv $(INCLUDE) $(DEFINE)
+
+comp: $(SIM_FOLDER)/$(SIM_PROC)
 
 #simulation executable
-$(SIM_PROC):
+$(SIM_FOLDER)/$(SIM_PROC):
+ifneq ($(TEST),)
+	@mkdir -p test/$(TEST)
+endif
 	$(VLOG) $(VSRC)
+	cp $(SIM_PROC) $(SIM_FOLDER)/
 
 exec:
-	./$(SIM_PROC)
+	cd $(SIM_FOLDER); ./$(SIM_PROC) -fst
 
 clean: clean-remote
-	@rm -f $(SIM_PROC)
+	@rm -f $(SIM_PROC) $(HDR) *.mem system.fst system.vcd
+	@rm -rf $(SIM_FOLDER) test
 
 .PHONY: comp exec clean debug
