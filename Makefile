@@ -92,8 +92,10 @@ sim-debug:
 fpga-fw-build: ila-build
 	$(MAKE) fw-build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
 
-fpga-build: ila-build
+fpga-boot:
 	$(MAKE) -C $(BOOT_DIR) build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
+
+fpga-build: ila-build fpga-boot
 	#$(MAKE) fw-build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
 	$(MAKE) -C $(BOARD_DIR) build
 

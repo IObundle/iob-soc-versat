@@ -93,10 +93,11 @@ module SMVMBlock2(){
    LookupTableRead row;
    LookupTableRead val;
    LookupTableRead vector;
-   Mul mul;
+   FloatMul mul;
 
-   ChangeDetect change;
-   SignalAccum accum;
+   ChangeDetect #(.AMOUNT(0)) change;
+   ChangeDetect change2;
+   FloatAddAccum accum;
    SignalMemStorage output;
    SignalMemStorage pos;
    DoneCycle cycler;
@@ -113,14 +114,96 @@ module SMVMBlock2(){
    row -> change:1;
    row -> flag;
 
+   row -> change2:0;
+   row -> change2:1;
+
    mul    -> accum:0;
-   change -> accum:1;
+   change[-4] -> accum:1;
 
    accum:0 -> output:0;
-   accum:1 -> output:1;
+   change2[3] -> output:1;
 
    row  -> pos:0;
    flag -> pos:1;
+}
+
+module SMVMBlock3(){
+   Generator gen;
+   IncrementFlag flag;
+   LookupTableRead col;
+   LookupTableRead row;
+   LookupTableRead val;
+   LookupTableRead vector;
+   FloatMul mul;
+
+   ChangeDetect #(.AMOUNT(0)) change;
+   ChangeDetect change2;
+   FloatAddAccum accum;
+   SignalMemWrite output;
+   //SignalMemStorage pos;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   gen -> row;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   row -> change:0;
+   row -> change:1;
+   row -> flag;
+
+   row -> change2:0;
+   row -> change2:1;
+
+   mul    -> accum:0;
+   change[-4] -> accum:1;
+
+   accum:0 -> output:0;
+   change2[3] -> output:1;
+}
+
+module SMVMBlock4(){
+   Generator gen;
+   TimedFlagRead flag;
+   LookupTableRead col;
+   LookupTableRead val;
+   LookupTableRead vector;
+   FloatMul mul;
+
+   ChangeDetect change2;
+   FloatAddAccum accum;
+   SignalMemWrite output;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   gen[1] -> flag;
+
+   mul  -> accum:0;
+   flag[-6] -> accum:1;
+
+   accum:0 -> output:0;
+   flag[1] -> output:1;
+}
+
+module SMVMBlock5(){
+   SMVMBlock3 block0;
+   SMVMBlock3 block1;
+   SMVMBlock3 block2;
+   SMVMBlock3 block3;
+   SMVMBlock3 block4;
+   SMVMBlock3 block5;
+   SMVMBlock3 block6;
+   SMVMBlock3 block7;
+#
 }
 
 module SMVMCSR(){
@@ -1208,10 +1291,10 @@ module MainRound(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,
 }
 
 module FloatTest(x,y){
-   FloatSub unit;   
+   Float2Int unit;   
 #
    x -> unit:0;
-   y -> unit:1;
+   //y -> unit:1;
 
    unit -> out;
 }

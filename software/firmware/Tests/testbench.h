@@ -193,7 +193,7 @@ int main(int argc,char* argv[]){
    gotBuffer      = (char*) malloc(TEST_BUFFER_SIZE);
    expectedPtr = expectedBuffer;
    gotPtr      = gotBuffer;
-   
+
    Arena arenaInst = InitArena(Megabyte(16));
    Arena* arena = &arenaInst;
 
@@ -216,18 +216,18 @@ int main(int argc,char* argv[]){
                break;
             }
          }
-      }         
+      }
 
       if(passed){
          printf("%s: OK\n",acceleratorTypeName);
       } else {
          printf("%s: ERROR\n",acceleratorTypeName);
-#if 0
+#if 1
          printf("Exp:%s\n",expectedBuffer);
          printf("Got:%s\n",gotBuffer);
 #endif
-      }         
-      
+      }
+
 #if 0
       if(passed){
          printf("Exp:%s\n",expectedBuffer);
@@ -235,7 +235,7 @@ int main(int argc,char* argv[]){
       }
 #endif
    }
-   
+
    uart_finish();
 
    return 0;

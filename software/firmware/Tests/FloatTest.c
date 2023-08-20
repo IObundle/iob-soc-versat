@@ -37,14 +37,52 @@ int main(int argc,const char* argv[]){
 
   versat_init(VERSAT_BASE);
 
-  ACCEL_TOP_input_0_constant = PackInt(1.0f);
-  ACCEL_TOP_input_1_constant = PackInt(1.0f);
+#if 0
+  {
+  float start = 0.5f;
+  float max = 1e10f;
+  for(float val = start; val < max; val *= 2){
+    ACCEL_TOP_input_0_constant = PackInt(val);
 
+    RunAccelerator(1);
+
+    int result = ACCEL_TOP_output_0_currentValue;
+
+    if(1){
+      printf("%f %d %d\n",val,result,(int) val);
+    }
+  }
+  }
+#endif
+
+#if 0
+  {
+  float start = -0.5f;
+  float max = -1e10f;
+  for(float val = start; val > max; val *= 2){
+    ACCEL_TOP_input_0_constant = PackInt(val);
+
+    RunAccelerator(1);
+
+    int result = ACCEL_TOP_output_0_currentValue;
+
+    if(1){
+      printf("%f %d %d\n",val,result,(int) val);
+    }
+  }
+  }
+#endif
+
+#if 1
+  float val = -2020.764893f;
+  ACCEL_TOP_input_0_constant = PackInt(val);
   RunAccelerator(1);
-
-  printf("%f\n",ACCEL_TOP_output_0_currentValue);
-
+  int result = ACCEL_TOP_output_0_currentValue;
+  printf("%d %d\n",result,(int) val);
+#endif
+  
   uart_finish();
 
   return 0;
 }
+

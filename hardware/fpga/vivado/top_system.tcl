@@ -42,7 +42,10 @@ if { $USE_DDR < 0 } {
                  CONFIG.NUM_SLAVE_PORTS {2}\
                  CONFIG.AXI_ADDR_WIDTH {30}\
                  CONFIG.ACLK_PERIOD {5000} \
-                 CONFIG.INTERCONNECT_DATA_WIDTH {32}\
+                 CONFIG.INTERCONNECT_DATA_WIDTH {128}\
+                 CONFIG.M00_AXI_DATA_WIDTH {128}\
+                 CONFIG.S00_AXI_DATA_WIDTH {128}\
+                 CONFIG.S01_AXI_DATA_WIDTH {128}\
                  CONFIG.M00_AXI_IS_ACLK_ASYNC {1}\
                  CONFIG.M00_AXI_WRITE_FIFO_DEPTH {32}\
                  CONFIG.M00_AXI_READ_FIFO_DEPTH {32}\
@@ -79,7 +82,7 @@ if { $USE_DDR < 0 } {
              CONFIG.C0.DDR4_AxiSelection {true} \
              CONFIG.C0.DDR4_CasLatency {11} \
              CONFIG.C0.DDR4_CasWriteLatency {11} \
-             CONFIG.C0.DDR4_AxiDataWidth {32} \
+             CONFIG.C0.DDR4_AxiDataWidth {128} \
              CONFIG.C0.DDR4_AxiAddressWidth {30} \
              CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {100} \
              CONFIG.C0.BANK_GROUP_WIDTH {1}] [get_ips ddr4_0]
@@ -107,7 +110,7 @@ report_utilization -hierarchical -file reports/synth_utilization.txt
 
 opt_design -debug_log -verbose
 power_opt_design -verbose
-report_timing_summary -file reports/opt_timing.txt
+report_timing_summary -file reports/opt_timing.txt -max_paths 100
 
 place_design
 #write_checkpoint -force checkpoints/post_place
@@ -115,7 +118,7 @@ place_design
 route_design
 #write_checkpoint -force checkpoints/post_route
 
-report_timing -file reports/timing.txt
+report_timing -file reports/timing.txt -max_paths 100
 report_clocks -file reports/clocks.txt
 report_clock_interaction -file reports/clock_interaction.txt
 report_cdc -details -file reports/cdc.txt

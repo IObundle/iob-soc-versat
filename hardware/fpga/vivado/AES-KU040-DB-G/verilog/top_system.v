@@ -130,8 +130,8 @@ module top_system
    wire [2*1-1:0]        sys_awvalid;
    wire [2*1-1:0]        sys_awready;
    //write
-   wire [2*32-1:0]        sys_wdata;
-   wire [2*4-1:0]         sys_wstrb;
+   wire [2*(`MIG_BUS_W)-1:0]        sys_wdata;
+   wire [2*(`MIG_BUS_W/8)-1:0]         sys_wstrb;
    wire [2*1-1:0]         sys_wlast;
    wire [2*1-1:0]         sys_wvalid;
    wire [2*1-1:0]         sys_wready;
@@ -154,7 +154,7 @@ module top_system
    wire [2*1-1:0]         sys_arready;
    //read
    wire [2*1-1:0]         sys_rid;
-   wire [2*`DATA_W-1:0]   sys_rdata;   
+   wire [2*(`MIG_BUS_W)-1:0]   sys_rdata;   
    wire [2*2-1:0]         sys_rresp;   
    wire [2*1-1:0]         sys_rlast;
    wire [2*1-1:0]         sys_rvalid;
@@ -174,8 +174,8 @@ module top_system
    wire       ddr_awvalid;
    wire       ddr_awready;
    //Write data
-   wire [31:0]      ddr_wdata;
-   wire [3:0]       ddr_wstrb;
+   wire [`MIG_BUS_W-1:0]      ddr_wdata;
+   wire [(`MIG_BUS_W/8)-1:0]       ddr_wstrb;
    wire       ddr_wlast;
    wire       ddr_wvalid;
    wire       ddr_wready;
@@ -198,7 +198,7 @@ module top_system
    wire       ddr_arready;
    //Read data
    wire [3:0]     ddr_rid;
-   wire [31:0]      ddr_rdata;
+   wire [`MIG_BUS_W-1:0]      ddr_rdata;
    wire [1:0]       ddr_rresp;
    wire       ddr_rlast;
    wire       ddr_rvalid;
@@ -345,8 +345,8 @@ module top_system
       .S00_AXI_AWREADY      (sys_awready[0*1+:1]),
 
       //Write data
-      .S00_AXI_WDATA        (sys_wdata[0*32+:32]),
-      .S00_AXI_WSTRB        (sys_wstrb[0*4+:4]),
+      .S00_AXI_WDATA        (sys_wdata[0*`MIG_BUS_W+:`MIG_BUS_W]),
+      .S00_AXI_WSTRB        (sys_wstrb[0*(`MIG_BUS_W/8)+:(`MIG_BUS_W/8)]),
       .S00_AXI_WLAST        (sys_wlast[0*1+:1]),
       .S00_AXI_WVALID       (sys_wvalid[0*1+:1]),
       .S00_AXI_WREADY       (sys_wready[0*1+:1]),
@@ -372,7 +372,7 @@ module top_system
       
       //Read data
       .S00_AXI_RID          (sys_rid[0*1+:1]),
-      .S00_AXI_RDATA        (sys_rdata[0*`DATA_W+:`DATA_W]),
+      .S00_AXI_RDATA        (sys_rdata[0*`MIG_BUS_W+:`MIG_BUS_W]),
       .S00_AXI_RRESP        (sys_rresp[0*2+:2]),
       .S00_AXI_RLAST        (sys_rlast[0*1+:1]),
       .S00_AXI_RVALID       (sys_rvalid[0*1+:1]),
@@ -395,8 +395,8 @@ module top_system
       .S01_AXI_AWREADY      (sys_awready[1*1+:1]),
 
       //Write data
-      .S01_AXI_WDATA        (sys_wdata[1*32+:32]),
-      .S01_AXI_WSTRB        (sys_wstrb[1*4+:4]),
+      .S01_AXI_WDATA        (sys_wdata[1*`MIG_BUS_W+:`MIG_BUS_W]),
+      .S01_AXI_WSTRB        (sys_wstrb[1*(`MIG_BUS_W/8)+:(`MIG_BUS_W/8)]),
       .S01_AXI_WLAST        (sys_wlast[1*1+:1]),
       .S01_AXI_WVALID       (sys_wvalid[1*1+:1]),
       .S01_AXI_WREADY       (sys_wready[1*1+:1]),
@@ -422,7 +422,7 @@ module top_system
       
       //Read data
       .S01_AXI_RID          (sys_rid[1*1+:1]),
-      .S01_AXI_RDATA        (sys_rdata[1*`DATA_W+:`DATA_W]),
+      .S01_AXI_RDATA        (sys_rdata[1*`MIG_BUS_W+:`MIG_BUS_W]),
       .S01_AXI_RRESP        (sys_rresp[1*2+:2]),
       .S01_AXI_RLAST        (sys_rlast[1*1+:1]),
       .S01_AXI_RVALID       (sys_rvalid[1*1+:1]),

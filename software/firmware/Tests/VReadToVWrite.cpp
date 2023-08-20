@@ -18,7 +18,7 @@ struct CollapseArray<T[N]>{
 
 #define ADD_BYTE_TO_PTR(PTR,BYTES) ((CollapseArray<decltype(PTR)>::type) (((char*) PTR) + BYTES))
 
-#define SIZE 4
+#define SIZE 512
 int outputBuffer[SIZE * 2];
 
 void ClearCache(){
@@ -38,7 +38,7 @@ void SingleTest(Arena* arena){
 
    int inputBuffer[SIZE * 2];
 
-   for(int i = 0; i < 2; i++){
+   for(int i = 0; i < 4; i++){
 #if 0
    int* output = ADD_BYTE_TO_PTR(outputBuffer,4 * i);
    int* input = ADD_BYTE_TO_PTR(inputBuffer,4 * i);
@@ -106,7 +106,7 @@ void SingleTest(Arena* arena){
      
 #if 1
    for(int i = 0; i < numberItems; i++){
-	 printf("%d: %d - %d\n",i,input[i],output[i]);
+	 //printf("%d: %d - %d\n",i,input[i],output[i]);
      if(input[i] != output[i]){
 	   printf("%d: %d - %d\n",i,input[i],output[i]);
 	 }
