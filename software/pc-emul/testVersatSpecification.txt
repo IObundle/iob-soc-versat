@@ -167,10 +167,10 @@ module SMVMBlock3(){
 
 module SMVMBlock4(){
    Generator gen;
-   TimedFlagRead flag;
-   LookupTableRead col;
-   LookupTableRead val;
-   LookupTableRead vector;
+   TimedFlagRead #(.SIZE_W(16)) flag; // Row
+   LookupTableRead2 #(.SIZE_W(16)) col; // Col
+   LookupTableRead val; // Matrix val
+   LookupTableRead vector; 
    FloatMul mul;
 
    ChangeDetect change2;

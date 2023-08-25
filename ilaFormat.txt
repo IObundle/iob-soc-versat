@@ -1,5 +1,6 @@
-$buffer 14
+$buffer 12
 
+$trigger versat.xversat.valid
 $trigger versat.xversat.done
 $trigger versat.xversat.run
 
@@ -21,3 +22,4 @@ versat.valid 1
 versat.ready 1
 versat.xversat.run 1
 versat.xversat.done 1
+

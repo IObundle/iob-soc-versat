@@ -43,11 +43,9 @@ extern "C" {
 #include "printf.h"
 #endif
 
-static const int TEST = 5;
-
 static bool error = false; // Global keep track if a error occurred. Do not want to print error messages more than once
 
-static const int TEST_BUFFER_SIZE = 1024 * 8;
+static const int TEST_BUFFER_SIZE = Megabyte(1);
 
 static char* expectedBuffer = nullptr;
 static char* gotBuffer = nullptr;
@@ -179,24 +177,98 @@ static void ExpectMemory(int* expected,int size, int* output){
    }
 }
 
+//#if (USE_DDR==1)
+//#if (RUN_DDR==0)
+//#else
+//#ifdef SIM
+//  int *ddr = (int*) EXTRA_BASE;
+//#else
+  int *ddr = (int*) (1<<(FIRM_ADDR_W+1));
+//#endif
+//#endif
+//#endif
+
 void SingleTest(Arena* arena);
 
 int main(int argc,char* argv[]){
    uart_init(UART_BASE,FREQ/BAUD);
    timer_init(TIMER_BASE);
-   ila_init(ILA_BASE);
+//   ila_init(ILA_BASE);
 
+printf("Before versat init\n");
+  
    versat_init(VERSAT_BASE);
 
    // Init testing buffers
+#ifdef PC
    expectedBuffer = (char*) malloc(TEST_BUFFER_SIZE);
    gotBuffer      = (char*) malloc(TEST_BUFFER_SIZE);
    expectedPtr = expectedBuffer;
    gotPtr      = gotBuffer;
+#endif
+  
+#ifdef PC
+  Arena arenaInst = InitArena(Megabyte(16));
+#else
+  Arena arenaInst = {};
+  arenaInst.mem = (Byte*) ddr;
+  arenaInst.totalAllocated = Gigabyte(1);
 
-   Arena arenaInst = InitArena(Megabyte(16));
-   Arena* arena = &arenaInst;
+  printf("DDR\n");
+  printf("%p\n",expectedBuffer); // Maloc return
+  printf("%p\n",&arenaInst); // Local variable
+  printf("%p\n",ddr); // Local variable
+#endif
 
+  Arena* arena = &arenaInst;
+
+#if 0
+  int size = Megabyte(256);
+  printf("Gonna fill\n");
+
+  char* original = (char*) ddr; //0x00040000; //(char*) malloc(Megabyte(size));
+  printf("%p\n",&arenaInst); // Local variable
+  printf("%p\n",original);
+
+  // Initialize ILA
+  ila_set_different_signal_storing(1);
+  ila_set_time_offset(-1);
+  
+  ila_set_trigger_type(0,ILA_TRIGGER_TYPE_CONTINUOUS);
+  ila_set_trigger_enabled(0,true); // Ila start recording. Only a small overhead cost anyway
+
+  SignalLoop();
+  
+  char* ptr = original;
+  for(int i = 0; i < size; i++){
+    if(i != 0 && (i % (size / 8)) == 0){
+      printf("Index: %x\n",i);
+    }
+    ptr[i] = (char) ((i % 255) + 1);
+  }
+
+  printf("Gonna check\n");
+  ptr = original;
+  bool noError = true;
+  for(int i = 0; i < size; i++){
+    if(i != 0 && (i % (size / 8)) == 0){
+      printf("Index: %x\n",i);
+    }
+    char val = (char) ((i % 255) + 1);
+    if(val != ptr[i]){
+      printf("Started giving bad at pos: %x (%d/%d)\n",i,val,ptr[i]);
+      printf("%p\n",&ptr[i]);
+      noError = false;
+      break;
+    }
+  }
+  if(noError){ printf("OK\n");}
+  
+  ila_output_everything();
+#endif
+  
+#if 1
+ 
    printf("Single test\n");
    SingleTest(arena);
 
@@ -235,9 +307,10 @@ int main(int argc,char* argv[]){
       }
 #endif
    }
+#endif
 
    uart_finish();
-
+  
    return 0;
 }
 

@@ -1,7 +1,7 @@
 #define BLOCK_XY
 
 #define CHANGE
-#define PRINT
+//#define PRINT
 #define TEST
 
 #include "SMVM.hpp"
@@ -172,7 +172,7 @@ static void ConfigAccelerator(int frame){
   int toRun = frame - 1;
   int toWrite = frame - 2;
 
-  printf("%d %d %d %d\n",toLoad,toRun,toWrite,max);
+  //printf("%d %d %d %d\n",toLoad,toRun,toWrite,max);
 
   if(toRun >= 0 && toRun < max){
     BlockCSR* toRunBlock = &blocks[toRun];
@@ -224,7 +224,7 @@ void SingleTest(Arena* arena){
   timeRegion("CPU multiply"){
     expected = MultiplyBlockCSR(block,vec,arena);
   }
-  printf("Make sure compiler does not optimize away: %f\n",expected[0]);
+  printf("Make sure compiler does not optimize away: %d\n",expected[0]);
 
   Array<real> res = PushArray<real>(arena,size);
   Memset(res,0.0f);
@@ -251,8 +251,6 @@ void SingleTest(Arena* arena){
   StartAccelerator();
   EndAccelerator();
 
-  ClearCache(PushBytes(arena,Megabyte(1)));
-  
   int index = 0;
   for(int i = 0; i < blocks.size; i++){
     BlockCSR& block = blocks[i];
