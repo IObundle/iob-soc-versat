@@ -8,10 +8,16 @@ typedef float real;
 #include <cstdint>
 typedef uint16_t u16;
 
+// For some reason static variables cannot have computations because firmware just inits them as zero, need to define them this way to make sure the actual values are 
+#define SIZE 50
+#define AMOUNT_NZ ((SIZE * SIZE) / 2)
+#define BLOCK_SIZE (SIZE / 2)
+#define BLOCK_SIZE SIZE
+
 // Default values for random example
-static int size = 5;
-static int amountNZ = (size * size) / 2;
-static int blockSize = size / 2; // 25 * 25 = 625
+static int size = SIZE;
+static int amountNZ = AMOUNT_NZ;
+static int blockSize = BLOCK_SIZE;
 
 static bool randomMat = true;
 
@@ -156,32 +162,29 @@ struct Matrix{
 static Matrix RandomMatrix(Arena* out,int size,int nonZeros,int randomSeed){
   SeedRandomNumber(randomSeed);
 
-  printf("3.1\n");
   int nElements = size * size;
 
-  printf("3.2\n");
   // Cannot meet the specifications. Return empty
   if(nonZeros > nElements || nonZeros < size){
+    printf("Empty matrix\n");
     return (Matrix){};
   }
 
-  printf("3.3\n");
   Array<real> data = PushArray<real>(out,nElements);
   Memset(data,0.0f);
-  
-  printf("3.4\n");
+
+  printf("Random mat\n");
   // Make sure that every column and every row has at least a non zero
   for(int i = 0; i < size; i++){
     data[i * size + i] = RandomNumberBetween(1,10);
   }
   int zerosLeft = nonZeros - size;
   
-  printf("3.5\n");
   while(zerosLeft){
     int y = RandomNumberBetween(0,size);
     int x = RandomNumberBetween(0,size);
 
-    printf("%d\n",zerosLeft);
+    //printf("%d\n",zerosLeft);
     
     if(data[y * size + x] == 0){
       data[y * size + x] = (real) RandomNumberBetween(1,10);
@@ -199,7 +202,6 @@ static Matrix RandomMatrix(Arena* out,int size,int nonZeros,int randomSeed){
     }
   }
 
-  printf("3.6\n");
   Matrix res = {};
   res.values = data;
   res.xSize = size;
@@ -396,6 +398,7 @@ void Print(FormatCSR* csr){
   Array<u16> column = CSRColumnArray(csr);
   Array<u16> row    = CSRRowArray(csr);
   Array<real> values = CSRValueArray(csr);
+  Array<Pair<u16,u16>> offsets = CSROffsetsArray(csr);
 
 #ifndef PC
   printf("%p %d %d %d\n",csr->data,csr->rowsAmount,csr->nonZeros,csr->_align0);
@@ -405,6 +408,14 @@ void Print(FormatCSR* csr){
   printf("Col: "); Print(column); printf("\n");
   printf("Row: "); Print(row); printf("\n");
   printf("Val: "); Print(values); printf("\n");
+
+  if(offsets.size){
+    printf("Off: %d [ ",offsets.size);
+    for(Pair<u16,u16>& p : offsets){
+      printf("%d:%d ",p.first,p.second);
+    }
+    printf("]\n");
+  }
 }
 
 
@@ -547,8 +558,8 @@ Array<Pair<u16,u16>> CalculateOffsetPair(Matrix mat,int offsets,Arena* arena){
     start += 1;
     end -= 1;
 
-    pairs[count].first = start;
-    pairs[count].second = end;
+    pairs[count].first = end;
+    pairs[count].second = start;
 
     count += 1;
   }
@@ -698,38 +709,62 @@ FormatCOO RandomCOO(Arena* temp,int amountOfNZ,int matrixSize){
   return res;
 }
 
+static real* expectedFloats;
+static real* gotFloats;
+static bool errorFloats = false;
+
+void PushExpected(Array<real> vec){
+  if(vec.size != SIZE){
+    errorFloats = true;
+  }
+
+  for(int i = 0; i < vec.size; i++){
+    expectedFloats[i] = vec[i];
+  }
+}
+
+void PushGot(Array<real> vec){
+  if(vec.size != SIZE){
+    errorFloats = true;
+  }
+  for(int i = 0; i < vec.size; i++){
+    gotFloats[i] = vec[i];
+  }
+}
+
+#if 0
 void PushExpected(Array<int> vec){
   for(int val : vec){
     PushExpectedI(val);
   }
 }
+#endif
 
-void PushExpected(Array<real> vec){
-  for(real val : vec){
-    PushExpectedF(val);
-  }
-}
-
-void PushGot(Array<real> vec){
-  for(real val : vec){
-    PushGotF(val);
-  }
-}
-
+#if 0
 void PushGot(Array<int> vec){
   for(int val : vec){
     PushGotI(val);
   }
 }
+#endif
+
+#define CACHE_LINE_BITS 256
+#define CACHE_LINE_BYTES (CACHE_LINE_BITS / 8)
+#define CACHE_N_WAYS 2
+#define CACHE_N_LINES 128
+
+#define CACHE_BIT_SIZE (CACHE_N_WAYS * CACHE_N_LINES * CACHE_LINE_BITS * 2) // Multiple by 2 to make sure
+#define CACHE_BYTE_SIZE (CACHE_BIT_SIZE / 8)
 
 // Should not be needed. Check if there is no bug elsewhere
 void ClearCache(void* validStart){
 #if 1
 #ifndef PC
+  printf("Gonna clear cache\n");
   char* ptr = (char*) validStart;
 
   char count = 0;
-  for(int i = 0; i < 1024 * 256; i += 16){
+  for(int i = 0; i < CACHE_BYTE_SIZE; i += CACHE_LINE_BYTES){
     count += ptr[i];
   }
 
@@ -963,16 +998,32 @@ Array<real> MultiplyBlockCSR(MatrixBlock* block,Array<real> vector,Arena* arena)
     Array<real> values = CSRValueArray(&csr);
     Array<u16> column = CSRColumnArray(&csr);
     Array<u16> row    = CSRRowArray(&csr);
-
+    Array<Pair<u16,u16>> offsets = CSROffsetsArray(&csr);
+    
     int yOffset = b.y * block->blockSize;
     int xOffset = b.x * block->blockSize;
     int start = 0;
+    int pairIndex = 0;
     for(int i = 0; i < csr.rowsAmount; i++){
+      int offset = i;
+
+      if(pairIndex < offsets.size){
+        if(offsets[pairIndex].first == offset){ 
+          offset = offsets[pairIndex].second;
+          pairIndex += 1;
+        } 
+      }
+      
       float val = 0;
       for(int ii = start; ii < row[i]; ii++){
-        val += values[ii] * vector[xOffset + column[ii]];
+        float sum = values[ii] * vector[xOffset + column[ii]];
+        val += sum;
+#ifdef HEAVY_PRINT
+        printf("%d %d %2f*%2f=%2f\n",yOffset + offset,xOffset + column[ii],values[ii],vector[xOffset + column[ii]],sum);
+#endif
       }
-      res[yOffset + i] = val;
+
+      res[yOffset + offset] = val;
       start = row[i];
     }
   }
@@ -1026,13 +1077,11 @@ void InitializeSMVM(Arena* arena,Type type){
 
   printf("Sizes:%d %d\n",sizeof(float),sizeof(int));
 
-  printf("1\n");
-  
-  //Arena tempInst = InitArena(Kilobyte(16));
-  Arena tempInst = SubArena(arena,Kilobyte(16));
-  Arena* temp = &tempInst;
+  expectedFloats = PushArray<real>(arena,SIZE+1).data;
+  gotFloats = PushArray<real>(arena,SIZE+1).data;
 
-  printf("2\n");
+  Arena tempInst = SubArena(arena,Megabyte(1));
+  Arena* temp = &tempInst;
 
   if(val){
 #ifdef PC
@@ -1065,15 +1114,12 @@ void InitializeSMVM(Arena* arena,Type type){
     }
 
   } else {
-    printf("3\n");
-
-  if(randomMat){
+    printf("Size: %d,NZ: %d,BlockSize:%d \n",size,amountNZ,blockSize);
+    if(randomMat){
       mat = RandomMatrix(arena,size,amountNZ,1);
     } else {
       mat = ExampleMatrix(arena);
     }
-
-  printf("4\n");
 
     // The previous code, ExampleMatrix can change size. Take care
     vec = PushArray<real>(arena,size);
@@ -1081,13 +1127,25 @@ void InitializeSMVM(Arena* arena,Type type){
       vec[i] = (real) RandomNumberBetween(1,size);
     }
 
-  printf("5\n");
+#ifdef HEAVY_PRINT
+    printf("Vec:\n");
+    Print(vec);
+    printf("\n");
+#endif
 
-  printf("Generated mat\n");
+    printf("Generated mat\n");
+
+#ifdef HEAVY_PRINT
     PrintMatrix(mat);
+#endif
 
-    printf("6\n");
-
+#if 0
+    PrintMatrix(mat);
+    ClearCache(mat.values.data);
+#endif
+    
+    //printf("%f\n",mat.values[mat.values.size-1]);
+    
     switch(type){
     case Type::COO:{
       coo = ConvertCOO(mat,arena);
@@ -1097,13 +1155,13 @@ void InitializeSMVM(Arena* arena,Type type){
     }break;
     case Type::BLOCK:{
       block = ConvertMatBlock(mat,arena);
-#ifdef PRINT
+#ifdef HEAVY_PRINT
       Print(block);
 #endif
     }break;
     case Type::BLOCKCSR:{
       block = ConvertMatBlockCSR(mat,arena,temp);
-#ifdef PRINT
+#ifdef HEAVY_PRINT
       PrintCSR(block);
 #endif
     }break;
@@ -1116,4 +1174,5 @@ void InitializeSMVM(Arena* arena,Type type){
 
     printf("Finished SMVM init\n");
   }
+
 }

@@ -10,6 +10,8 @@ SIM_PROC=a.out
 
 include ../simulation.mk
 
+DCACHE_ADDR_W:=24
+
 ifeq ($(TEST),)
 SIM_FOLDER:=.
 else

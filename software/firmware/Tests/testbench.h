@@ -89,7 +89,7 @@ static void PushExpectedF(float val){ // NOTE: Floating point rounding can make 
 }
 
 static void PushGotF(float val){
-   gotPtr += sprintf(gotPtr,"%f ",val);
+  gotPtr += sprintf(gotPtr,"%f ",val);
 }
 
 static void PushExpectedS(const char* str){
@@ -181,9 +181,9 @@ static void ExpectMemory(int* expected,int size, int* output){
 //#if (RUN_DDR==0)
 //#else
 //#ifdef SIM
-//  int *ddr = (int*) EXTRA_BASE;
+//static int *ddr = (int*) EXTRA_BASE;
 //#else
-  int *ddr = (int*) (1<<(FIRM_ADDR_W+1));
+static int *ddr = (int*) (1<<(FIRM_ADDR_W+1));
 //#endif
 //#endif
 //#endif
@@ -193,19 +193,11 @@ void SingleTest(Arena* arena);
 int main(int argc,char* argv[]){
    uart_init(UART_BASE,FREQ/BAUD);
    timer_init(TIMER_BASE);
-//   ila_init(ILA_BASE);
+   ila_init(ILA_BASE);
 
-printf("Before versat init\n");
+   printf("Before versat init\n");
   
    versat_init(VERSAT_BASE);
-
-   // Init testing buffers
-#ifdef PC
-   expectedBuffer = (char*) malloc(TEST_BUFFER_SIZE);
-   gotBuffer      = (char*) malloc(TEST_BUFFER_SIZE);
-   expectedPtr = expectedBuffer;
-   gotPtr      = gotBuffer;
-#endif
   
 #ifdef PC
   Arena arenaInst = InitArena(Megabyte(16));
@@ -221,6 +213,12 @@ printf("Before versat init\n");
 #endif
 
   Arena* arena = &arenaInst;
+
+   // Init testing buffers
+  expectedBuffer = (char*) PushBytes(arena,TEST_BUFFER_SIZE);
+  gotBuffer      = (char*) PushBytes(arena,TEST_BUFFER_SIZE);
+  expectedPtr = expectedBuffer;
+  gotPtr      = gotBuffer;
 
 #if 0
   int size = Megabyte(256);
@@ -272,6 +270,7 @@ printf("Before versat init\n");
    printf("Single test\n");
    SingleTest(arena);
 
+#if 0
    if(error){
       PrintError();
    } else {
@@ -300,6 +299,20 @@ printf("Before versat init\n");
 #endif
       }
 
+#if 1
+     if(!passed){
+       printf("Expected: %d, Got: %d\n",expectedDiff,gotDiff);
+        for(int i = 0; i < expectedDiff; i++){
+          if(expectedBuffer[i] != gotBuffer[i]){
+            printf("^");
+          } else {
+            printf(" ");
+          }
+        }
+        printf("\n");
+      }
+#endif
+     
 #if 0
       if(passed){
          printf("Exp:%s\n",expectedBuffer);
@@ -309,6 +322,8 @@ printf("Before versat init\n");
    }
 #endif
 
+#endif
+  
    uart_finish();
   
    return 0;

@@ -1,10 +1,16 @@
 #define BLOCK_XY
 
+//#define HEAVY_PRINT
+//#define PRINT
+
 #define CHANGE
-#define PRINT
 #define TEST
 
+#define ILA_OUTPUT
+
 #include "SMVM.hpp"
+
+#define PERIOD 6
 
 static void InitializeBaseAccelerator(){
   //ACCEL_TOP_cycler_amount = size + 24;
@@ -14,7 +20,7 @@ static void InitializeBaseAccelerator(){
   ACCEL_TOP_gen_shift = 0;
   ACCEL_TOP_gen_incr = 1;
   ACCEL_TOP_gen_duty = 1;
-  ACCEL_TOP_gen_period = 5;
+  ACCEL_TOP_gen_period = PERIOD;
   //ACCEL_TOP_gen_off_value = 0;
 
   ACCEL_TOP_col_incrA = 1;
@@ -177,7 +183,7 @@ static void ConfigAccelerator(int frame){
   if(toRun >= 0 && toRun < max){
     BlockCSR* toRunBlock = &blocks[toRun];
     int nonZeros = toRunBlock->csr.nonZeros;
-    ACCEL_TOP_cycler_amount = 9 + nonZeros * 6;
+    ACCEL_TOP_cycler_amount = 9 + nonZeros * PERIOD;
     ACCEL_TOP_gen_iterations = nonZeros;
 
     ACCEL_TOP_flag_disabled = 0;
@@ -195,7 +201,7 @@ static void ConfigAccelerator(int frame){
 
     outputIndex += toWriteBlock->csr.rowsAmount;
   } else {
-    ACCEL_TOP_output_disabled = ~0;
+    //ACCEL_TOP_output_disabled = ~0;
   }
 
   if(toLoad < max){
@@ -215,9 +221,15 @@ void SingleTest(Arena* arena){
 
   InitializeBaseAccelerator();
 
-  Array<float> outputArray = PushArray<float>(arena,2048);
-  Memset(outputArray,0.0f);
+  int loops = block->numberBlocks;
+  int blockSize = block->blockSize;
+
+  Array<float> outputArray = PushArray<float>(arena,sizeof(float) * amountNZ); // TODO: Need to put correct
   outputBuffer = outputArray.data;
+
+  Memset(outputArray,0.0f);
+
+  printf("Size of outputArray: %d\n",outputArray.size);
   printf("%p\n",outputBuffer);
 
   Array<real> expected = {};
@@ -229,28 +241,50 @@ void SingleTest(Arena* arena){
   Array<real> res = PushArray<real>(arena,size);
   Memset(res,0.0f);
 
-  int loops = block->numberBlocks;
-  int blockSize = block->blockSize;
+#ifdef ILA_OUTPUT
+  ila_set_different_signal_storing(0);
+  //ila_set_time_offset(-1);
+  
+  ila_set_trigger_type(0,ILA_TRIGGER_TYPE_SINGLE); // Valid
+  ila_set_trigger_type(1,ILA_TRIGGER_TYPE_SINGLE); // Done
+  ila_set_trigger_type(2,ILA_TRIGGER_TYPE_SINGLE); // Run
+
+  ila_set_trigger_negated(1,1);
+  
+  ila_set_trigger_enabled(0,true);
+  ila_set_trigger_enabled(1,true);
+  ila_set_trigger_enabled(2,true);
+
+  ila_set_reduce_type(ILA_REDUCE_TYPE_OR);
+#endif // ILA_OUTPUT
+
   Array<BlockCSR> blocks = MatrixBlockCSRArray(block);
   {
     TIME_IT("Accelerator Run");
 
-    ila_set_trigger_enabled(1,true); // Ila start recording. Only a small overhead cost anyway
-
     ConfigAccelerator(0);
 
-    for(int currentRun = 1; currentRun < loops + 2; currentRun++){
+    StartAccelerator();
+
+    ConfigAccelerator(1);
+
+    EndAccelerator();
+    
+    for(int currentRun = 2; currentRun < loops + 2; currentRun++){
       StartAccelerator();
 
       ConfigAccelerator(currentRun);
 
       EndAccelerator();
     }
+
+    ACCEL_TOP_flag_disabled = 1;
+
+    StartAccelerator();
+    EndAccelerator();
   }
 
-  StartAccelerator();
-  EndAccelerator();
-
+  printf("Accelerator end\n");
   ClearCache(PushBytes(arena,Megabyte(1)));
   
   int index = 0;
@@ -260,15 +294,34 @@ void SingleTest(Arena* arena){
     int size = block.csr.rowsAmount;
 
     Array<Pair<u16,u16>> offsets = CSROffsetsArray(&block.csr);
+
 #ifdef PRINT
     printf("Offset: %d\n",offsets.size);
 #endif
-    
-    for(int ii = 0; ii < size; ii++){
+
 #ifdef PRINT
-      printf("%d %d\n",yOffset + ii,index + ii);
+    if(offsets.size == 1){
+      Pair<u16,u16> p = offsets[0];
+      printf("P %d %d\n",p.first,p.second);
+    }
 #endif
-      res[yOffset + ii] += outputArray[index + ii];
+
+    int pairIndex = 0;
+    for(int ii = 0; ii < size; ii++){
+      int offset = ii;
+
+      if(pairIndex < offsets.size){
+        if(offsets[pairIndex].first == offset){ 
+          offset = offsets[pairIndex].second;
+          pairIndex += 1; // Accelerator converts every row into one value so if pair is found, we know we can go for the next
+        } 
+      }
+
+#ifdef PRINT
+      printf("%d %d\n",yOffset + offset,index + offset);
+#endif
+
+      res[yOffset + offset] += outputArray[index + offset];
     }
     index += size;
   }
@@ -276,8 +329,6 @@ void SingleTest(Arena* arena){
   for(int i = 0; i < outputIndex; i++){
     printf("%f\n",outputBuffer[i]);
   }
-
-  //ila_output_everything();
 
 #ifdef TEST
   PushGot(res);
@@ -287,4 +338,22 @@ void SingleTest(Arena* arena){
 #ifndef PC
   printf("Times waiting: %d\n",timesWaiting);
 #endif
+
+  if(!errorFloats){
+    for(int i = 0; i < SIZE; i++){
+      if(std::abs(gotFloats[i] - expectedFloats[i]) > 0.001f){
+        printf("%d: %f %f\n",i,expectedFloats[i],gotFloats[i]);
+        errorFloats = true;
+      }
+    }
+  }
+
+  if(!errorFloats){
+    printf("OK\n");
+#ifdef ILA_OUTPUT
+    ila_output_everything();
+#endif // ILA_OUTPUT
+  } else {
+    printf("Error\n");
+  }
 }
