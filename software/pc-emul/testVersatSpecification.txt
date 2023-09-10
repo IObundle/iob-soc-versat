@@ -166,17 +166,18 @@ module SMVMBlock3(){
 }
 
 module SMVMBlock4(){
-   Generator gen;
    TimedFlagRead #(.SIZE_W(16)) flag; // Row
    LookupTableRead2 #(.SIZE_W(16)) col; // Col
    LookupTableRead val; // Matrix val
    LookupTableRead vector; 
+
+   Generator gen;
    FloatMul mul;
 
-   ChangeDetect change2;
-   FloatAddAccum accum;
-   SignalMemWrite output;
+   MyFloatAccum accum;
    DoneCycle cycler;
+
+   SignalMemWrite output;
 #
    gen -> val;
    gen -> col;
@@ -187,22 +188,24 @@ module SMVMBlock4(){
 
    gen[1] -> flag;
 
-   mul  -> accum:0;
-   flag[-7] -> accum:1;
+   mul      -> accum:0;
+   flag[-2] -> accum:1;
 
    accum:0 -> output:0;
-   flag[1] -> output:1;
+   flag    -> output:1;
 }
 
 module SMVMBlock5(){
-   SMVMBlock3 block0;
-   SMVMBlock3 block1;
-   SMVMBlock3 block2;
-   SMVMBlock3 block3;
-   SMVMBlock3 block4;
-   SMVMBlock3 block5;
-   SMVMBlock3 block6;
-   SMVMBlock3 block7;
+   SMVMBlock4 block0;
+   SMVMBlock4 block1;
+#
+}
+
+module SMVMBlock6(){
+   SMVMBlock4 block0;
+   SMVMBlock4 block1;
+   SMVMBlock4 block2;
+   SMVMBlock4 block3;
 #
 }
 
@@ -2814,5 +2817,304 @@ iterative Iterative_Databus(){
 }
 
 */
+
+module av(const1,const2,const3,bark,Xtm){
+   FloatMul mul1;
+   FloatAdd add1;
+   FloatAdd add2;
+   FloatAdd add3;
+#
+   const2 -> mul1:0;
+   bark -> mul1:1;
+
+   mul1 -> add1:0;
+   const1 -> add1:1;
+
+   add1 -> add2:0;
+   Xtm -> add2:1;
+
+   add2 -> add3:0;
+   const3 -> add3:1;
+
+   add3 -> out;
+}
+
+
+module dzRange(dz){
+   FloatGreaterEqual ge1_dzRange;
+   FloatLess lt1_dzRange;
+   Const const1_dzRange;
+   Const const2_dzRange;
+#
+   ////dz[j] >= -3.0
+   dz -> ge1_dzRange:0;
+   const1_dzRange -> ge1_dzRange:1;
+
+   ////dz[j] < 8.0
+   dz -> lt1_dzRange:0;
+   const2_dzRange -> lt1_dzRange:1;
+
+   ////if (dz[j] >= -3.0 && dz[j] < 8.0)
+   and = ge1_dzRange & lt1_dzRange;
+   and -> out:0;
+}
+
+
+module Logic(dz){
+   FloatLess lt1_Logic;
+   FloatLess lt2_Logic;
+   FloatLess lt3_Logic;
+   Const const1_Logic;
+   Const const2_Logic;
+   Const const3_Logic;
+   Const const4_Logic;
+#
+   ////dz[j] < -1
+   dz -> lt1_Logic:0;
+   const1_Logic -> lt1_Logic:1;
+
+   ////dz[j] < 0
+   dz -> lt2_Logic:0;
+   const2_Logic -> lt2_Logic:1;
+
+   ////dz[j] < 1
+   dz -> lt3_Logic:0;
+   const3_Logic -> lt3_Logic:1;
+
+   ////sel(1)
+   cond1_not = ~lt1_Logic;
+   cond2_not = ~lt2_Logic;
+   and1 = cond1_not & cond2_not;
+   one = and1 << const4_Logic;
+
+   ////sel(0)
+   cond3_not = ~lt3_Logic;
+   and2 = cond2_not & cond3_not;
+   or1 = lt2_Logic | and2;
+   and3 = cond1_not & or1;
+   zero = and3;
+
+   ////sel
+   sel = zero ^ one;
+   sel -> out:0;
+}
+
+
+module vf4(dz,logic1,Xtm){
+   FloatAdd add1_vf4;
+   FloatAdd add2_vf4;
+   FloatSub sub1_vf4;
+   FloatSub sub2_vf4;
+   FloatSub sub3_vf4;
+   FloatSub sub4_vf4;
+   FloatMul mul1_vf4;
+   FloatMul mul2_vf4;
+   FloatMul mul3_vf4;
+   FloatMul mul4_vf4;
+   FloatMul mul5_vf4;
+   FloatMul mul6_vf4;
+   Const const1_vf4;
+   Const const2_vf4;
+   Const const3_vf4;
+   Const const4_vf4;
+   Const const5_vf4;
+   Const const6_vf4;
+   Mux4 mux4_vf4;
+   FloatNot not1_vf4;
+#
+   ////(0.4 * Xtm[k] + 6)
+   const3_vf4 -> mul1_vf4:0;
+   Xtm -> mul1_vf4:1;
+   mul1_vf4 -> add1_vf4:0;
+   const4_vf4 -> add1_vf4:1;
+
+   ////vf = 17 * (dz[j] + 1) - (0.4 * Xtm[k] + 6)
+   dz -> add2_vf4:0;
+   const2_vf4 -> add2_vf4:1;
+   const1_vf4 -> mul2_vf4:0;
+   add2_vf4 -> mul2_vf4:1;
+   mul2_vf4 -> sub1_vf4:0;
+   add1_vf4 -> sub1_vf4:1;
+   sub1_vf4 -> mux4_vf4:0;
+
+   ////vf = (0.4 * Xtm[k] + 6) * dz[j]
+   add1_vf4 -> mul3_vf4:0;
+   dz -> mul3_vf4:1;
+   mul3_vf4 -> mux4_vf4:3;
+
+   ////vf = (-17 * dz[j])
+   const5_vf4 -> mul4_vf4:0;
+   dz -> mul4_vf4:1;
+   mul4_vf4 -> mux4_vf4:2;
+
+   ////vf = -(dz[j] - 1) * (17 - 0.15 * Xtm[k]) - 17;
+   dz -> sub2_vf4:0;
+   const2_vf4 -> sub2_vf4:1;
+   sub2_vf4 -> not1_vf4:0;
+   const6_vf4 -> mul5_vf4:0;
+   Xtm -> mul5_vf4:1;
+   const1_vf4 -> sub3_vf4:0;
+   mul5_vf4 -> sub3_vf4:1;
+   not1_vf4 -> mul6_vf4:0;
+   sub3_vf4 -> mul6_vf4:1;
+   mul6_vf4 -> sub4_vf4:0;
+   const1_vf4 -> sub4_vf4:1;
+   sub4_vf4 -> mux4_vf4:1;
+
+   ////sel
+   logic1 -> mux4_vf4:4;
+
+   ////vf
+   mux4_vf4 -> out:0;
+}
+
+
+module psycho_3_add_db(a,b,add1,add2,sel,if){
+   Mux4 mux4_psycho_3;
+   Conditional1 conditional_psycho_3;
+#
+
+   ////return mux4
+   a -> mux4_psycho_3:0;
+   b -> mux4_psycho_3:3;
+   add1 -> mux4_psycho_3:2;
+   add2 -> mux4_psycho_3:1;
+   sel -> mux4_psycho_3:4;
+
+   ////LTtm[j] = psycho_3_add_db()
+   if -> conditional_psycho_3:0;
+   mux4_psycho_3 -> conditional_psycho_3:1;
+   a -> conditional_psycho_3:2;
+   conditional_psycho_3 -> out:0;
+}
+
+
+module start() {
+   Const DBMIN;
+   Const const1_av;
+   Const const2_av;
+   Const const3_av;
+   Const barkK;
+   Const Xtm;
+   Const Xnm;
+   Mux2 mux2;
+   av av1;
+   Mem freq_subset;
+   LookupTable bark;
+   dzRange dzRange1;
+   Logic logic1;
+   vf4 vf1;
+   FloatSub sub;
+   FloatAdd add;
+   psycho_3_add_db psycho_3_add_db1;
+   Mem LTtmR;
+   LookupTable mem;
+   Const const1_psycho_3; 
+   Const const2_psycho_3; 
+   Const const3_psycho_3; 
+   Const const4_psycho_3;
+   Const const5_psycho_3;
+   FloatSub sub1_psycho_3;
+   FloatAdd add1_psycho_3;
+   FloatAdd add2_psycho_3;
+   FloatMul mul_psycho_3;
+   FloatGreater gt_psycho_3;
+   FloatLess lt_psycho_3;
+   FloatGreaterEqual ge_psycho_3;
+   Float2Int f2i_psycho_3;
+#
+   ////FLOAT av_tone = -1.525 - 0.275 * bark[k] - 4.5 + Xtm[k]
+   ////FLOAT av_noise = -1.525 - 0.175 * bark[k] - 0.5 + Xnm[k];
+   const1_av -> av1:0;
+   const2_av -> av1:1;
+   const3_av -> av1:2;
+   barkK -> av1:3;
+   Xtm -> av1:4;
+
+   ////dz[j] = bark[freq_subset[j]] - bark[k]
+   freq_subset -> bark;
+   bark -> sub:0;
+   barkK -> sub:1;
+
+   ////dz
+   sub -> dzRange1:0;
+
+   ////dz
+   sub -> logic1:0;
+
+   ////dz
+   sub -> vf1:0;
+   logic1 -> vf1:1;
+   Xtm -> vf1:2;
+
+   av1 -> add:0;
+   vf1 -> add:1;
+
+   ///////////////////////////////////////psycho_3_add_db operations
+
+   ////DBMIN or LTtmR
+   DBMIN -> mux2:0;
+   LTtmR:1 -> mux2:1;
+
+   ////fdiff = (10.0 * (a - b));
+   mux2 -> sub1_psycho_3:0;
+   add -> sub1_psycho_3:1;
+   const1_psycho_3 -> mul_psycho_3:0;
+   sub1_psycho_3 -> mul_psycho_3:1;
+   fdiff = mul_psycho_3;
+
+   ////fdiff > 990.0
+   fdiff -> gt_psycho_3:0;
+   const2_psycho_3 -> gt_psycho_3:1;
+
+   ////fdiff < -990.0
+   fdiff -> lt_psycho_3:0;
+   const3_psycho_3 -> lt_psycho_3:1;
+
+   ////idiff = (int) fdiff
+   fdiff -> f2i_psycho_3:0;
+   idiff = f2i_psycho_3;
+
+   ////idiff >= 0
+   idiff -> ge_psycho_3:0;
+   const4_psycho_3 -> ge_psycho_3:1;
+
+   ////a + mem->dbtable[idiff]
+   mux2 -> add1_psycho_3:0;
+   idiff -> mem;
+   mem -> add1_psycho_3:1;
+
+   ////b + mem->dbtable[-idiff]
+   add -> add2_psycho_3:0;
+   _idiff = -idiff;
+   _idiff -> mem:1;
+   mem:1 -> add2_psycho_3:1;
+
+   ////sel(1)
+   cond1_not = ~gt_psycho_3;
+   cond2_not = ~lt_psycho_3;
+   and1 = cond1_not & cond2_not;
+   one = and1 << const5_psycho_3;
+
+   ////sel(0)
+   cond3_not = ~ge_psycho_3;
+   and2 = cond2_not & cond3_not;
+   or1 = lt_psycho_3 | and2;
+   and3 = cond1_not & or1;
+   zero = and3;
+
+   ////sel mux4
+   sel = zero ^ one;
+
+   ///////////////////////////////////////psycho_3_add_db inputs and output
+
+   mux2 -> psycho_3_add_db1:0;
+   add -> psycho_3_add_db1:1;
+   add1_psycho_3 -> psycho_3_add_db1:2;
+   add2_psycho_3 -> psycho_3_add_db1:3;
+   sel -> psycho_3_add_db1:4;
+   dzRange1 -> psycho_3_add_db1:5;
+   psycho_3_add_db1 -> LTtmR:0;
+}
 
 

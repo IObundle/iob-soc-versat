@@ -42,10 +42,10 @@ if { $USE_DDR < 0 } {
                  CONFIG.NUM_SLAVE_PORTS {2}\
                  CONFIG.AXI_ADDR_WIDTH {30}\
                  CONFIG.ACLK_PERIOD {5000} \
-                 CONFIG.INTERCONNECT_DATA_WIDTH {128}\
-                 CONFIG.M00_AXI_DATA_WIDTH {128}\
-                 CONFIG.S00_AXI_DATA_WIDTH {128}\
-                 CONFIG.S01_AXI_DATA_WIDTH {128}\
+                 CONFIG.INTERCONNECT_DATA_WIDTH {256}\
+                 CONFIG.M00_AXI_DATA_WIDTH {256}\
+                 CONFIG.S00_AXI_DATA_WIDTH {256}\
+                 CONFIG.S01_AXI_DATA_WIDTH {256}\
                  CONFIG.M00_AXI_IS_ACLK_ASYNC {1}\
                  CONFIG.M00_AXI_WRITE_FIFO_DEPTH {32}\
                  CONFIG.M00_AXI_READ_FIFO_DEPTH {32}\
@@ -82,7 +82,7 @@ if { $USE_DDR < 0 } {
              CONFIG.C0.DDR4_AxiSelection {true} \
              CONFIG.C0.DDR4_CasLatency {11} \
              CONFIG.C0.DDR4_CasWriteLatency {11} \
-             CONFIG.C0.DDR4_AxiDataWidth {128} \
+             CONFIG.C0.DDR4_AxiDataWidth {256} \
              CONFIG.C0.DDR4_AxiAddressWidth {30} \
              CONFIG.ADDN_UI_CLKOUT1_FREQ_HZ {100} \
              CONFIG.C0.BANK_GROUP_WIDTH {1}] [get_ips ddr4_0]
@@ -102,7 +102,7 @@ if { $USE_DDR < 0 } {
 file mkdir reports
 file mkdir checkpoints
 
-synth_design -include_dirs $INCLUDE -verilog_define $DEFINE -part $DEVICE -top $TOP -debug_log -verbose
+synth_design -include_dirs $INCLUDE -verilog_define $DEFINE -part $DEVICE -top $TOP -debug_log -verbose -retiming
 report_utilization -hierarchical -file reports/synth_utilization.txt
 #write_checkpoint -force checkpoints/post_synth
 
@@ -118,6 +118,7 @@ place_design -directive Explore
 route_design -directive Explore 
 #write_checkpoint -force checkpoints/post_route
 
+report_bus_skew -file reports/bus_skew.txt
 report_timing -file reports/timing.txt -max_paths 100
 report_clocks -file reports/clocks.txt
 report_clock_interaction -file reports/clock_interaction.txt

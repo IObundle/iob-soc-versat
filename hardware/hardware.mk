@@ -110,13 +110,9 @@ $(OUTPUT_SIM_FOLDER)/boot.hex: $(BOOT_DIR)/boot.bin
 $(OUTPUT_SIM_FOLDER)/firmware.hex: $(INPUT_FIRM_FOLDER)/firmware.bin
 	@mkdir -p $(OUTPUT_SIM_FOLDER)
 	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > $@
-ifeq ($(MIG_BUS_W),64)
+ifneq ($(MIG_BUS_W),32)
 	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > firmwareBase.hex
-	$(SW_DIR)/python/convertFirmware.py firmwareBase.hex 64 > $@
-endif
-ifeq ($(MIG_BUS_W),128)
-	$(PYTHON_DIR)/makehex.py $< $(FIRM_ADDR_W) > firmwareBase.hex
-	$(SW_DIR)/python/convertFirmware.py firmwareBase.hex 128 > $@
+	$(SW_DIR)/python/convertFirmware.py firmwareBase.hex $(MIG_BUS_W) > $@
 endif
 
 boot.hex: $(BOOT_DIR)/boot.bin

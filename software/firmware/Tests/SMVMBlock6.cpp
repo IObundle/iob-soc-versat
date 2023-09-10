@@ -1,11 +1,14 @@
 #define BLOCK_XY
 
+//#define BLOCK_SIMPLE_PRINT
 //#define CLEAR_CACHE
 //#define HEAVY_PRINT
 //#define BLOCK_PRINT
 //#define PRINT
+//#define PRINT_OUTPUT
+#define PRINT_DIFF
 
-#define ILA_OUTPUT
+//#define ILA_OUTPUT
 
 #define CHANGE
 #define TEST
@@ -13,7 +16,7 @@
 #include "SMVM.hpp"
 
 #define PERIOD 1
-#define ACCELS 2
+#define ACCELS 4
 
 static void InitializeBaseAccelerator(){
   // Block 0
@@ -27,7 +30,6 @@ static void InitializeBaseAccelerator(){
   ACCEL_TOP_block0_col_incrA = 1;
   ACCEL_TOP_block0_col_iterA = 1;
   ACCEL_TOP_block0_col_dutyA = ~0;
-  ACCEL_TOP_block0_col_size = 8;
   ACCEL_TOP_block0_col_int_addr = 0;
   ACCEL_TOP_block0_col_pingPong = 1;
 
@@ -35,21 +37,18 @@ static void InitializeBaseAccelerator(){
   ACCEL_TOP_block0_flag_incrA = 1;
   ACCEL_TOP_block0_flag_iterA = 1;
   ACCEL_TOP_block0_flag_dutyA = ~0;
-  ACCEL_TOP_block0_flag_size = 8;
   ACCEL_TOP_block0_flag_int_addr = 0;
   ACCEL_TOP_block0_flag_maximum = 0;
 
   ACCEL_TOP_block0_val_incrA = 1;
   ACCEL_TOP_block0_val_iterA = 1;
   ACCEL_TOP_block0_val_dutyA = ~0;
-  ACCEL_TOP_block0_val_size = 8;
   ACCEL_TOP_block0_val_int_addr = 0;
   ACCEL_TOP_block0_val_pingPong = 1;
 
   ACCEL_TOP_block0_vector_incrA = 1;
   ACCEL_TOP_block0_vector_iterA = 1;
   ACCEL_TOP_block0_vector_dutyA = ~0;
-  ACCEL_TOP_block0_vector_size = 8;
   ACCEL_TOP_block0_vector_int_addr = 0;
 
   ACCEL_TOP_block0_output_disabled = 0;
@@ -69,7 +68,6 @@ static void InitializeBaseAccelerator(){
   ACCEL_TOP_block1_col_incrA = 1;
   ACCEL_TOP_block1_col_iterA = 1;
   ACCEL_TOP_block1_col_dutyA = ~0;
-  ACCEL_TOP_block1_col_size = 8;
   ACCEL_TOP_block1_col_int_addr = 0;
   ACCEL_TOP_block1_col_pingPong = 1;
 
@@ -77,21 +75,18 @@ static void InitializeBaseAccelerator(){
   ACCEL_TOP_block1_flag_incrA = 1;
   ACCEL_TOP_block1_flag_iterA = 1;
   ACCEL_TOP_block1_flag_dutyA = ~0;
-  ACCEL_TOP_block1_flag_size = 8;
   ACCEL_TOP_block1_flag_int_addr = 0;
   ACCEL_TOP_block1_flag_maximum = 0;
 
   ACCEL_TOP_block1_val_incrA = 1;
   ACCEL_TOP_block1_val_iterA = 1;
   ACCEL_TOP_block1_val_dutyA = ~0;
-  ACCEL_TOP_block1_val_size = 8;
   ACCEL_TOP_block1_val_int_addr = 0;
   ACCEL_TOP_block1_val_pingPong = 1;
 
   ACCEL_TOP_block1_vector_incrA = 1;
   ACCEL_TOP_block1_vector_iterA = 1;
   ACCEL_TOP_block1_vector_dutyA = ~0;
-  ACCEL_TOP_block1_vector_size = 8;
   ACCEL_TOP_block1_vector_int_addr = 0;
 
   ACCEL_TOP_block1_output_disabled = 0;
@@ -99,9 +94,86 @@ static void InitializeBaseAccelerator(){
 #ifndef CHANGE
   ACCEL_TOP_block1_vector_pingPong = 1;
 #endif
+
+  // Block 2
+  ACCEL_TOP_block2_gen_iterations = 1;
+  ACCEL_TOP_block2_gen_start = 0;
+  ACCEL_TOP_block2_gen_shift = 1;
+  ACCEL_TOP_block2_gen_incr = 1;
+  ACCEL_TOP_block2_gen_duty = 1;
+  ACCEL_TOP_block2_gen_period = PERIOD;
+
+  ACCEL_TOP_block2_col_incrA = 1;
+  ACCEL_TOP_block2_col_iterA = 1;
+  ACCEL_TOP_block2_col_dutyA = ~0;
+  ACCEL_TOP_block2_col_int_addr = 0;
+  ACCEL_TOP_block2_col_pingPong = 1;
+
+  ACCEL_TOP_block2_flag_disabled = 1;
+  ACCEL_TOP_block2_flag_incrA = 1;
+  ACCEL_TOP_block2_flag_iterA = 1;
+  ACCEL_TOP_block2_flag_dutyA = ~0;
+  ACCEL_TOP_block2_flag_int_addr = 0;
+  ACCEL_TOP_block2_flag_maximum = 0;
+
+  ACCEL_TOP_block2_val_incrA = 1;
+  ACCEL_TOP_block2_val_iterA = 1;
+  ACCEL_TOP_block2_val_dutyA = ~0;
+  ACCEL_TOP_block2_val_int_addr = 0;
+  ACCEL_TOP_block2_val_pingPong = 1;
+
+  ACCEL_TOP_block2_vector_incrA = 1;
+  ACCEL_TOP_block2_vector_iterA = 1;
+  ACCEL_TOP_block2_vector_dutyA = ~0;
+  ACCEL_TOP_block2_vector_int_addr = 0;
+
+  ACCEL_TOP_block2_output_disabled = 0;
+
+#ifndef CHANGE
+  ACCEL_TOP_block2_vector_pingPong = 1;
+#endif
+
+  // Block 3
+  ACCEL_TOP_block3_gen_iterations = 1;
+  ACCEL_TOP_block3_gen_start = 0;
+  ACCEL_TOP_block3_gen_shift = 1;
+  ACCEL_TOP_block3_gen_incr = 1;
+  ACCEL_TOP_block3_gen_duty = 1;
+  ACCEL_TOP_block3_gen_period = PERIOD;
+
+  ACCEL_TOP_block3_col_incrA = 1;
+  ACCEL_TOP_block3_col_iterA = 1;
+  ACCEL_TOP_block3_col_dutyA = ~0;
+  ACCEL_TOP_block3_col_int_addr = 0;
+  ACCEL_TOP_block3_col_pingPong = 1;
+
+  ACCEL_TOP_block3_flag_disabled = 1;
+  ACCEL_TOP_block3_flag_incrA = 1;
+  ACCEL_TOP_block3_flag_iterA = 1;
+  ACCEL_TOP_block3_flag_dutyA = ~0;
+  ACCEL_TOP_block3_flag_int_addr = 0;
+  ACCEL_TOP_block3_flag_maximum = 0;
+
+  ACCEL_TOP_block3_val_incrA = 1;
+  ACCEL_TOP_block3_val_iterA = 1;
+  ACCEL_TOP_block3_val_dutyA = ~0;
+  ACCEL_TOP_block3_val_int_addr = 0;
+  ACCEL_TOP_block3_val_pingPong = 1;
+
+  ACCEL_TOP_block3_vector_incrA = 1;
+  ACCEL_TOP_block3_vector_iterA = 1;
+  ACCEL_TOP_block3_vector_dutyA = ~0;
+  ACCEL_TOP_block3_vector_int_addr = 0;
+
+  ACCEL_TOP_block3_output_disabled = 0;
+
+#ifndef CHANGE
+  ACCEL_TOP_block3_vector_pingPong = 1;
+#endif
+
 }
 
-static int lastLoadedX[ACCELS] = {-1,-1};
+static int lastLoadedX[ACCELS] = {-1,-1,-1,-1};
 
 #ifdef TEST
 static int vectorLoads = 0;
@@ -119,6 +191,18 @@ static void EnableReads(int accel){
     ACCEL_TOP_block1_val_disabled = 0;
     ACCEL_TOP_block1_vector_disabled = 0;
   }
+
+  if(accel == 2){
+    ACCEL_TOP_block2_col_disabled = 0;
+    ACCEL_TOP_block2_val_disabled = 0;
+    ACCEL_TOP_block2_vector_disabled = 0;
+  }
+
+  if(accel == 3){
+    ACCEL_TOP_block3_col_disabled = 0;
+    ACCEL_TOP_block3_val_disabled = 0;
+    ACCEL_TOP_block3_vector_disabled = 0;
+  }
 }
 
 static void EnableAccel(int accel){
@@ -132,6 +216,16 @@ static void EnableAccel(int accel){
   if(accel == 1){
     ACCEL_TOP_block1_output_disabled = 0;
     ACCEL_TOP_block1_flag_disabled = 0;
+  }
+
+  if(accel == 2){
+    ACCEL_TOP_block2_output_disabled = 0;
+    ACCEL_TOP_block2_flag_disabled = 0;
+  }
+
+  if(accel == 3){
+    ACCEL_TOP_block3_output_disabled = 0;
+    ACCEL_TOP_block3_flag_disabled = 0;
   }
 }
 
@@ -147,6 +241,18 @@ static void DisableReads(int accel){
     ACCEL_TOP_block1_val_disabled = 1;
     ACCEL_TOP_block1_vector_disabled = 1;
   }
+
+  if(accel == 2){
+    ACCEL_TOP_block2_col_disabled = 1;
+    ACCEL_TOP_block2_val_disabled = 1;
+    ACCEL_TOP_block2_vector_disabled = 1;
+  }
+
+  if(accel == 3){
+    ACCEL_TOP_block3_col_disabled = 1;
+    ACCEL_TOP_block3_val_disabled = 1;
+    ACCEL_TOP_block3_vector_disabled = 1;
+  }
 }
 
 static void DisableAccel(int accel){
@@ -160,6 +266,16 @@ static void DisableAccel(int accel){
   if(accel == 1){
     ACCEL_TOP_block1_output_disabled = 1;
     ACCEL_TOP_block1_flag_disabled = 1;
+  }
+
+  if(accel == 2){
+    ACCEL_TOP_block2_output_disabled = 1;
+    ACCEL_TOP_block2_flag_disabled = 1;
+  }
+
+  if(accel == 3){
+    ACCEL_TOP_block3_output_disabled = 1;
+    ACCEL_TOP_block3_flag_disabled = 1;
   }
 }
 
@@ -234,9 +350,6 @@ static inline void ConfigureToLoad0(BlockCSR* block){
   {
     //printf("Vec: %p %d\n",vec.data,blockSize);
     int numberItems = blockSize;
-#ifdef PRINT
-    printf("Vec: %p\n",&vec.data[xPos * blockSize]);
-#endif
     real* data = &vec.data[xPos * blockSize];
 
 #ifdef CHANGE
@@ -318,9 +431,6 @@ static inline void ConfigureToLoad1(BlockCSR* block){
   {
     //printf("Vec: %p %d\n",vec.data,blockSize);
     int numberItems = blockSize;
-#ifdef PRINT
-    printf("%p\n",&vec.data[xPos * blockSize]);
-#endif
     real* data = &vec.data[xPos * blockSize];
 
 #ifdef CHANGE
@@ -344,19 +454,174 @@ static inline void ConfigureToLoad1(BlockCSR* block){
   }
 }
 
+static inline void ConfigureToLoad2(BlockCSR* block){
+  FormatCSR& toLoad = block->csr;
+  int xPos = block->x;
+
+  //ConfigureSimpleVRead(col,toLoad.column.size,toLoad.column.data);
+  // Memory side
+  {
+    int numberItems = toLoad.nonZeros;
+    u16* data = CSRColumn(&toLoad);
+    //printf("Col0: %p, %x, %x\n",data,data[0],data[1]);
+
+    ACCEL_TOP_block2_col_perA = numberItems;
+
+    // B - versat side
+    ACCEL_TOP_block2_col_ext_addr = (iptr) data;
+    ACCEL_TOP_block2_col_length = numberItems * sizeof(u16); // AXI requires length of len - 1
+    //printf("%d %d\n",numberItems,numberItems * sizeof(int));
+  }
+
+  //ConfigureSimpleVRead(row,toLoad.row.size,toLoad.row.data);
+  // Memory side
+  {
+    int numberItems = toLoad.rowsAmount;
+    u16* data = CSRRow(&toLoad);
+    //printf("Row0: %p, %x, %x\n",data,data[0],data[1]);
+    
+    ACCEL_TOP_block2_flag_perA = numberItems;
+
+    // B - versat side
+    ACCEL_TOP_block2_flag_ext_addr = (iptr) data;
+    ACCEL_TOP_block2_flag_length = numberItems * sizeof(u16); // AXI requires length of len - 1
+  }
+
+  //ConfigureSimpleVRead(val,toLoad.values.size,toLoad.values.data);
+  // Memory side
+  {
+    int numberItems = toLoad.nonZeros;
+    real* data = CSRValue(&toLoad);
+    //printf("Val0: %p, %f, %f\n",data,data[0],data[1]);
+
+    ACCEL_TOP_block2_val_perA = numberItems;
+
+    // B - versat side
+    ACCEL_TOP_block2_val_ext_addr = (iptr) data;
+    ACCEL_TOP_block2_val_length = numberItems * sizeof(int); // AXI requires length of len - 1
+  }
+
+  //ConfigureSimpleVRead(vec,vec.size,vec.data);
+  // Memory side
+#ifdef CHANGE
+  if(lastLoadedX[2] == xPos){
+    ACCEL_TOP_block2_vector_disabled = 0;
+  }
+  else
+#endif
+  {
+    //printf("Vec: %p %d\n",vec.data,blockSize);
+    int numberItems = blockSize;
+    real* data = &vec.data[xPos * blockSize];
+
+#ifdef CHANGE
+    ACCEL_TOP_block2_vector_disabled = 0;
+
+#ifdef TEST
+    vectorLoads += 1;
+#endif
+
+    if(xPos > 0)
+      ACCEL_TOP_block2_vector_pingPong = 1;
+#endif
+
+    ACCEL_TOP_block2_vector_perA = numberItems;
+
+    // B - versat side
+    ACCEL_TOP_block2_vector_ext_addr = (iptr) data;
+    ACCEL_TOP_block2_vector_length = numberItems * sizeof(int); // AXI requires length of len - 1
+
+    lastLoadedX[2] = xPos;
+  }
+}
+
+static inline void ConfigureToLoad3(BlockCSR* block){
+  FormatCSR& toLoad = block->csr;
+  int xPos = block->x;
+
+  //ConfigureSimpleVRead(col,toLoad.column.size,toLoad.column.data);
+  // Memory side
+  {
+    int numberItems = toLoad.nonZeros;
+    u16* data = CSRColumn(&toLoad);
+    //printf("Col0: %p, %x, %x\n",data,data[0],data[1]);
+
+    ACCEL_TOP_block3_col_perA = numberItems;
+
+    // B - versat side
+    ACCEL_TOP_block3_col_ext_addr = (iptr) data;
+    ACCEL_TOP_block3_col_length = numberItems * sizeof(u16); // AXI requires length of len - 1
+    //printf("%d %d\n",numberItems,numberItems * sizeof(int));
+  }
+
+  //ConfigureSimpleVRead(row,toLoad.row.size,toLoad.row.data);
+  // Memory side
+  {
+    int numberItems = toLoad.rowsAmount;
+    u16* data = CSRRow(&toLoad);
+    //printf("Row0: %p, %x, %x\n",data,data[0],data[1]);
+    
+    ACCEL_TOP_block3_flag_perA = numberItems;
+
+    // B - versat side
+    ACCEL_TOP_block3_flag_ext_addr = (iptr) data;
+    ACCEL_TOP_block3_flag_length = numberItems * sizeof(u16); // AXI requires length of len - 1
+  }
+
+  //ConfigureSimpleVRead(val,toLoad.values.size,toLoad.values.data);
+  // Memory side
+  {
+    int numberItems = toLoad.nonZeros;
+    real* data = CSRValue(&toLoad);
+    //printf("Val0: %p, %f, %f\n",data,data[0],data[1]);
+
+    ACCEL_TOP_block3_val_perA = numberItems;
+
+    // B - versat side
+    ACCEL_TOP_block3_val_ext_addr = (iptr) data;
+    ACCEL_TOP_block3_val_length = numberItems * sizeof(int); // AXI requires length of len - 1
+  }
+
+  //ConfigureSimpleVRead(vec,vec.size,vec.data);
+  // Memory side
+#ifdef CHANGE
+  if(lastLoadedX[3] == xPos){
+    ACCEL_TOP_block3_vector_disabled = 0;
+  }
+  else
+#endif
+  {
+    //printf("Vec: %p %d\n",vec.data,blockSize);
+    int numberItems = blockSize;
+    real* data = &vec.data[xPos * blockSize];
+
+#ifdef CHANGE
+    ACCEL_TOP_block3_vector_disabled = 0;
+
+#ifdef TEST
+    vectorLoads += 1;
+#endif
+
+    if(xPos > 0)
+      ACCEL_TOP_block3_vector_pingPong = 1;
+#endif
+
+    ACCEL_TOP_block3_vector_perA = numberItems;
+
+    // B - versat side
+    ACCEL_TOP_block3_vector_ext_addr = (iptr) data;
+    ACCEL_TOP_block3_vector_length = numberItems * sizeof(int); // AXI requires length of len - 1
+
+    lastLoadedX[3] = xPos;
+  }
+}
+
 struct AccelState{
   int lastToLoad;
   int lastToRun;
 };
 
-struct PastRuns{
-  int loaded;
-  int runned;
-  int written;
-};
-
-static AccelState state[2];
-static PastRuns* runs;
+static AccelState state[ACCELS];
 
 static void ConfigAccelerator(int frame,int accel){
   int blockSize = block->blockSize;
@@ -367,43 +632,38 @@ static void ConfigAccelerator(int frame,int accel){
 
   int toRun = state[accel].lastToLoad;
   int toWrite = state[accel].lastToRun;
-
-  //int toRun = frame - 1;
-  //int toWrite = frame - 2;
   
   state[accel].lastToLoad = toLoad;
   state[accel].lastToRun = toRun;
-
-  if(toLoad >= 0 && toLoad < max){
-    runs[toLoad].loaded = accel; 
-  }
-  if(toRun >= 0 && toRun < max){
-    runs[toRun].runned = accel; 
-  }
-  if(toWrite >= 0 && toWrite < max){
-    runs[toWrite].written = accel; 
-  }
   
 #ifdef PRINT
   printf("%d %d %d %d\n",toLoad,toRun,toWrite,max);
 #endif
 
-  //printf("A\n");
-  
   if(toRun >= 0 && toRun < max){
     BlockCSR* toRunBlock = &blocks[toRun];
     int nonZeros = toRunBlock->csr.nonZeros;
     
     if(accel == 0){
       ACCEL_TOP_block0_cycler_amount = 12 + nonZeros * PERIOD;
-      ACCEL_TOP_block0_gen_iterations = nonZeros + 1 + 1; // Extra one so that FlagRead does not repeat last value 
+      ACCEL_TOP_block0_gen_iterations = nonZeros + 1 + 1 + 2; // Extra one so that FlagRead does not repeat last value 
       ACCEL_TOP_block0_flag_maximum = nonZeros + 1;
       ACCEL_TOP_block0_flag_disabled = 0;
     } else if(accel == 1) {
       ACCEL_TOP_block1_cycler_amount = 12 + nonZeros * PERIOD;
-      ACCEL_TOP_block1_gen_iterations = nonZeros + 1 + 1; // Extra one so that FlagRead does not repeat last value
+      ACCEL_TOP_block1_gen_iterations = nonZeros + 1 + 1 + 2; // Extra one so that FlagRead does not repeat last value
       ACCEL_TOP_block1_flag_maximum = nonZeros + 1;
       ACCEL_TOP_block1_flag_disabled = 0;
+    } else if(accel == 2) {
+      ACCEL_TOP_block2_cycler_amount = 12 + nonZeros * PERIOD;
+      ACCEL_TOP_block2_gen_iterations = nonZeros + 1 + 1 + 2; // Extra one so that FlagRead does not repeat last value
+      ACCEL_TOP_block2_flag_maximum = nonZeros + 1;
+      ACCEL_TOP_block2_flag_disabled = 0;
+    } else if(accel == 3) {
+      ACCEL_TOP_block3_cycler_amount = 12 + nonZeros * PERIOD;
+      ACCEL_TOP_block3_gen_iterations = nonZeros + 1 + 1 + 2; // Extra one so that FlagRead does not repeat last value
+      ACCEL_TOP_block3_flag_maximum = nonZeros + 1;
+      ACCEL_TOP_block3_flag_disabled = 0;
     }
   } else if(toRun >= max) {
     if(accel == 0){
@@ -414,16 +674,32 @@ static void ConfigAccelerator(int frame,int accel){
       ACCEL_TOP_block1_cycler_amount = 0;
       ACCEL_TOP_block1_gen_iterations = 0;
       ACCEL_TOP_block1_flag_disabled = 1;
+    } else if(accel == 2) {
+      ACCEL_TOP_block2_cycler_amount = 0;
+      ACCEL_TOP_block2_gen_iterations = 0;
+      ACCEL_TOP_block2_flag_disabled = 1;
+    } else if(accel == 3) {
+      ACCEL_TOP_block3_cycler_amount = 0;
+      ACCEL_TOP_block3_gen_iterations = 0;
+      ACCEL_TOP_block3_flag_disabled = 1;
     }
   }
 
+//  printf("ToWrite: %d (%d)\n",toWrite,max);
   if(toWrite >= 0 && toWrite < max){
+//    printf("here\n");
     if(accel == 0){
       ACCEL_TOP_block0_output_disabled = 0;
       ACCEL_TOP_block0_output_ext_addr = (iptr) &outputBuffer[outputIndex];
-    } else {
+    } else if(accel == 1) {
       ACCEL_TOP_block1_output_disabled = 0;
       ACCEL_TOP_block1_output_ext_addr = (iptr) &outputBuffer[outputIndex];
+    } else if(accel == 2) {
+      ACCEL_TOP_block2_output_disabled = 0;
+      ACCEL_TOP_block2_output_ext_addr = (iptr) &outputBuffer[outputIndex];
+    } else if(accel == 3) {
+      ACCEL_TOP_block3_output_disabled = 0;
+      ACCEL_TOP_block3_output_ext_addr = (iptr) &outputBuffer[outputIndex];
     }      
       
     BlockCSR* toWriteBlock = &blocks[toWrite];
@@ -433,8 +709,6 @@ static void ConfigAccelerator(int frame,int accel){
 #endif 
 
     outputIndex += toWriteBlock->csr.rowsAmount;
-  } else {
-    //ACCEL_TOP_block0_output_disabled = ~0;
   }
 
   if(toLoad < max){
@@ -442,6 +716,8 @@ static void ConfigAccelerator(int frame,int accel){
 
     if(accel == 0) ConfigureToLoad0(toLoadBlock);
     if(accel == 1) ConfigureToLoad1(toLoadBlock);
+    if(accel == 2) ConfigureToLoad2(toLoadBlock);
+    if(accel == 3) ConfigureToLoad3(toLoadBlock);
   } else {
     DisableReads(accel);
   }
@@ -480,35 +756,28 @@ void SingleTest(Arena* arena){
   
   int loops = block->numberBlocks;
   int blockSize = block->blockSize;
+  Array<BlockCSR> blocks = MatrixBlockCSRArray(block);
   
-  PushPageAlign(arena);
-  runs = PushArray<PastRuns>(arena,loops).data;
-  PushPageAlign(arena);
-
-  printf("Runs: %d\n",runs);
-  
-  for(int i = 0; i < blockSize; i++){
-    runs[i].loaded = -1;
-    runs[i].runned = -1;
-    runs[i].written = -1;
+  for(int i = 0; i < ACCELS; i++){
+    state[i].lastToLoad = -1;
+    state[i].lastToRun = -2;
   }
-  
-  state[0].lastToLoad = -1;
-  state[1].lastToLoad = -1;
 
-  state[0].lastToRun = -2;
-  state[1].lastToRun = -2;
-  
-  int outputSize = sizeof(float) * block->blockSize * block->numberBlocks;
-#ifdef TEMPORARY_MARK
-  Array<float> outputArray = {(float*) (arena->mem + Megabyte(512+256)),0,outputSize};
-#else
-  Array<float> outputArray = {(float*) (arena->mem + Megabyte(512+256) /* + Kilobyte(4) - 8 */ ),outputSize};
-#endif
-  
-  //Array<float> outputArray = PushArray<float>(arena,);
+  int amountOfOutput = 0;
+  for(int i = 0; i < loops; i++){
+    BlockCSR* block = &blocks[i];
+    amountOfOutput += block->csr.rowsAmount;
+  }
+
+  PushBytes(arena,Megabyte(1));
+  PushPageAlign(arena);
+  Array<float> outputArray = PushArray<float>(arena,amountOfOutput);  
   outputBuffer = outputArray.data;
   Memset(outputArray,0.0f);
+  PushPageAlign(arena);
+  PushBytes(arena,Megabyte(1));
+
+  ClearCache(PushBytes(arena,Megabyte(1)));
 
   printf("Size of outputArray: %d\n",outputArray.size);
   printf("%p\n",outputBuffer);
@@ -540,45 +809,49 @@ void SingleTest(Arena* arena){
   ila_set_reduce_type(ILA_REDUCE_TYPE_OR);
 #endif // ILA_OUTPUT
 
-  Array<BlockCSR> blocks = MatrixBlockCSRArray(block);
+  Time totalStart = {};
+  Time cpuStart = {};
   {
-    TIME_IT("Accelerator Run");
+    totalStart = GetTime();
 
-    ConfigAccelerator(0,0);
-    ConfigAccelerator(1,1);
-    
-    for(int currentRun = 2; currentRun < (loops + (ACCELS + 1) * 2);){
+    // Initial configuration before first Start
+    for(int i = 0; i < ACCELS; i++){
+      ConfigAccelerator(i,i);
+    }
+
+    for(int currentRun = ACCELS; currentRun < (loops + ACCELS * 2 + ACCELS);){
       StartAccelerator();
-
+      
       for(int i = 0; i < ACCELS; i++){
         ConfigAccelerator(currentRun,i);
         currentRun += 1;
       }
-        
+
       EndAccelerator();
     }
 
+#if 0
     // Disable the run side
-    DisableReads(0);
-    DisableReads(1);
+    for(int i = 0; i < ACCELS; i++){
+      DisableReads(i);
+    }
     ACCEL_TOP_block0_flag_disabled = 1;
     ACCEL_TOP_block1_flag_disabled = 1;
-
+    ACCEL_TOP_block2_flag_disabled = 1;
+    ACCEL_TOP_block3_flag_disabled = 1;
+#endif
+    
     // Just to write the final memory values;
     StartAccelerator();
     EndAccelerator();
     
-#if 0
-    for(int i = 0; i < ACCELS; i++){
-      ConfigAccelerator(loops,i);
-}
-#endif
-
     //printf("Accelerator end\n");
 #ifdef CLEAR_CACHE
     ClearCache(PushBytes(arena,Megabyte(1)));
 #endif
-    
+
+    cpuStart = GetTime();
+#if 1
     int index = 0;
     int outputIndex = 0;
     for(int i = 0; i < blocks.size; i++){
@@ -619,10 +892,25 @@ void SingleTest(Arena* arena){
       }
       index += size;
     }
-
+#endif
   }
 
-#ifdef PRINT
+  Time endTime = GetTime();
+
+  Time cpuTime = endTime - cpuStart;
+  Time totalTime = endTime - totalStart;
+
+  Time accelTime = cpuStart - totalStart;
+  
+  PrintTime(totalStart,"TotalStart");
+  PrintTime(cpuStart,"CPUStart");
+  PrintTime(endTime,"EndTime");
+
+  PrintTime(totalTime,"Total");
+  PrintTime(cpuTime,"CPU");
+  PrintTime(accelTime,"Accel");
+  
+#ifdef PRINT_OUTPUT
   printf("OutputBuffer: %p\n",outputBuffer);
   for(int i = 0; i < outputIndex; i++){
     printf("%f\n",outputBuffer[i]);
@@ -630,6 +918,13 @@ void SingleTest(Arena* arena){
 #endif
   
 #ifdef TEST
+  SignalLoop();
+
+  printf("%p\n",expectedBuffer);
+  printf("%p\n",gotBuffer);
+  printf("%p\n",expectedPtr);
+  printf("%p\n",gotPtr);
+
   PushGot(res);
   printf("VecLoads: %d/%d\n",vectorLoads,blocks.size);
 #endif
@@ -641,7 +936,7 @@ void SingleTest(Arena* arena){
   if(!errorFloats){
     for(int i = 0; i < size; i++){
       if(!FloatEqual(res[i],expectedFloats[i],0.01f)){
-#ifdef PRINT
+#ifdef PRINT_DIFF
         printf("%d: %f %f\n",i,expectedFloats[i],res[i]);
 #endif
         errorFloats = true;

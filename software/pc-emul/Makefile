@@ -95,6 +95,10 @@ LIBS+=$(OUTPUT_FOLDER)/libaccel.a
 
 OBJ += $(OUTPUT_FOLDER)/wrapper.o
 
+ifeq ($(DEBUG),1)
+OPTS+=-g
+endif
+
 $(OUTPUT_FOLDER)/versat_accel.h: $(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_VSRC) testVersatSpecification.txt
 	$(VERSAT_EXE) $(VERSAT_THIS_HARDWARE) $(EXTRA_SOURCES) $(V_INCLUDE) $(VERSAT_THIS_INCLUDE) testVersatSpecification.txt $(OPTS) -T $(TYPE_NAME) -o $(OUTPUT_FOLDER)
 

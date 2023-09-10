@@ -8,6 +8,7 @@ test
 
 # Import Ethernet package
 import sys
+from os.path import getsize
 sys.path.append('../../')
 from submodules.ETHERNET.software.python.ethBase import CreateSocket, SyncAckFirst, SyncAckLast
 from submodules.ETHERNET.software.python.ethSendVariableData import SendVariableFile
@@ -17,26 +18,24 @@ if __name__ == "__main__":
     print("\nSHA 256 Single Test\n")
 
     # Check input arguments
-    if len(sys.argv) != 5:
-        print(f'Usage: ./{sys.argv[0]} [RMAC_INTERFACE] [RMAC] [input.bin] [output.bin]')
+    if len(sys.argv) != 4:
+        print(f'Usage: ./{sys.argv[0]} [RMAC_INTERFACE] [RMAC] [input.bin]')
         quit()
     else:
         send_file = sys.argv[3]
-        rcv_file = sys.argv[4]
 
-    # Send Variable Data File
-    print("\nStarting file transmission...")
+    try:
+        fileSize = getsize(send_file)
 
-    socket = CreateSocket()
+        # Send Variable Data File
+        print("\nStarting file transmission...")
 
-    SyncAckFirst(socket)
-    SendVariableFile(socket,send_file)
+        socket = CreateSocket()
 
-    # Receive Variable Data File
-    print("\nStarting file reception...")
+        SyncAckFirst(socket)
+        SendVariableFile(socket,send_file)
 
-    SyncAckLast(socket)
-    RcvVariableFile(socket,rcv_file)
-
-    # Close Socket
-    socket.close()
+        # Close Socket
+        socket.close()
+    except OSError:
+        print("Path '%s' does not exists or is inaccessible" % send_file)

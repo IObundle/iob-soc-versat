@@ -136,6 +136,7 @@ module system_top (
             .M_COUNT(1),
             .DATA_WIDTH(`MIG_BUS_W),
             .ADDR_WIDTH(`DDR_ADDR_W),
+            .M_ADDR_WIDTH({1{{1{32'd30}}}}),
             .ID_WIDTH(1)
             )
    interconnect_inst (

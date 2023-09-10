@@ -3,21 +3,21 @@
 //#define HEAVY_PRINT
 //#define PRINT
 
+//#define ILA_OUTPUT
+
 #define CHANGE
 #define TEST
 
-#define ILA_OUTPUT
-
 #include "SMVM.hpp"
 
-#define PERIOD 6
+#define PERIOD 1
 
 static void InitializeBaseAccelerator(){
   //ACCEL_TOP_cycler_amount = size + 24;
 
   ACCEL_TOP_gen_iterations = 1;
   ACCEL_TOP_gen_start = 0;
-  ACCEL_TOP_gen_shift = 0;
+  ACCEL_TOP_gen_shift = 1;
   ACCEL_TOP_gen_incr = 1;
   ACCEL_TOP_gen_duty = 1;
   ACCEL_TOP_gen_period = PERIOD;
@@ -36,6 +36,7 @@ static void InitializeBaseAccelerator(){
   ACCEL_TOP_flag_dutyA = ~0;
   ACCEL_TOP_flag_size = 8;
   ACCEL_TOP_flag_int_addr = 0;
+  ACCEL_TOP_flag_maximum = 0;
 
   ACCEL_TOP_val_incrA = 1;
   ACCEL_TOP_val_iterA = 1;
@@ -183,9 +184,10 @@ static void ConfigAccelerator(int frame){
   if(toRun >= 0 && toRun < max){
     BlockCSR* toRunBlock = &blocks[toRun];
     int nonZeros = toRunBlock->csr.nonZeros;
-    ACCEL_TOP_cycler_amount = 9 + nonZeros * PERIOD;
-    ACCEL_TOP_gen_iterations = nonZeros;
-
+    ACCEL_TOP_cycler_amount = 12 + nonZeros * PERIOD;
+    ACCEL_TOP_gen_iterations = nonZeros + 1;
+    ACCEL_TOP_flag_maximum = nonZeros;
+    
     ACCEL_TOP_flag_disabled = 0;
     Array<u16> rows = CSRRowArray(&toRunBlock->csr);
   } else if(toRun >= max) {
@@ -224,7 +226,7 @@ void SingleTest(Arena* arena){
   int loops = block->numberBlocks;
   int blockSize = block->blockSize;
 
-  Array<float> outputArray = PushArray<float>(arena,sizeof(float) * amountNZ); // TODO: Need to put correct
+  Array<float> outputArray = PushArray<float>(arena,sizeof(float) * block->blockSize * block->numberBlocks);
   outputBuffer = outputArray.data;
 
   Memset(outputArray,0.0f);
@@ -293,7 +295,7 @@ void SingleTest(Arena* arena){
     int yOffset = block.y * blockSize;
     int size = block.csr.rowsAmount;
 
-    Array<Pair<u16,u16>> offsets = CSROffsetsArray(&block.csr);
+    Array<Pair<u16,u16>> offsets = block.offsets; // CSROffsetsArray(&block.csr);
 
 #ifdef PRINT
     printf("Offset: %d\n",offsets.size);

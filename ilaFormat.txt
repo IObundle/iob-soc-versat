@@ -1,12 +1,10 @@
-$buffer 14
+$buffer 12
 
 $trigger versat.xversat.valid
 $trigger versat.xversat.done
 $trigger versat.xversat.run
-$trigger versat.xversat.ready
+$trigger versat.ready
 
-versat.m_axi_arlen 8
-versat.m_axi_awlen 8
 versat.m_axi_awready 1
 versat.m_axi_awvalid 1
 versat.m_axi_wready 1
@@ -15,34 +13,9 @@ versat.m_axi_arready 1
 versat.m_axi_arvalid 1
 versat.m_axi_rready 1
 versat.m_axi_rvalid 1
-versat.address 32
-versat.rdata 32
-versat.wdata 32
-versat.wstrb 4
 versat.valid 1
 versat.ready 1
+versat.wstrb 4
 versat.xversat.run 1
 versat.xversat.done 1
-versat.xversat.TOP_0.vector_4.done 1
-versat.xversat.TOP_0.vector_4.databus_valid_0 1
-versat.xversat.TOP_0.vector_4.databus_ready_0 1
-versat.xversat.TOP_0.vector_4.databus_last_0 1
-versat.xversat.TOP_0.val_3.done 1
-versat.xversat.TOP_0.val_3.databus_valid_0 1
-versat.xversat.TOP_0.val_3.databus_ready_0 1
-versat.xversat.TOP_0.val_3.databus_last_0 1
-versat.xversat.TOP_0.output_8.done 1
-versat.xversat.TOP_0.output_8.stored 10
-versat.xversat.TOP_0.output_8.databus_valid_0 1
-versat.xversat.TOP_0.output_8.databus_ready_0 1
-versat.xversat.TOP_0.output_8.databus_last_0 1
-versat.xversat.TOP_0.gen_0.done 1
-versat.xversat.TOP_0.flag_1.done 1
-versat.xversat.TOP_0.flag_1.databus_valid_0 1
-versat.xversat.TOP_0.flag_1.databus_ready_0 1
-versat.xversat.TOP_0.flag_1.databus_last_0 1
-versat.xversat.TOP_0.cycler_9.done 1
-versat.xversat.TOP_0.col_2.done 1
-versat.xversat.TOP_0.col_2.databus_valid_0 1
-versat.xversat.TOP_0.col_2.databus_ready_0 1
-versat.xversat.TOP_0.col_2.databus_last_0 1
+

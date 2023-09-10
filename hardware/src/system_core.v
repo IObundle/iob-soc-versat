@@ -426,7 +426,7 @@ axi_adapter #
    //
    ext_mem
       #(
-      .AXI_ID_W(AXI_ID_W),
+      .AXI_ID_W(1),
       .AXI_ADDR_W(AXI_ADDR_W),
       .AXI_DATA_W(`MIG_BUS_W)
       )
@@ -443,6 +443,7 @@ axi_adapter #
 
       //AXI INTERFACE 
 
+/*
 `ifdef NOTHING
       //AXI INTERFACE 
       //address write
@@ -488,13 +489,14 @@ axi_adapter #
       .m_axi_rvalid(smaller_rvalid),  
       .m_axi_rready(smaller_rready),
 `endif
+*/
 
    .m_axi_awid(m_axi_awid[0*1+:1]), 
    .m_axi_awaddr(m_axi_awaddr[0*`DDR_ADDR_W+:`DDR_ADDR_W]), 
    .m_axi_awlen(m_axi_awlen[0*8+:8]), 
    .m_axi_awsize(m_axi_awsize[0*3+:3]), 
    .m_axi_awburst(m_axi_awburst[0*2+:2]), 
-   .m_axi_awlock(m_axi_awlock[0*1+:1]), 
+   .m_axi_awlock(), 
    .m_axi_awcache(m_axi_awcache[0*4+:4]), 
    .m_axi_awprot(m_axi_awprot[0*3+:3]),
    .m_axi_awqos(m_axi_awqos[0*4+:4]), 
@@ -514,7 +516,7 @@ axi_adapter #
    .m_axi_arlen(m_axi_arlen[0*8+:8]), 
    .m_axi_arsize(m_axi_arsize[0*3+:3]), 
    .m_axi_arburst(m_axi_arburst[0*2+:2]), 
-   .m_axi_arlock(m_axi_arlock[0*1+:1]), 
+   .m_axi_arlock(), 
    .m_axi_arcache(m_axi_arcache[0*4+:4]), 
    .m_axi_arprot(m_axi_arprot[0*3+:3]), 
    .m_axi_arqos(m_axi_arqos[0*4+:4]), 

@@ -1,3 +1,27 @@
+#ifdef TEMPORARY_MARK
+template<typename T>
+class ArrayIterator{
+public:
+   T* ptr;
+
+   inline bool operator!=(const ArrayIterator<T>& iter){return ptr != iter.ptr;};
+   inline ArrayIterator<T>& operator++(){++ptr; return *this;};
+   inline T& operator*(){return *ptr;};
+};
+
+template<typename T>
+struct Array{
+  T* data;
+  int _align;
+  int size;
+  int _align2;
+
+  inline T& operator[](int index) const {return data[index];}
+  ArrayIterator<T> begin(){return ArrayIterator<T>{data};};
+  ArrayIterator<T> end(){return ArrayIterator<T>{data + size};};
+};
+#endif
+
 #include "testbench.h"
 
 #include "memory.hpp"
@@ -8,11 +32,25 @@ typedef float real;
 #include <cstdint>
 typedef uint16_t u16;
 
-// For some reason static variables cannot have computations because firmware just inits them as zero, need to define them this way to make sure the actual values are 
-#define SIZE 50
+// 0 - Generate random matrix. 1 - Get values from ethernet 
+
+//#define TEST_TYPE TestType::TYPE_GENERATE
+#define TEST_TYPE TestType::TYPE_ETHERNET
+//#define TEST_TYPE TestType::TYPE_DIRECTLY
+
+// For some reason static variables cannot have computations because firmware just inits them as zero, need to define them this way to make sure the actual values are properly initialized at beginning of program
+#define SIZE 200 // 250
 #define AMOUNT_NZ ((SIZE * SIZE) / 2)
-#define BLOCK_SIZE (SIZE / 2)
-#define BLOCK_SIZE SIZE
+//#define BLOCK_SIZE (SIZE / 2)
+//#define BLOCK_SIZE SIZE
+#define BLOCK_SIZE 16
+
+//#define BLOCK_SIZE 4096
+
+// Max memory size for current accelerator should be 4096 but 8192 seems to work in sim? Maybe because memories output just in time to start getting filled again
+
+// Above 512 nz per block gives error on sim and probably on the board.
+// Probably would be best to allocate output array at the last possible position. That way we make sure that no problem from caching should occur
 
 // Default values for random example
 static int size = SIZE;
@@ -21,6 +59,19 @@ static int blockSize = BLOCK_SIZE;
 
 static bool randomMat = true;
 
+static Byte* PushPageAlign(Arena* arena){
+  int toPush = ALIGN_UP(arena->used,4096) - arena->used;
+
+  return PushBytes(arena,toPush);
+}
+
+static Byte* PushAlign(Arena* arena,int bytesAlignment){
+  int aligned = ALIGN_UP(arena->used,bytesAlignment);
+  int toPush = aligned - arena->used;
+
+  return PushBytes(arena,toPush);
+}
+
 #ifdef SIM
 // Because compilation with .cpp files does not work as the embedded system does not include the necessary files.
 // Just copy the implementations for now.
@@ -28,9 +79,7 @@ void FlushStdout(){
   fflush(stdout);
 }
 
-static char* GetNumberRepr(uint64 number){
-  static char buffer[32];
-
+static char* GetNumberRepr(uint64 number,char* buffer){
   if(number == 0){
     buffer[0] = '0';
     buffer[1] = '\0';
@@ -83,18 +132,53 @@ int GetMaxDigitSize(Array<float> array){
   return 2; // Floating points is hard to figure out how many digits. 2 should be enough
 }
 
-void TimeIt::Output(){
-  // Cannot use floating point because of embedded
-  Time end = GetTime();
+char GetHexadecimalChar(int value){
+  if(value < 10){
+    return '0' + value;
+  } else{
+    return 'a' + (value - 10);
+  }
+}
 
-  Assert(end > start);
+char* GetHexadecimal(const char* text, int str_size,char* buffer){
+  int i;
 
-  printf("[TimeIt] %s: ",id);
+  Assert(str_size * 2 < 64);
+  for(i = 0; i < str_size; i++){
+    int ch = (int) ((unsigned char) text[i]);
 
+    buffer[64 - 3 - i*2] = GetHexadecimalChar(ch / 16);
+    buffer[64 - 3 - i*2+1] = GetHexadecimalChar(ch % 16);
+  }
+
+  buffer[64 - 1] = '\0';
+
+  return &buffer[64 - str_size * 2 - 1];
+}
+
+struct Uint64As8{
+  unsigned char array[8];
+};
+
+uint64 SwapEndianess(uint64 val){
+  Uint64As8* viewIn = (Uint64As8*) &val;
+  uint64 res;
+  Uint64As8* viewOut = (Uint64As8*) &res;
+
+  for(int i = 0; i < 8; i++){
+    viewOut[i] = viewIn[7-i];
+  }
+
+  return res;
+}
+
+void PrintTime(Time time,const char* id){
+  printf("[TimeIt] %15s: ",id);
+
+  char buffer[128];
   {
-    uint64 diff = end.seconds - start.seconds;
-    int digits = NumberDigitsRepresentation(diff);
-    char* secondsRepr = GetNumberRepr(diff);
+    int digits = NumberDigitsRepresentation(time.seconds);
+    char* secondsRepr = GetNumberRepr(time.seconds,buffer);
 
     for(int i = 0; i < digits; i++){
       printf("%c",secondsRepr[i]);
@@ -102,15 +186,39 @@ void TimeIt::Output(){
   }
   printf(".");
   {
-    uint64 diff = end.nanoSeconds - start.nanoSeconds;
-    int digits = NumberDigitsRepresentation(diff);
-    char* nanoRepr = GetNumberRepr(diff);
+    int digits = NumberDigitsRepresentation(time.microSeconds);
+    char* nanoRepr = GetNumberRepr(time.microSeconds,buffer);
 
+    for(int i = 0; i < (6 - digits); i++){
+      printf("0");
+    }
+    
     for(int i = 0; i < digits; i++){
       printf("%c",nanoRepr[i]);
     }
   }
+
+#if 0  
+  Time temp = time;
+  temp.seconds = SwapEndianess(time.seconds);
+  temp.microSeconds = SwapEndianess(time.microSeconds);
+  char* hexVal = GetHexadecimal((const char*) &temp,sizeof(Time),buffer); // Helper function to display result
+  printf(" ");
+  printf(" ");
+  printf("%s ",hexVal);
+#endif
+  
   printf("\n");
+}
+
+void TimeIt::Output(){
+  // Cannot use floating point because of embedded
+  Time end = GetTime();
+
+  Time diff = end - start;
+  Assert(end > start);
+
+  PrintTime(diff,id);
 }
 
 void Print(Array<float> array,int digitSize){
@@ -133,7 +241,30 @@ void Print(Array<int> array,int digitSize){
   }
 }
 
+Time operator-(const Time& s1,const Time& s2){
+  Time res = {};
+
+  if(s1.seconds < s2.seconds  || (s1.seconds == s2.seconds && s1.microSeconds < s2.microSeconds)){
+    printf("Not allowed negative time\n");
+  }
+  
+  res.seconds = s1.seconds - s2.seconds;
+
+  int s1MicroSeconds = s1.microSeconds;
+  if(s1.microSeconds < s2.microSeconds){
+    res.seconds -= 1;
+    s1MicroSeconds += 1000000;
+  }
+
+  res.microSeconds = s1MicroSeconds - s2.microSeconds;
+   
+  return res;
+}
+
 #endif
+
+void PrintMemoryBlock(void* mem,int size);
+
 int GetMaxDigitSize(Array<u16> array){
   int maxReprSize = 0;
   for(u16 val : array){
@@ -179,13 +310,15 @@ static Matrix RandomMatrix(Arena* out,int size,int nonZeros,int randomSeed){
     data[i * size + i] = RandomNumberBetween(1,10);
   }
   int zerosLeft = nonZeros - size;
-  
+
   while(zerosLeft){
     int y = RandomNumberBetween(0,size);
     int x = RandomNumberBetween(0,size);
 
-    //printf("%d\n",zerosLeft);
-    
+#if 0
+    if(zerosLeft % 100 == 0) printf("%d\n",zerosLeft);
+#endif
+
     if(data[y * size + x] == 0){
       data[y * size + x] = (real) RandomNumberBetween(1,10);
       zerosLeft -= 1;
@@ -206,7 +339,7 @@ static Matrix RandomMatrix(Arena* out,int size,int nonZeros,int randomSeed){
   res.values = data;
   res.xSize = size;
   res.ySize = size;
-  
+
   return res;
 }
 
@@ -268,7 +401,7 @@ void Identity(Matrix mat){
   Memset(mat.values,0.0f);
 
   Assert(mat.xSize == mat.ySize);
-  
+
   for(int i = 0; i < mat.ySize; i++){
     mat.values[i * mat.ySize + i] = 1;
   }
@@ -299,7 +432,7 @@ Matrix ExtractBlock(Matrix mat,int blockStartX,int blockStartY,int blockSize,Are
 
   int ySize = maxY - blockStartY;
   int xSize = maxX - blockStartX;
-  
+
   Array<real> data = PushArray<real>(arena,ySize * xSize);
   //printf("%p\n",data.data);
   Memset(data,0.0f);
@@ -319,7 +452,7 @@ Matrix ExtractBlock(Matrix mat,int blockStartX,int blockStartY,int blockSize,Are
   res.values = data;
   res.xSize = xSize;
   res.ySize = ySize;
-  
+
   return res;
 }
 
@@ -347,34 +480,50 @@ struct FormatCOO{
 #define COORowArray(COO_PTR)    {COORow(COO_PTR)   ,(COO_PTR)->nonZeros + 1}
 #define COOValueArray(COO_PTR)  {COOValue(COO_PTR) ,(COO_PTR)->nonZeros}
 
+typedef uint32_t u32;
+
 struct FormatCSR{
   int* data;
+#ifndef PC
+  u32 _align; // PC is 8 bytes per pointer. In sim it's 4.
+#endif
   u16 rowsAmount;
   u16 nonZeros;
-  u16 offsets;
-  u16 _align0;
+
+#ifndef PC
+  u32 _align2;
+#endif // PC
+
+  //u16 offsets;
+  //u16 _align0;
 
   // Array<real> values;
   // Array<u16> column;
   // Array<u16> row;
-  // Array<Pair<u16>> offsets;
+  // Not anymore - Array<Pair<u16>> offsets;
 };
 
 #define CSRValue(CSR_PTR) ((real*) (CSR_PTR)->data)
 #define CSRColumn(CSR_PTR) ((u16*) (CSRValue(CSR_PTR) + (CSR_PTR)->nonZeros))
 #define CSRRow(CSR_PTR) (CSRColumn(CSR_PTR) + (CSR_PTR)->nonZeros)
-#define CSROffsets(CSR_PTR) ((Pair<u16,u16>*) (CSRRow(CSR_PTR) + (CSR_PTR)->rowsAmount))
+//#define CSROffsets(CSR_PTR) ((Pair<u16,u16>*) (CSRRow(CSR_PTR) + (CSR_PTR)->rowsAmount))
 
+#ifdef TEMPORARY_MARK
+#define CSRValueArray(CSR_PTR) {CSRValue(CSR_PTR),0,(CSR_PTR)->nonZeros}
+#define CSRColumnArray(CSR_PTR) {CSRColumn(CSR_PTR),0,(CSR_PTR)->nonZeros}
+#define CSRRowArray(CSR_PTR) {CSRRow(CSR_PTR),0,(CSR_PTR)->rowsAmount}
+#else
 #define CSRValueArray(CSR_PTR) {CSRValue(CSR_PTR),(CSR_PTR)->nonZeros}
 #define CSRColumnArray(CSR_PTR) {CSRColumn(CSR_PTR),(CSR_PTR)->nonZeros}
 #define CSRRowArray(CSR_PTR) {CSRRow(CSR_PTR),(CSR_PTR)->rowsAmount}
-#define CSROffsetsArray(CSR_PTR) {CSROffsets(CSR_PTR),(CSR_PTR)->offsets}
+#endif
+//#define CSROffsetsArray(CSR_PTR) {CSROffsets(CSR_PTR),(CSR_PTR)->offsets}
 
 int CSRSize(int nonZeros,int rows,int offsets){
   int size = sizeof(float) * nonZeros;
      size += sizeof(u16) * nonZeros;
      size += sizeof(u16) * rows;
-     size += sizeof(Pair<u16,u16>) * offsets;
+     //size += sizeof(Pair<u16,u16>) * offsets;
 
   return size;
 }
@@ -398,17 +547,18 @@ void Print(FormatCSR* csr){
   Array<u16> column = CSRColumnArray(csr);
   Array<u16> row    = CSRRowArray(csr);
   Array<real> values = CSRValueArray(csr);
-  Array<Pair<u16,u16>> offsets = CSROffsetsArray(csr);
+  //Array<Pair<u16,u16>> offsets = CSROffsetsArray(csr);
 
 #ifndef PC
-  printf("%p %d %d %d\n",csr->data,csr->rowsAmount,csr->nonZeros,csr->_align0);
+  printf("%p %d %d\n",csr->data,csr->rowsAmount,csr->nonZeros);
 #endif
 
   printf("CSR: %d %d %d\n",column.size,row.size,values.size);
-  printf("Col: "); Print(column); printf("\n");
+  //printf("Col: "); Print(column); printf("\n");
   printf("Row: "); Print(row); printf("\n");
-  printf("Val: "); Print(values); printf("\n");
+  //printf("Val: "); Print(values); printf("\n");
 
+#if 0
   if(offsets.size){
     printf("Off: %d [ ",offsets.size);
     for(Pair<u16,u16>& p : offsets){
@@ -416,8 +566,8 @@ void Print(FormatCSR* csr){
     }
     printf("]\n");
   }
+#endif
 }
-
 
 FormatCOO ConvertCOO(Matrix mat,Arena* arena){
   int nonZero = NonZeros(mat.values);
@@ -504,92 +654,84 @@ int CalculateOffsets(Matrix mat,Arena* arena){
 
   Array<int> rows = Rows(mat,arena);
 
-  int start = 0;
-  int end = rows.size - 1;
-
+  int index = 0;
   int count = 0;
-  while(start < end){
-    if(rows[start] != 0){
-      start += 1;
-      continue;
+  while(index < rows.size){
+    while(index < rows.size && rows[index] != 0){
+      index += 1;
     }
 
-    if(rows[end] == 0){
-      end -= 1;
-      continue;
+    int start = index;
+
+    while(index < rows.size && rows[index] == 0){
+      index += 1;
     }
 
-    // Start is zero and rows is non zero
-    rows[start] = rows[end];
-    rows[end] = 0;
-    start += 1;
-    end -= 1;
+    int end = index;
+
+    if(index >= rows.size){
+      break;
+    }
+
     count += 1;
   }
 
   return count;
 }
 
-Array<Pair<u16,u16>> CalculateOffsetPair(Matrix mat,int offsets,Arena* arena){
+Array<Pair<u16,u16>> PushOffsetPair(Matrix mat,int offsets,Arena* arena){
   Assert(offsets > 0);
   Array<Pair<u16,u16>> pairs = PushArray<Pair<u16,u16>>(arena,offsets);
 
   BLOCK_REGION(arena);
 
   Array<int> rows = Rows(mat,arena);
-  u16 start = 0;
-  u16 end = (u16) (rows.size - 1);
+  u16 index = 0;
 
   int count = 0;
-  while(start < end){
-    if(rows[start] != 0){
-      start += 1;
-      continue;
+  while(index < rows.size){
+    while(index < rows.size && rows[index] != 0){
+      index += 1;
     }
 
-    if(rows[end] == 0){
-      end -= 1;
-      continue;
+    int start = index;
+
+    while(index < rows.size && rows[index] == 0){
+      index += 1;
     }
 
-    // Start is zero and rows is non zero
-    rows[start] = rows[end];
-    rows[end] = 0;
-    start += 1;
-    end -= 1;
+    int end = index;
 
-    pairs[count].first = end;
-    pairs[count].second = start;
+    if(index >= rows.size){
+      break;
+    }
+
+    pairs[count].first = start;
+    pairs[count].second = end;
 
     count += 1;
   }
-  
+
   return pairs;
 }
 
-FormatCSR ConvertCSR(Matrix mat,Arena* arena){
+FormatCSR ConvertCSR(Matrix mat,Arena* arena,Arena* temp){
+  BLOCK_REGION(temp);
   int nonZero = NonZeros(mat.values);
-  int rows = RowsCount(mat,arena);
-  int offsets = CalculateOffsets(mat,arena);
+  int rows = RowsCount(mat,temp);
+  int offsets = CalculateOffsets(mat,temp);
 
+  PushAlign(arena,4);
+  
   FormatCSR res = {};
-  res.data = PushArray<int>(arena,CSRSize(nonZero,rows,offsets)).data;
+  res.data = (int*) PushArray<Byte>(arena,CSRSize(nonZero,rows,offsets)).data;
   res.nonZeros = nonZero;
   res.rowsAmount = rows;
-  res.offsets = offsets;
 
+  Array<real> values = CSRValueArray(&res);
   Array<u16> column = CSRColumnArray(&res);
   Array<u16> row    = CSRRowArray(&res);
-  Array<real> values = CSRValueArray(&res);
 
-  if(offsets){
-    BLOCK_REGION(arena);
-    Array<Pair<u16,u16>> offsetArray = CSROffsetsArray(&res);
-    
-    Array<Pair<u16,u16>> calculatedOffsets = CalculateOffsetPair(mat,offsets,arena);
-    Memcpy(offsetArray,calculatedOffsets);
-  }
-    
   int index = 0;
   int rowIndex = 0;
   for(int y = 0; y < mat.ySize; y++){
@@ -603,7 +745,7 @@ FormatCSR ConvertCSR(Matrix mat,Arena* arena){
           }
           seenFirst = false;
         }
-
+        
         column[index] = x;
         values[index] = val;
         index += 1;
@@ -623,6 +765,7 @@ Array<real> Multiply(Matrix mat,Array<real> vector,Arena* arena){
   for(int y = 0; y < mat.ySize; y++){
     for(int x = 0; x < mat.xSize; x++){
       res[y] += vector[x] * mat.values[y * mat.xSize + x];
+      //printf("Got: %f\n",res[y]);
     }
   }
 
@@ -714,7 +857,7 @@ static real* gotFloats;
 static bool errorFloats = false;
 
 void PushExpected(Array<real> vec){
-  if(vec.size != SIZE){
+  if(vec.size != size){
     errorFloats = true;
   }
 
@@ -724,9 +867,10 @@ void PushExpected(Array<real> vec){
 }
 
 void PushGot(Array<real> vec){
-  if(vec.size != SIZE){
+  if(vec.size != size){
     errorFloats = true;
   }
+  printf("%p\n",gotFloats);
   for(int i = 0; i < vec.size; i++){
     gotFloats[i] = vec[i];
   }
@@ -783,6 +927,7 @@ struct Block{
 struct BlockCSR{
   int x;
   int y;
+  Array<Pair<u16,u16>> offsets;
   FormatCSR csr;
 };
 
@@ -790,15 +935,22 @@ struct MatrixBlock{
   int size;
   int blockSize;
   int numberBlocks;
+
   // Followed by array of blocks
   //Array<Block> blocks;
+  // Followed by array of offsets
 };
 
 #define MatrixBlock(MATRIX_PTR) ((Block*) (&(MATRIX_PTR)[1]))
 #define MatrixBlockArray(MATRIX_PTR) {MatrixBlock(MATRIX_PTR),(MATRIX_PTR)->numberBlocks}
 
 #define MatrixBlockCSR(MATRIX_PTR) ((BlockCSR*) (&(MATRIX_PTR)[1]))
+
+#ifdef TEMPORARY_MARK
+#define MatrixBlockCSRArray(MATRIX_PTR) {MatrixBlockCSR(MATRIX_PTR),0,(MATRIX_PTR)->numberBlocks,0}
+#else
 #define MatrixBlockCSRArray(MATRIX_PTR) {MatrixBlockCSR(MATRIX_PTR),(MATRIX_PTR)->numberBlocks}
+#endif
 
 MatrixBlock* UnpackMatrixBlock(void* base){
   MatrixBlock* matrix = (MatrixBlock*) base;
@@ -818,24 +970,30 @@ MatrixBlock* UnpackMatrixBlock(void* base){
 }
 
 MatrixBlock* UnpackMatrixBlockCSR(void* base){
-  NOT_IMPLEMENTED;
-#if 0
   MatrixBlock* matrix = (MatrixBlock*) base;
 
-  Array<Block> blocks = MatrixBlockArray(matrix);
+  Array<BlockCSR> blocks = MatrixBlockCSRArray(matrix);
+  blocks.size = matrix->numberBlocks;
 
-  int* startOfCOOData = (int*) &blocks.data[blocks.size];
+  Pair<u16,u16>* startOfOffsetData = (Pair<u16,u16>*) &blocks.data[blocks.size];
+  for(int i = 0; i < blocks.size; i++){
+    if(blocks[i].offsets.size){
+      blocks[i].offsets.data = startOfOffsetData;
+      startOfOffsetData += blocks[i].offsets.size;
+    }
+  }
 
-  for(Block& block : blocks){
-    block.coo.data = startOfCOOData;
+  char* startOfCSRData = (char*) startOfOffsetData;
+  for(BlockCSR& block : blocks){
+    startOfCSRData = (char*) ALIGN_UP(((iptr) startOfCSRData),4);
 
-    int size = block.coo.nonZeros * 3 + 1;
-    startOfCOOData += size;
+    block.csr.data = (int*) startOfCSRData;
+
+    int size = CSRSize(block.csr.nonZeros,block.csr.rowsAmount,block.offsets.size);
+    startOfCSRData += size;
   }
 
   return matrix;
-#endif
-  return nullptr;
 }
 
 static const int MAXIMUM_NZ_PER_BLOCK = 500;
@@ -870,9 +1028,9 @@ MatrixBlock* ConvertMatBlock(Matrix mat,Arena* arena){
             continue;
       }
 
-      if(nonZeros > MAXIMUM_NZ_PER_BLOCK){
-        printf("Higher than %d\n",MAXIMUM_NZ_PER_BLOCK);
-      }
+#ifdef PRINT
+      printf("Block %d: %d\n",blockIndex,nonZeros);
+#endif
 
       FormatCOO coo = {};
       coo.nonZeros = nonZeros;
@@ -910,12 +1068,29 @@ MatrixBlock* ConvertMatBlock(Matrix mat,Arena* arena){
 }
 
 MatrixBlock* ConvertMatBlockCSR(Matrix mat,Arena* arena,Arena* temp){
-  int numberOfBlocks = ((mat.xSize / blockSize) + 1) * ((mat.ySize / blockSize) + 1);
+  int numberOfBlocks = (((mat.xSize + blockSize - 1) / blockSize)) * (((mat.ySize + blockSize - 1)  / blockSize));
 
   MatrixBlock* matrix = PushStruct<MatrixBlock>(arena);
+  matrix->size = mat.xSize;
   matrix->blockSize = blockSize;
 
-  Array<BlockCSR> blocks = PushArray<BlockCSR>(arena,numberOfBlocks);
+  int nonZeroBlocksCount = 0;
+  for(int xStart = 0; xStart < mat.xSize; xStart += blockSize){
+    for(int yStart = 0; yStart < mat.ySize; yStart += blockSize){
+      BLOCK_REGION(temp);
+
+      Matrix blockMat = ExtractBlock(mat,xStart,yStart,blockSize,temp);
+      int nonZeros = NonZeros(blockMat.values);
+
+      if(nonZeros == 0){ // Do not store info for empty blocks.
+        continue;
+      }
+
+      nonZeroBlocksCount += 1;
+    }
+  }
+  
+  Array<BlockCSR> blocks = PushArray<BlockCSR>(arena,nonZeroBlocksCount);
 
   int blockIndex = 0;
   //#ifdef BLOCK_XY
@@ -926,6 +1101,10 @@ MatrixBlock* ConvertMatBlockCSR(Matrix mat,Arena* arena,Arena* temp){
       //  for(int xStart = 0; xStart < mat.xSize; xStart += blockSize){
       //#endif
 
+#ifdef PRINT
+      printf("%d\n",blockIndex);
+#endif
+
       BLOCK_REGION(temp);
 
       Matrix blockMat = ExtractBlock(mat,xStart,yStart,blockSize,temp);
@@ -933,14 +1112,52 @@ MatrixBlock* ConvertMatBlockCSR(Matrix mat,Arena* arena,Arena* temp){
       int nonZeros = NonZeros(blockMat.values);
 
       //printf("%d\n",nonZeros);
-      
+
       if(nonZeros == 0){ // Do not store info for empty blocks.
         continue;
       }
 
-      if(nonZeros > MAXIMUM_NZ_PER_BLOCK){
-        printf("Higher than %d\n",MAXIMUM_NZ_PER_BLOCK);
+      Array<int> rowsCount = Rows(blockMat,temp);
+      int rows = RowsCount(rowsCount);
+      int offsets = CalculateOffsets(blockMat,temp);
+
+      if(offsets){
+        blocks[blockIndex].offsets = PushOffsetPair(blockMat,offsets,arena);
+      } else {
+        blocks[blockIndex].offsets = {0,0,0};
       }
+      blockIndex += 1;
+    }
+  }
+
+  blockIndex = 0;
+  //#ifdef BLOCK_XY
+  for(int xStart = 0; xStart < mat.xSize; xStart += blockSize){
+    for(int yStart = 0; yStart < mat.ySize; yStart += blockSize){
+      //#else
+      //for(int yStart = 0; yStart < mat.ySize; yStart += blockSize){
+      //  for(int xStart = 0; xStart < mat.xSize; xStart += blockSize){
+      //#endif
+
+#ifdef PRINT
+      printf("%d\n",blockIndex);
+#endif
+
+      BLOCK_REGION(temp);
+
+      Matrix blockMat = ExtractBlock(mat,xStart,yStart,blockSize,temp);
+      //printf("%f\n",blockMat.values[0]);
+      int nonZeros = NonZeros(blockMat.values);
+
+      //printf("%d\n",nonZeros);
+
+      if(nonZeros == 0){ // Do not store info for empty blocks.
+        continue;
+      }
+
+#ifdef PRINT
+      printf("Block %d: %d\n",blockIndex,nonZeros);
+#endif
 
 #if 0
       Array<int> rowsCount = Rows(blockMat,blockSize,temp);
@@ -948,7 +1165,7 @@ MatrixBlock* ConvertMatBlockCSR(Matrix mat,Arena* arena,Arena* temp){
       int offsets = CalculateOffsets(blockMat,blockSize,temp);
 #endif
 
-      FormatCSR csr = ConvertCSR(blockMat,arena);
+      FormatCSR csr = ConvertCSR(blockMat,arena,temp);
 
       blocks[blockIndex].y = yStart / blockSize;
       blocks[blockIndex].x = xStart / blockSize;
@@ -991,29 +1208,29 @@ Array<real> MultiplyBlockCSR(MatrixBlock* block,Array<real> vector,Arena* arena)
   Memset(res,0.0f);
 
   Array<BlockCSR> blocks = MatrixBlockCSRArray(block);
-
+  
+  timeRegion("CPU multiply"){
   for(BlockCSR& b : blocks){
     FormatCSR csr = b.csr;
 
     Array<real> values = CSRValueArray(&csr);
     Array<u16> column = CSRColumnArray(&csr);
     Array<u16> row    = CSRRowArray(&csr);
-    Array<Pair<u16,u16>> offsets = CSROffsetsArray(&csr);
-    
+    Array<Pair<u16,u16>> offsets = b.offsets;
+
     int yOffset = b.y * block->blockSize;
     int xOffset = b.x * block->blockSize;
+    int offset = 0;
     int start = 0;
     int pairIndex = 0;
     for(int i = 0; i < csr.rowsAmount; i++){
-      int offset = i;
-
       if(pairIndex < offsets.size){
-        if(offsets[pairIndex].first == offset){ 
+        if(offsets[pairIndex].first == offset){
           offset = offsets[pairIndex].second;
           pairIndex += 1;
-        } 
+        }
       }
-      
+
       float val = 0;
       for(int ii = start; ii < row[i]; ii++){
         float sum = values[ii] * vector[xOffset + column[ii]];
@@ -1023,10 +1240,13 @@ Array<real> MultiplyBlockCSR(MatrixBlock* block,Array<real> vector,Arena* arena)
 #endif
       }
 
-      res[yOffset + offset] = val;
+      res[yOffset + offset] += val;
       start = row[i];
+      offset += 1;
     }
   }
+}
+
   return res;
 }
 
@@ -1042,14 +1262,36 @@ void Print(MatrixBlock* block){
   }
 }
 
-void PrintCSR(MatrixBlock* block){
+void PrintSimpleCSR(MatrixBlock* block){
   Array<BlockCSR> blocks = MatrixBlockCSRArray(block);
 
+  printf("Size: %d BlockSize: %d NBlocks: %d\n",block->size,block->blockSize,block->numberBlocks);
+
+  for(BlockCSR& b : blocks){
+    printf("%d %d %d",b.y,b.x,b.csr.nonZeros);
+
+    printf("\n");
+  }
+}
+
+void PrintCSR(MatrixBlock* block){
+  printf("%d %d %d\n",block->size,block->blockSize,block->numberBlocks);
+  Array<BlockCSR> blocks = MatrixBlockCSRArray(block);
+
+  printf("%d %d %d\n",block->size,block->blockSize,block->numberBlocks);
   printf("Blocks: %d\n",blocks.size);
 
   for(BlockCSR& b : blocks){
     printf("%d %d ",b.y,b.x);
     Print(&b.csr);
+    if(b.offsets.size){
+      printf("Off: %d [ ",b.offsets.size);
+      for(Pair<u16,u16>& p : b.offsets){
+        printf("%d:%d ",p.first,p.second);
+      }
+      printf("]\n");
+    }
+
     printf("\n");
   }
 }
@@ -1062,64 +1304,53 @@ MatrixBlock* block;
 
 enum Type {COO,CSR,BLOCK,BLOCKCSR};
 
-//set pointer to DDR base
-#if (RUN_EXTMEM==0)  //running firmware from SRAM
-#define DATA_BASE_ADDR (EXTRA_BASE)
-#else //running firmware from DDR
-#define DATA_BASE_ADDR ((1<<(FIRM_ADDR_W)))
-#endif
+void PrintMemoryBlock(void* mem,int size){
+  unsigned char* view = (Byte*) mem;
+  for(int i = 0; i < size; i++){
+    unsigned int ch = (int) view[i];
+
+    printf(",0x%02x",ch & 0x000000ff);
+    if((i + 1) % 16 == 0){
+      printf("\n");
+    }
+  }
+  printf("\n");
+}
+
+enum TestType {
+  TYPE_GENERATE = 0,
+  TYPE_ETHERNET = 1,
+  TYPE_DIRECTLY = 2
+};
+
+void InitializeGotFloats(Arena* arena,int size){
+  PushPageAlign(arena);
+  expectedFloats = PushArray<real>(arena,size+1).data;
+  PushPageAlign(arena);
+  gotFloats = PushArray<real>(arena,size+1).data;
+  PushPageAlign(arena);
+}
 
 void InitializeSMVM(Arena* arena,Type type){
-  // Read from file
-  int val = 0;
-
-  Assert(sizeof(int) == sizeof(real));
-
-  printf("Sizes:%d %d\n",sizeof(float),sizeof(int));
-
-  expectedFloats = PushArray<real>(arena,SIZE+1).data;
-  gotFloats = PushArray<real>(arena,SIZE+1).data;
+  TestType test = TEST_TYPE;
 
   Arena tempInst = SubArena(arena,Megabyte(1));
   Arena* temp = &tempInst;
-
-  if(val){
-#ifdef PC
-    String content = PushFile(arena,"../../../../PWTK");
-    block = UnpackMatrixBlock((void*) content.data);
-#else
-    eth_init(ETHERNET_BASE);
-
-    char* buffer = (char*) DATA_BASE_ADDR;
-    int* view = (int*) buffer;
-
-    printf("%x\n",(int) buffer);
-    printf("Waiting for file receive\n");
-
-    //int size = uart_recvfile("example1",buffer);
-    int size = eth_rcv_variable_file(buffer);
-
-    printf("Received: %d\n",size);
-
-    block = UnpackMatrixBlock(buffer);
-#endif
-
-    int numberBlocks = block->numberBlocks;
-
-    size = block->size;
-    vec = PushArray<real>(arena,size);
-
-    for(int i = 0; i < size; i++){
-      vec[i] = RandomNumberBetween(1,size);
-    }
-
-  } else {
+ 
+  switch(test){
+  case TestType::TYPE_GENERATE:{
     printf("Size: %d,NZ: %d,BlockSize:%d \n",size,amountNZ,blockSize);
+
+    InitializeGotFloats(arena,size);
+    
     if(randomMat){
       mat = RandomMatrix(arena,size,amountNZ,1);
     } else {
       mat = ExampleMatrix(arena);
     }
+    PushPageAlign(arena);
+
+    printf("Generated mat\n");
 
     // The previous code, ExampleMatrix can change size. Take care
     vec = PushArray<real>(arena,size);
@@ -1127,52 +1358,141 @@ void InitializeSMVM(Arena* arena,Type type){
       vec[i] = (real) RandomNumberBetween(1,size);
     }
 
+    PushPageAlign(arena);
+    //PushBytes(arena,Kilobyte(4) - 4);
+
 #ifdef HEAVY_PRINT
     printf("Vec:\n");
     Print(vec);
     printf("\n");
-#endif
-
-    printf("Generated mat\n");
+#endif // HEAVY_PRINT
 
 #ifdef HEAVY_PRINT
     PrintMatrix(mat);
-#endif
+#endif // HEAVY_PRINT
 
-#if 0
-    PrintMatrix(mat);
-    ClearCache(mat.values.data);
-#endif
-    
     //printf("%f\n",mat.values[mat.values.size-1]);
-    
+
+    PushPageAlign(arena);
     switch(type){
     case Type::COO:{
       coo = ConvertCOO(mat,arena);
     }break;
     case Type::CSR:{
-      csr = ConvertCSR(mat,arena);
+      csr = ConvertCSR(mat,arena,temp);
     }break;
     case Type::BLOCK:{
       block = ConvertMatBlock(mat,arena);
-#ifdef HEAVY_PRINT
+#ifdef BLOCK_PRINT
       Print(block);
 #endif
     }break;
     case Type::BLOCKCSR:{
+      Byte* start = PushBytes(arena,0);
+
+      printf("Start: %d %x\n",start,start);
       block = ConvertMatBlockCSR(mat,arena,temp);
+
+      Byte* end = PushBytes(arena,0);
+
+      printf("Total size: %d\n",end - start);
+
+      printf("Start: %x\n",start);
+      printf("End: %x\n",end);
+      //PrintMemoryBlock(start,end-start);
+
 #ifdef HEAVY_PRINT
+      PrintMemoryBlock(start,end-start);
+#endif
+#ifdef BLOCK_PRINT
       PrintCSR(block);
+#endif
+#ifdef BLOCK_SIMPLE_PRINT
+      PrintSimpleCSR(block);
 #endif
     }break;
     }
+    PushPageAlign(arena);
 
     region(arena){
       Array<real> expected = Multiply(mat,vec,arena);
       PushExpected(expected);
     }
+  }break;
+  case TestType::TYPE_ETHERNET:{
+    eth_init(ETHERNET_BASE);
 
-    printf("Finished SMVM init\n");
+    char* buffer = (char*) PushBytes(arena,Megabyte(256));
+    buffer += Megabyte(1); // Make sure that we are in memory never touched upon;
+
+    printf("Waiting for file receive\n");
+    int fileSize = eth_rcv_variable_file(buffer);
+    printf("Received: %d\n",fileSize);
+
+    block = UnpackMatrixBlockCSR(buffer);
+    printf("B: %p\n",block);
+    printf("%d %d %d\n",block->size,block->blockSize,block->numberBlocks);
+
+    printf("Start: %x\n",buffer);
+    printf("End: %x\n",&buffer[fileSize]);
+    
+    InitializeGotFloats(arena,block->size);
+    
+#ifdef HEAVY_PRINT
+    PrintMemoryBlock(buffer,fileSize);
+#endif // HEAVY_PRINT
+
+#ifdef BLOCK_PRINT
+    printf("%d %d %d\n",block->size,block->blockSize,block->numberBlocks);
+    PrintCSR(block);
+#endif // HEAVY_PRINT
+
+#ifdef BLOCK_SIMPLE_PRINT
+    PrintSimpleCSR(block);
+#endif
+    
+    size = block->size;
+    blockSize = block->blockSize; 
+    
+    vec = PushArray<real>(arena,size);
+    for(int i = 0; i < size; i++){
+      vec[i] = RandomNumberBetween(1,size);
+    }
+    
+    Array<real> expected = MultiplyBlockCSR(block,vec,arena);
+    PushExpected(expected);
+  }break;
+  case TestType::TYPE_DIRECTLY:{
+    printf("Using data directly\n");
+    
+    InitializeGotFloats(arena,size);
+
+    if(startData < (int) &arena->mem[arena->used]){
+      printf("[ERROR] Arena is overallocated compared to expected\n");
+    }
+       
+    arena->used = (startData - (int) arena->mem);
+    
+    int dataSize = ARRAY_SIZE(testData);
+    Byte* memory = PushBytes(arena,dataSize);
+
+    printf("Start: 0x%p\n",memory);
+    printf("End: 0x%p 0x%p\n",(int) &memory[dataSize],endData);
+
+    int* intView = (int*) memory;
+    int* testDataView = (int*) testData;
+    for(int i = 0; i < (dataSize / sizeof(int)) + 1; i++){
+      if(i % Megabyte(1) == 0){
+        printf("%d\n",i);
+      }
+      intView[i] = testDataView[i];
+    }
+
+    block = (MatrixBlock*) memory;
+    
+    // Do not know if should do a memory align ???
+  }break;
   }
 
+  printf("Finished SMVM init\n");
 }

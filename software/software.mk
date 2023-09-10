@@ -7,13 +7,15 @@ DEFINE+=$(defmacro)FREQ=$(FREQ)
 
 #compiler settings
 TOOLCHAIN_PREFIX:=riscv64-unknown-elf-
-CFLAGS=-Os -O2 -nostdlib -march=$(MFLAGS) -mabi=ilp32 --specs=nano.specs -Wcast-align=strict
+CFLAGS=-Os -O2 -nostdlib -march=$(MFLAGS) -mabi=ilp32f --specs=nano.specs -Wcast-align=strict
 LFLAGS+= -Wl,-Bstatic,-T,../template.lds,--strip-debug
 LLIBS=-lgcc -lc -lnosys
 
-MFLAGS=$(MFLAGS_BASE)$(MFLAG_M)$(MFLAG_C)
+MFLAGS=$(MFLAGS_BASE)$(MFLAG_M)af$(MFLAG_C)
 
 MFLAGS_BASE:=rv32i
+
+LDFLAGS=-march=$(MFLAGS) -mabi=ilp32f 
 
 ifeq ($(USE_MUL_DIV),1)
 MFLAG_M=m

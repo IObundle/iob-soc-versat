@@ -177,16 +177,8 @@ static void ExpectMemory(int* expected,int size, int* output){
    }
 }
 
-//#if (USE_DDR==1)
-//#if (RUN_DDR==0)
-//#else
-//#ifdef SIM
-//static int *ddr = (int*) EXTRA_BASE;
-//#else
-static int *ddr = (int*) (1<<(FIRM_ADDR_W+1));
-//#endif
-//#endif
-//#endif
+//static int *ddr = (int*) (0x80000000 + (1<<(FIRM_ADDR_W+2)));
+static int *ddr = (int*) (0x80000000 + (1<<(FIRM_ADDR_W+2)));
 
 void SingleTest(Arena* arena);
 
@@ -207,11 +199,16 @@ int main(int argc,char* argv[]){
   arenaInst.totalAllocated = Gigabyte(1);
 
   printf("DDR\n");
-  printf("%p\n",expectedBuffer); // Maloc return
   printf("%p\n",&arenaInst); // Local variable
   printf("%p\n",ddr); // Local variable
 #endif
 
+#if 0
+  printf("%x\n",UART_BASE);
+  printf("%x\n",VERSAT_BASE);
+  printf("%x\n",ILA_BASE);
+#endif
+  
   Arena* arena = &arenaInst;
 
    // Init testing buffers
@@ -220,6 +217,13 @@ int main(int argc,char* argv[]){
   expectedPtr = expectedBuffer;
   gotPtr      = gotBuffer;
 
+#if 0
+  printf("%p\n",expectedBuffer);
+  printf("%p\n",gotBuffer);
+  printf("%p\n",expectedPtr);
+  printf("%p\n",gotPtr);
+#endif
+  
 #if 0
   int size = Megabyte(256);
   printf("Gonna fill\n");

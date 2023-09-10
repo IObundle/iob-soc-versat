@@ -15,9 +15,10 @@ TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVM VReadToVWrite SMVMCPU
 #CPU ARCHITECTURE
 DATA_W := 32
 ADDR_W := 32
+N_CORES := 1
 
 DDR_ADDR_W := 30
-MIG_BUS_W := 128
+MIG_BUS_W := 256
 
 #FIRMWARE SIZE (LOG2)
 FIRM_ADDR_W ?=18
@@ -128,6 +129,7 @@ DOC_DIR=$(ROOT_DIR)/document/$(DOC)
 #define macros
 DEFINE+=$(defmacro)DATA_W=$(DATA_W)
 DEFINE+=$(defmacro)ADDR_W=$(ADDR_W)
+DEFINE+=$(defmacro)N_CORES=$(N_CORES)
 DEFINE+=$(defmacro)BOOTROM_ADDR_W=$(BOOTROM_ADDR_W)
 DEFINE+=$(defmacro)SRAM_ADDR_W=$(SRAM_ADDR_W)
 DEFINE+=$(defmacro)FIRM_ADDR_W=$(FIRM_ADDR_W)

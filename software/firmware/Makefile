@@ -52,6 +52,9 @@ ifeq ($(SIM),1)
 DEFINE+=$(defmacro)SIM
 endif
 
+
+DEFINE+=$(defmacro)TEMPORARY_MARK
+
 #RULES
 
 ifeq ($(COMPILER),g++)
@@ -75,13 +78,13 @@ $(OUTPUT_NAME): ../template.lds $(HDR) $(SRC) $(GENERATED)/versat_accel.h
 ifneq ($(HARDWARE_TEST),)
 	@mkdir -p $(OUTPUT_DIR)
 endif
-	$(TOOLCHAIN_PREFIX)$(COMPILER) -std=c++17 -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions 
-	#$(TOOLCHAIN_PREFIX)objdump -drwC -S $@ > assembly.asm
+	$(TOOLCHAIN_PREFIX)$(COMPILER) -std=c++17 -o $@ $(CFLAGS) $(LFLAGS) $(DEFINE) $(INCLUDE) interruptHandler.c $(SRC) $(LLIBS) -lgcc -lc -lnosys -fno-exceptions 
+	$(TOOLCHAIN_PREFIX)objdump -drwC -S $@ > assembly.asm
 	$(TOOLCHAIN_PREFIX)objcopy -O binary $(OUTPUT_DIR)/firmware.elf $(OUTPUT_DIR)/firmware.bin
 	$(TOOLCHAIN_PREFIX)objcopy -O binary $(OUTPUT_DIR)/firmware.elf firmware.bin
 
 clean:
-	@rm -rf firmware.bin firmware.elf firmware.map *.hex periphs.h periphs_tmp.h eth_frame_struct.h UARTsw_reg.h TIMERsw_reg.h *swreg.h \
+	@rm -rf firmware.bin firmware.elf firmware.map *.hex periphs.h periphs_tmp.h eth_frame_struct.h UARTsw_reg.h TIMERsw_reg.h *swreg.h assembly.asm \
 		*swreg_emb.c \
 		*d_in.bin *d_out.bin generated src test
 
