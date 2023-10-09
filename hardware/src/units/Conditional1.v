@@ -19,10 +19,14 @@ module Conditional1 #(
 
 always @(posedge clk,posedge rst)
 begin
-     if(in0[0]) begin
-          out0 <= in1;
+     if(rst) begin
+          out0 <= 0;          
      end else begin
-          out0 <= in2;
+          if(in0[0]) begin
+               out0 <= in1;
+          end else begin
+               out0 <= in2;
+          end
      end
 end
 

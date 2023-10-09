@@ -174,7 +174,7 @@ module SMVMBlock4(){
    Generator gen;
    FloatMul mul;
 
-   MyFloatAccum accum;
+   FloatAddAccum accum; // MyFloatAccum 
    DoneCycle cycler;
 
    SignalMemWrite output;
@@ -2839,7 +2839,6 @@ module av(const1,const2,const3,bark,Xtm){
    add3 -> out;
 }
 
-
 module dzRange(dz){
    FloatGreaterEqual ge1_dzRange;
    FloatLess lt1_dzRange;
@@ -2858,7 +2857,6 @@ module dzRange(dz){
    and = ge1_dzRange & lt1_dzRange;
    and -> out:0;
 }
-
 
 module Logic(dz){
    FloatLess lt1_Logic;
@@ -2898,7 +2896,6 @@ module Logic(dz){
    sel = zero ^ one;
    sel -> out:0;
 }
-
 
 module vf4(dz,logic1,Xtm){
    FloatAdd add1_vf4;
@@ -2968,7 +2965,6 @@ module vf4(dz,logic1,Xtm){
    mux4_vf4 -> out:0;
 }
 
-
 module psycho_3_add_db(a,b,add1,add2,sel,if){
    Mux4 mux4_psycho_3;
    Conditional1 conditional_psycho_3;
@@ -2988,8 +2984,7 @@ module psycho_3_add_db(a,b,add1,add2,sel,if){
    conditional_psycho_3 -> out:0;
 }
 
-
-module start() {
+module psycho() {
    Const DBMIN;
    Const const1_av;
    Const const2_av;
@@ -3057,7 +3052,7 @@ module start() {
    LTtmR:1 -> mux2:1;
 
    ////fdiff = (10.0 * (a - b));
-   mux2 -> sub1_psycho_3:0;
+   mux2[3] -> sub1_psycho_3:0;
    add -> sub1_psycho_3:1;
    const1_psycho_3 -> mul_psycho_3:0;
    sub1_psycho_3 -> mul_psycho_3:1;
@@ -3080,7 +3075,7 @@ module start() {
    const4_psycho_3 -> ge_psycho_3:1;
 
    ////a + mem->dbtable[idiff]
-   mux2 -> add1_psycho_3:0;
+   mux2[3] -> add1_psycho_3:0;
    idiff -> mem;
    mem -> add1_psycho_3:1;
 
@@ -3108,7 +3103,7 @@ module start() {
 
    ///////////////////////////////////////psycho_3_add_db inputs and output
 
-   mux2 -> psycho_3_add_db1:0;
+   mux2[3] -> psycho_3_add_db1:0;
    add -> psycho_3_add_db1:1;
    add1_psycho_3 -> psycho_3_add_db1:2;
    add2_psycho_3 -> psycho_3_add_db1:3;
@@ -3117,4 +3112,25 @@ module start() {
    psycho_3_add_db1 -> LTtmR:0;
 }
 
+module Merge0(){
+   Mem m0;
+   Mem m1;
+   Mem output;
+#
+   a = m0 + m1;
+   a -> output;
+}
 
+module Merge1(){
+   Mem m0;
+   Mem m1;
+   Mem output;
+#
+   a = m0 - m1;
+   a -> output;
+}
+
+merge MergeTest = Merge0:a | Merge1:b {
+   a.m0 - b.m1;
+   a.m1 - b.m0;
+}

@@ -6,7 +6,11 @@
 
 IOBSOC_NAME:=IOBSOCSHA
 
-TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVM VReadToVWrite SMVMCPU
+#TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVM VReadToVWrite SMVMCPU
+TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVMBlock6
+
+TESTS_BUILD:=$(addsuffix _build,$(TESTS))
+TESTS_RUN:=$(addsuffix _run,$(TESTS))
 
 #
 # PRIMARY PARAMETERS: CAN BE CHANGED BY USERS OR OVERRIDEN BY ENV VARS

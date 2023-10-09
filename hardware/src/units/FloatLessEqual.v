@@ -16,9 +16,6 @@ module FloatLessEqual #(
     input [DATA_W-1:0] in0,
     input [DATA_W-1:0] in1,
 
-    input              start,
-    output reg         done,
-
     (* versat_latency = 1 *) output reg [DATA_W-1:0] out0
    );
 
@@ -45,10 +42,8 @@ module FloatLessEqual #(
     always @(posedge clk, posedge rst) begin
         if (rst) begin
             out0 <= 0;
-            done <= 0;
         end else begin
             out0 <= {32{res_int}};
-            done <= start;
         end
     end
 

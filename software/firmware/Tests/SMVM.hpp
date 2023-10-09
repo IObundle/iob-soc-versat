@@ -34,16 +34,17 @@ typedef uint16_t u16;
 
 // 0 - Generate random matrix. 1 - Get values from ethernet 
 
-//#define TEST_TYPE TestType::TYPE_GENERATE
-#define TEST_TYPE TestType::TYPE_ETHERNET
+//#define TEST_TYPE TestType::TYPE_CSR
+#define TEST_TYPE TestType::TYPE_GENERATE
+//#define TEST_TYPE TestType::TYPE_ETHERNET
 //#define TEST_TYPE TestType::TYPE_DIRECTLY
 
 // For some reason static variables cannot have computations because firmware just inits them as zero, need to define them this way to make sure the actual values are properly initialized at beginning of program
-#define SIZE 200 // 250
+#define SIZE 4 // 250
 #define AMOUNT_NZ ((SIZE * SIZE) / 2)
-//#define BLOCK_SIZE (SIZE / 2)
+#define BLOCK_SIZE (SIZE / 2)
 //#define BLOCK_SIZE SIZE
-#define BLOCK_SIZE 16
+//#define BLOCK_SIZE 16
 
 //#define BLOCK_SIZE 4096
 
@@ -480,6 +481,25 @@ struct FormatCOO{
 #define COORowArray(COO_PTR)    {COORow(COO_PTR)   ,(COO_PTR)->nonZeros + 1}
 #define COOValueArray(COO_PTR)  {COOValue(COO_PTR) ,(COO_PTR)->nonZeros}
 
+#define OriginalCSRValue(CSR_PTR) ((real*) (CSR_PTR)->data)
+#define OriginalCSRColumn(CSR_PTR) ((u32*) (OriginalCSRValue(CSR_PTR) + (CSR_PTR)->nonZeros))
+#define OriginalCSRRow(CSR_PTR) (OriginalCSRColumn(CSR_PTR) + (CSR_PTR)->nonZeros)
+
+struct OriginalCSR{
+  int* data;
+#ifndef PC
+  unsigned int _align; // PC is 8 bytes per pointer. In sim it's 4.
+#endif
+
+  unsigned int size;
+  unsigned int rowsAmount;
+  unsigned int nonZeros;
+  
+  // Array<real> values;
+  // Array<u32> column;
+  // Array<u32> row;
+};
+
 typedef uint32_t u32;
 
 struct FormatCSR{
@@ -500,7 +520,6 @@ struct FormatCSR{
   // Array<real> values;
   // Array<u16> column;
   // Array<u16> row;
-  // Not anymore - Array<Pair<u16>> offsets;
 };
 
 #define CSRValue(CSR_PTR) ((real*) (CSR_PTR)->data)
@@ -787,22 +806,35 @@ Array<real> MultiplyCOO(FormatCOO coo,Array<real> vector,Arena* arena){
   return res;
 }
 
-Array<real> MultiplyCSR(FormatCSR csr,Array<real> vector,Arena* arena){
+Array<real> MultiplyCSR(OriginalCSR csr,Array<real> vector,Arena* arena){
   int size = vector.size;
-  Array<real> res = PushArray<real>(arena,size);
+  Array<real> res = PushArray<real>(arena,size + 2);
   Memset(res,0.0f);
 
-  Array<u16> column = CSRColumnArray(&csr);
-  Array<u16> row    = CSRRowArray(&csr);
-  Array<real> values = CSRValueArray(&csr);
+  u32*  column = OriginalCSRColumn(&csr);
+  u32*  row    = OriginalCSRRow(&csr);
+  real* values = OriginalCSRValue(&csr);
 
-  for(int i = 0; i < row.size; i++){
+  printf("%x %x %x %d\n",column,row,values,size);
+
+  //int count = 0;
+  // MARK
+  Time cpuStart = GetTime();
+  for(int i = 0; i < size; i++){
     int val = 0;
-    for(int ii = row[i]; ii < row[i+1]; ii++){
+    int nextRow = row[i+1];
+    for(int ii = row[i]; ii < nextRow; ii++){
+      //count += 1;
       val += values[ii] * vector[column[ii]];
     }
     res[i] = val;
   }
+  Time cpuEnd = GetTime();
+  Time diff = cpuEnd - cpuStart;
+
+  //printf("CSR Count: %d\n",count);
+  PrintTime(diff,"CPU_CSR");
+  
   return res;
 }
 
@@ -1124,7 +1156,7 @@ MatrixBlock* ConvertMatBlockCSR(Matrix mat,Arena* arena,Arena* temp){
       if(offsets){
         blocks[blockIndex].offsets = PushOffsetPair(blockMat,offsets,arena);
       } else {
-        blocks[blockIndex].offsets = {0,0,0};
+        blocks[blockIndex].offsets = {0,0};
       }
       blockIndex += 1;
     }
@@ -1208,7 +1240,8 @@ Array<real> MultiplyBlockCSR(MatrixBlock* block,Array<real> vector,Arena* arena)
   Memset(res,0.0f);
 
   Array<BlockCSR> blocks = MatrixBlockCSRArray(block);
-  
+
+  //int count = 0;
   timeRegion("CPU multiply"){
   for(BlockCSR& b : blocks){
     FormatCSR csr = b.csr;
@@ -1233,6 +1266,7 @@ Array<real> MultiplyBlockCSR(MatrixBlock* block,Array<real> vector,Arena* arena)
 
       float val = 0;
       for(int ii = start; ii < row[i]; ii++){
+        //count += 1;
         float sum = values[ii] * vector[xOffset + column[ii]];
         val += sum;
 #ifdef HEAVY_PRINT
@@ -1247,6 +1281,11 @@ Array<real> MultiplyBlockCSR(MatrixBlock* block,Array<real> vector,Arena* arena)
   }
 }
 
+  //printf("Block count: %d\n",count);
+
+  //uart_finish();
+  //exit(0);
+  
   return res;
 }
 
@@ -1320,7 +1359,8 @@ void PrintMemoryBlock(void* mem,int size){
 enum TestType {
   TYPE_GENERATE = 0,
   TYPE_ETHERNET = 1,
-  TYPE_DIRECTLY = 2
+  TYPE_DIRECTLY = 2,
+  TYPE_CSR = 3
 };
 
 void InitializeGotFloats(Arena* arena,int size){
@@ -1338,6 +1378,33 @@ void InitializeSMVM(Arena* arena,Type type){
   Arena* temp = &tempInst;
  
   switch(test){
+  case TestType::TYPE_CSR:{
+    eth_init(ETHERNET_BASE);
+
+    char* buffer = (char*) PushBytes(arena,Megabyte(256));
+    buffer += Megabyte(1); // Make sure that we are in memory never touched upon;
+
+    printf("Testing CSR\n");
+    printf("Waiting for file receive\n");
+    int fileSize = eth_rcv_variable_file(buffer);
+    printf("Received: %d\n",fileSize);
+
+    OriginalCSR* csr = (OriginalCSR*) buffer;
+    csr->data = (int*) &csr[1];
+    
+    printf("%x %d %d %d\n",csr->data,csr->size,csr->rowsAmount,csr->nonZeros);
+
+    size = csr->size;
+
+    vec = PushArray<real>(arena,size);
+    for(int i = 0; i < size; i++){
+      vec[i] = RandomNumberBetween(1,size);
+    }
+
+    Array<real> expected = MultiplyCSR(*csr,vec,arena);
+    uart_finish();
+    exit(0);
+  } break;
   case TestType::TYPE_GENERATE:{
     printf("Size: %d,NZ: %d,BlockSize:%d \n",size,amountNZ,blockSize);
 
@@ -1463,6 +1530,7 @@ void InitializeSMVM(Arena* arena,Type type){
     PushExpected(expected);
   }break;
   case TestType::TYPE_DIRECTLY:{
+#if 0
     printf("Using data directly\n");
     
     InitializeGotFloats(arena,size);
@@ -1489,7 +1557,7 @@ void InitializeSMVM(Arena* arena,Type type){
     }
 
     block = (MatrixBlock*) memory;
-    
+#endif    
     // Do not know if should do a memory align ???
   }break;
   }

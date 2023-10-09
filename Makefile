@@ -3,6 +3,14 @@ MAKEFLAGS += --no-builtin-rules
 ROOT_DIR:=.
 include $(ROOT_DIR)/config.mk
 
+$(TESTS_BUILD):
+	$(MAKE) pc-emul-build TEST=$(subst _build,,$@)
+
+$(TESTS_RUN): $(TESTS_BUILD)
+	$(MAKE) pc-emul-run TEST=$(subst _run,,$@)
+
+test-pc-emul: $(TESTS_RUN)
+
 ila-build: ilaFormat.txt
 	$(ILA_PYTHON_DIR)/ilaGenerateSource.py ilaFormat.txt ila.c
 	$(ILA_PYTHON_DIR)/ilaGenerateVerilog.py ilaFormat.txt $(HW_DIR)/include/
@@ -135,8 +143,6 @@ clean: pc-emul-clean sim-clean fpga-clean doc-clean ila-clean
 #
 # TEST ALL PLATFORMS
 #
-
-test-pc-emul: pc-emul-test
 
 test-pc-emul-clean: pc-emul-clean
 

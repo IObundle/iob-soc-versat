@@ -25,15 +25,16 @@ module Mux4 #(
 
 always @(posedge clk,posedge rst)
 begin
-   if(rst)
+   if(rst) begin
       out0 <= 0;
-   else
+   end else begin
       case(in4[1:0])
       2'b00: out0 <= in0;
       2'b01: out0 <= in1;
       2'b10: out0 <= in2;
       2'b11: out0 <= in3;
       endcase
+   end
 end
 
 endmodule

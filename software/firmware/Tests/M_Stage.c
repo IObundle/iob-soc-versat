@@ -1,6 +1,6 @@
 #include "testbench.h"
 
-void SingleTest(){
+void SingleTest(Arena* arena){
    iptr input[] = {(iptr)0x5a86b737,(iptr)0xa9f9be83,(iptr)0x08251f6d,(iptr)0xeaea8ee9};
    VersatMemoryCopy(SimpleInputStart,input,4);
 

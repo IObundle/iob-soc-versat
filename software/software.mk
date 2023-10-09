@@ -56,7 +56,7 @@ VERSAT_THIS_HARDWARE := $(wildcard $(HW_DIR)/src/units/*.v)
 VERSAT_THIS_INCLUDE :=  -I $(VERSAT_DIR)/hardware/include -I $(HW_DIR)/include -I $(HW_DIR)/src/units
 
 versat:
-	$(MAKE) -C $(VERSAT_DIR) -j8 versat
+	$(MAKE) -C $(VERSAT_DIR) versat
 
 $(VERSAT_EXE): versat # Makes sure versat is updated
 

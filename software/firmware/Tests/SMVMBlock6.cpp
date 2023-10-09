@@ -6,7 +6,7 @@
 //#define BLOCK_PRINT
 //#define PRINT
 //#define PRINT_OUTPUT
-#define PRINT_DIFF
+//#define PRINT_DIFF
 
 //#define ILA_OUTPUT
 
@@ -725,7 +725,6 @@ static void ConfigAccelerator(int frame,int accel){
 
 #ifndef PC
 extern int timesWaiting;
-#endif
 
 float Abs(float val){
   float res = val;
@@ -748,6 +747,7 @@ bool FloatEqual(float f0,float f1,float epsilon){
 
   return equal;
 }
+#endif
 
 void SingleTest(Arena* arena){
   InitializeSMVM(arena,Type::BLOCKCSR);

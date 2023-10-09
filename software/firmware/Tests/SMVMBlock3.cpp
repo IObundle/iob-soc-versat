@@ -20,28 +20,24 @@ static void InitializeBaseAccelerator(){
   ACCEL_TOP_col_incrA = 1;
   ACCEL_TOP_col_iterA = 1;
   ACCEL_TOP_col_dutyA = ~0;
-  ACCEL_TOP_col_size = 8;
   ACCEL_TOP_col_int_addr = 0;
   ACCEL_TOP_col_pingPong = 1;
 
   ACCEL_TOP_row_incrA = 1;
   ACCEL_TOP_row_iterA = 1;
   ACCEL_TOP_row_dutyA = ~0;
-  ACCEL_TOP_row_size = 8;
   ACCEL_TOP_row_int_addr = 0;
   ACCEL_TOP_row_pingPong = 1;
 
   ACCEL_TOP_val_incrA = 1;
   ACCEL_TOP_val_iterA = 1;
   ACCEL_TOP_val_dutyA = ~0;
-  ACCEL_TOP_val_size = 8;
   ACCEL_TOP_val_int_addr = 0;
   ACCEL_TOP_val_pingPong = 1;
 
   ACCEL_TOP_vector_incrA = 1;
   ACCEL_TOP_vector_iterA = 1;
   ACCEL_TOP_vector_dutyA = ~0;
-  ACCEL_TOP_vector_size = 8;
   ACCEL_TOP_vector_int_addr = 0;
 
   ACCEL_TOP_output_disabled = 0;

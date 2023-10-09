@@ -11,9 +11,15 @@
 
 #include "versat_accel.h" // C++, include outside
 
+#define Kilobyte(val) (val * 1024)
+#define Megabyte(val) (Kilobyte(val) * 1024)
+#define Gigabyte(val) (Megabyte(val) * 1024)
+
 #include "system.h"
 #include "periphs.h"
 #include "string.h"
+
+#include "iob-eth.h"
 
 #if defined(__cplusplus) && defined(PC)
 extern "C" {
@@ -22,10 +28,9 @@ extern "C" {
 #include "iob-uart.h"
 #include "iob-timer.h"
 #include "iob-ila.h"
-#include "iob-eth.h"
 
 #if defined(__cplusplus) && defined(PC)
-}
+  }
 #endif
 
 #ifndef __cplusplus
@@ -35,12 +40,16 @@ extern "C" {
 #endif
 
 #ifdef PC
-// Remove having to use console to test firmware
+  // Remove having to use console to test firmware
 #define uart_init(...) ((void)0)
 #define uart_finish(...) ((void)0)
 #include "stdio.h"
 #else
 #include "printf.h"
+#endif
+
+#ifndef __cplusplus
+#define nullptr NULL
 #endif
 
 static bool error = false; // Global keep track if a error occurred. Do not want to print error messages more than once
@@ -53,35 +62,35 @@ static char* expectedPtr = nullptr;
 static char* gotPtr = nullptr;
 
 #ifndef __cplusplus // C++ code already has access to these functions
-typedef union {
-   iptr i;
-   float f;
-} Conv;
+  typedef union {
+    iptr i;
+    float f;
+  } Conv;
 
-static int PackInt(float f){
-   Conv c = {};
-   c.f = f;
-   return c.i;
-}
+  static int PackInt(float f){
+    Conv c = {};
+    c.f = f;
+    return c.i;
+  }
 
-static float PackFloat(int i){
-   Conv c = {};
-   c.i = i;
-   return c.f;
-}
+  static float PackFloat(int i){
+    Conv c = {};
+    c.i = i;
+    return c.f;
+  }
 #endif
 
 static void ResetTestBuffers(){
-   expectedPtr = expectedBuffer;
-   gotPtr = gotBuffer;
+  expectedPtr = expectedBuffer;
+  gotPtr = gotBuffer;
 }
 
 static void PushExpectedI(int val){
-   expectedPtr += sprintf(expectedPtr,"0x%x ",val);
+  expectedPtr += sprintf(expectedPtr,"0x%x ",val);
 }
 
 static void PushGotI(int val){
-   gotPtr += sprintf(gotPtr,"0x%x ",val);
+  gotPtr += sprintf(gotPtr,"0x%x ",val);
 }
 
 static void PushExpectedF(float val){ // NOTE: Floating point rounding can make these fail. If so, just push a certain amount of decimal places
@@ -93,89 +102,114 @@ static void PushGotF(float val){
 }
 
 static void PushExpectedS(const char* str){
-   expectedPtr += sprintf(expectedPtr,"%s ",str);
+  expectedPtr += sprintf(expectedPtr,"%s ",str);
 }
 
 static void PushGotS(const char* str){
-   gotPtr += sprintf(gotPtr,"%s ",str);
+  gotPtr += sprintf(gotPtr,"%s ",str);
 }
 
 static void PrintError(){
-   char* expected = expectedBuffer;
-   char* got = gotBuffer;
+  char* expected = expectedBuffer;
+  char* got = gotBuffer;
 
-   printf("\n");
-   printf("%s: Test Failed\n",acceleratorTypeName);
-   printf("    Expected: %s\n",expected);
-   printf("    Result:   %s\n",got);
-   printf("              ");
-   for(int i = 0; expected[i] != '\0'; i++){
-      if(got[i] == '\0'){
-         printf("^");
-         break;
-      }
-      if(got[i] != expected[i]){
-         printf("^");
-      } else {
-         printf(" ");
-      }
-   }
+  printf("\n");
+  printf("%s: Test Failed\n",acceleratorTypeName);
+  printf("    Expected: %s\n",expected);
+  printf("    Result:   %s\n",got);
+  printf("              ");
+  for(int i = 0; expected[i] != '\0'; i++){
+    if(got[i] == '\0'){
+      printf("^");
+      break;
+    }
+    if(got[i] != expected[i]){
+      printf("^");
+    } else {
+      printf(" ");
+    }
+  }
 
-   printf("\n");
+  printf("\n");
 }
 
 static void Assert_Eq(int val1,int val2){
-   PushExpectedI(val1);
-   PushGotI(val2);
+  PushExpectedI(val1);
+  PushGotI(val2);
 
-   if(val1 != val2){
-      error = true;
-   }
+  if(val1 != val2){
+    error = true;
+  }
 }
 
 static void Assert_EqF(float val1,float val2){
-   PushExpectedF(val1);
-   PushGotF(val2);
+  PushExpectedF(val1);
+  PushGotF(val2);
 
-   if(val1 != val2){
-      error = true;
-   }
+  if(val1 != val2){
+    error = true;
+  }
 }
 
 static void Expect(const char* expected,const char* format, ...){
-   va_list args;
-   va_start(args,format);
+  va_list args;
+  va_start(args,format);
 
-   char buffer[1024 * 16];
-   int size = vsprintf(buffer,format,args);
+  char buffer[1024 * 16];
+  int size = vsprintf(buffer,format,args);
 
-   va_end(args);
+  va_end(args);
 
-   bool result = (strcmp(expected,buffer) == 0);
+  bool result = (strcmp(expected,buffer) == 0);
 
-   if(!result){
-      error = true;
-      PushExpectedS(expected);
-      PushGotS(buffer);
-   }
+  if(!result){
+    error = true;
+    PushExpectedS(expected);
+    PushGotS(buffer);
+  }
 }
 
 static void ExpectMemory(int* expected,int size, int* output){
-   bool result = (memcmp(expected,output,size) == 0);
+  bool result = (memcmp(expected,output,size) == 0);
 
-   if(!result){
-      error = true;
-      char expectedStr[1024 * 16];
-      char gotStr[1024 * 16];
+  if(!result){
+    error = true;
+    char expectedStr[1024 * 16];
+    char gotStr[1024 * 16];
 
-      char* expectedPtr = expectedStr;
-      char* gotPtr = gotPtr;
-      for(int i = 0; i < size; i++){
-         PushExpectedI(expected[i]);
-         PushGotI(output[i]);
-      }
-   }
+    char* expectedPtr = expectedStr;
+    char* gotPtr = gotPtr;
+    for(int i = 0; i < size; i++){
+      PushExpectedI(expected[i]);
+      PushGotI(output[i]);
+    }
+  }
 }
+
+#ifndef __cplusplus
+  typedef struct {
+    char* mem;
+    int used;
+    int totalAllocated;
+  } Arena;
+
+  Arena InitArena(int amount){
+    Arena arena = {};
+    arena.mem = malloc(amount);
+    arena.totalAllocated = amount;
+    return arena;
+  }
+
+  void* PushBytes(Arena* arena,int amount){
+    //assert(arena->used + amount < arena->totalAllocated);
+
+    void* res = (void*) &arena->mem[arena->used];
+    arena->used += amount;
+
+    return res;
+  }
+
+#endif
 
 //static int *ddr = (int*) (0x80000000 + (1<<(FIRM_ADDR_W+2)));
 static int *ddr = (int*) (0x80000000 + (1<<(FIRM_ADDR_W+2)));
@@ -183,13 +217,10 @@ static int *ddr = (int*) (0x80000000 + (1<<(FIRM_ADDR_W+2)));
 void SingleTest(Arena* arena);
 
 int main(int argc,char* argv[]){
-   uart_init(UART_BASE,FREQ/BAUD);
-   timer_init(TIMER_BASE);
-   ila_init(ILA_BASE);
-
-   printf("Before versat init\n");
-  
-   versat_init(VERSAT_BASE);
+  uart_init(UART_BASE,FREQ/BAUD);
+  timer_init(TIMER_BASE);
+  ila_init(ILA_BASE);
+  versat_init(VERSAT_BASE);
   
 #ifdef PC
   Arena arenaInst = InitArena(Megabyte(16));
@@ -202,135 +233,59 @@ int main(int argc,char* argv[]){
   printf("%p\n",&arenaInst); // Local variable
   printf("%p\n",ddr); // Local variable
 #endif
-
-#if 0
-  printf("%x\n",UART_BASE);
-  printf("%x\n",VERSAT_BASE);
-  printf("%x\n",ILA_BASE);
-#endif
-  
+ 
   Arena* arena = &arenaInst;
 
-   // Init testing buffers
+  // Init testing buffers
   expectedBuffer = (char*) PushBytes(arena,TEST_BUFFER_SIZE);
   gotBuffer      = (char*) PushBytes(arena,TEST_BUFFER_SIZE);
   expectedPtr = expectedBuffer;
   gotPtr      = gotBuffer;
-
-#if 0
-  printf("%p\n",expectedBuffer);
-  printf("%p\n",gotBuffer);
-  printf("%p\n",expectedPtr);
-  printf("%p\n",gotPtr);
-#endif
   
-#if 0
-  int size = Megabyte(256);
-  printf("Gonna fill\n");
+  SingleTest(arena);
 
-  char* original = (char*) ddr; //0x00040000; //(char*) malloc(Megabyte(size));
-  printf("%p\n",&arenaInst); // Local variable
-  printf("%p\n",original);
+  if(error){
+    PrintError();
+  } else {
+    int expectedDiff = (expectedPtr - expectedBuffer);
+    int gotDiff = (gotPtr - gotBuffer);
 
-  // Initialize ILA
-  ila_set_different_signal_storing(1);
-  ila_set_time_offset(-1);
-  
-  ila_set_trigger_type(0,ILA_TRIGGER_TYPE_CONTINUOUS);
-  ila_set_trigger_enabled(0,true); // Ila start recording. Only a small overhead cost anyway
-
-  SignalLoop();
-  
-  char* ptr = original;
-  for(int i = 0; i < size; i++){
-    if(i != 0 && (i % (size / 8)) == 0){
-      printf("Index: %x\n",i);
-    }
-    ptr[i] = (char) ((i % 255) + 1);
-  }
-
-  printf("Gonna check\n");
-  ptr = original;
-  bool noError = true;
-  for(int i = 0; i < size; i++){
-    if(i != 0 && (i % (size / 8)) == 0){
-      printf("Index: %x\n",i);
-    }
-    char val = (char) ((i % 255) + 1);
-    if(val != ptr[i]){
-      printf("Started giving bad at pos: %x (%d/%d)\n",i,val,ptr[i]);
-      printf("%p\n",&ptr[i]);
-      noError = false;
-      break;
-    }
-  }
-  if(noError){ printf("OK\n");}
-  
-  ila_output_everything();
-#endif
-  
-#if 1
- 
-   printf("Single test\n");
-   SingleTest(arena);
-
-#if 0
-   if(error){
-      PrintError();
-   } else {
-      int expectedDiff = (expectedPtr - expectedBuffer);
-      int gotDiff = (gotPtr - gotBuffer);
-
-      bool passed = true;
-      if(expectedDiff != gotDiff){
-         passed = false;
-      } else {
-         for(int i = 0; i < expectedDiff; i++){
-            if(expectedBuffer[i] != gotBuffer[i]){
-               passed = false;
-               break;
-            }
-         }
-      }
-
-      if(passed){
-         printf("%s: OK\n",acceleratorTypeName);
-      } else {
-         printf("%s: ERROR\n",acceleratorTypeName);
-#if 1
-         printf("Exp:%s\n",expectedBuffer);
-         printf("Got:%s\n",gotBuffer);
-#endif
-      }
-
-#if 1
-     if(!passed){
-       printf("Expected: %d, Got: %d\n",expectedDiff,gotDiff);
-        for(int i = 0; i < expectedDiff; i++){
-          if(expectedBuffer[i] != gotBuffer[i]){
-            printf("^");
-          } else {
-            printf(" ");
-          }
+    bool passed = true;
+    if(expectedDiff != gotDiff){
+      passed = false;
+    } else {
+      for(int i = 0; i < expectedDiff; i++){
+        if(expectedBuffer[i] != gotBuffer[i]){
+          passed = false;
+          break;
         }
-        printf("\n");
       }
-#endif
-     
-#if 0
-      if(passed){
-         printf("Exp:%s\n",expectedBuffer);
-         printf("Got:%s\n",gotBuffer);
-      }
-#endif
-   }
-#endif
+    }
 
-#endif
+    if(passed){
+      printf("%s: OK\n",acceleratorTypeName);
+    } else {
+      printf("%s: ERROR\n",acceleratorTypeName);
+      printf("Exp:%s\n",expectedBuffer);
+      printf("Got:%s\n",gotBuffer);
+    }
+
+    if(!passed){
+      printf("Expected: %d, Got: %d\n",expectedDiff,gotDiff);
+      for(int i = 0; i < expectedDiff; i++){
+        if(expectedBuffer[i] != gotBuffer[i]){
+          printf("^");
+        } else {
+          printf(" ");
+        }
+      }
+      printf("\n");
+    }
+  }
   
-   uart_finish();
+  uart_finish();
   
-   return 0;
+  return 0;
 }
 
 #endif // INCLUDED_TESTBENCH

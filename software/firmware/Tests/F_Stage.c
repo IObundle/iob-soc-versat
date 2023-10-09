@@ -1,6 +1,6 @@
 #include "testbench.h"
 
-void SingleTest(){
+void SingleTest(Arena* arena){
    ACCEL_TOP_input_0_constant = 0x6a09e667;
    ACCEL_TOP_input_1_constant = 0xbb67ae85;
    ACCEL_TOP_input_2_constant = 0x3c6ef372;
