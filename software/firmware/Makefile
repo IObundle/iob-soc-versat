@@ -52,9 +52,6 @@ ifeq ($(SIM),1)
 DEFINE+=$(defmacro)SIM
 endif
 
-
-DEFINE+=$(defmacro)TEMPORARY_MARK
-
 #RULES
 
 ifeq ($(COMPILER),g++)

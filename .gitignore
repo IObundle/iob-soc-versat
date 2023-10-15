@@ -7,6 +7,8 @@ software/periphs.h
 #*.c
 
 TAGS
+.clangd
+compile_commands.json
 
 software/pc-emul/*
 !software/pc-emul/Makefile

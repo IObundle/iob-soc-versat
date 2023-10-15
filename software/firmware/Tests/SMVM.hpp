@@ -305,7 +305,9 @@ static Matrix RandomMatrix(Arena* out,int size,int nonZeros,int randomSeed){
   Array<real> data = PushArray<real>(out,nElements);
   Memset(data,0.0f);
 
+#ifdef PRINT
   printf("Random mat\n");
+#endif
   // Make sure that every column and every row has at least a non zero
   for(int i = 0; i < size; i++){
     data[i * size + i] = RandomNumberBetween(1,10);
@@ -884,46 +886,6 @@ FormatCOO RandomCOO(Arena* temp,int amountOfNZ,int matrixSize){
   return res;
 }
 
-static real* expectedFloats;
-static real* gotFloats;
-static bool errorFloats = false;
-
-void PushExpected(Array<real> vec){
-  if(vec.size != size){
-    errorFloats = true;
-  }
-
-  for(int i = 0; i < vec.size; i++){
-    expectedFloats[i] = vec[i];
-  }
-}
-
-void PushGot(Array<real> vec){
-  if(vec.size != size){
-    errorFloats = true;
-  }
-  printf("%p\n",gotFloats);
-  for(int i = 0; i < vec.size; i++){
-    gotFloats[i] = vec[i];
-  }
-}
-
-#if 0
-void PushExpected(Array<int> vec){
-  for(int val : vec){
-    PushExpectedI(val);
-  }
-}
-#endif
-
-#if 0
-void PushGot(Array<int> vec){
-  for(int val : vec){
-    PushGotI(val);
-  }
-}
-#endif
-
 #define CACHE_LINE_BITS 256
 #define CACHE_LINE_BYTES (CACHE_LINE_BITS / 8)
 #define CACHE_N_WAYS 2
@@ -1363,14 +1325,6 @@ enum TestType {
   TYPE_CSR = 3
 };
 
-void InitializeGotFloats(Arena* arena,int size){
-  PushPageAlign(arena);
-  expectedFloats = PushArray<real>(arena,size+1).data;
-  PushPageAlign(arena);
-  gotFloats = PushArray<real>(arena,size+1).data;
-  PushPageAlign(arena);
-}
-
 void InitializeSMVM(Arena* arena,Type type){
   TestType test = TEST_TYPE;
 
@@ -1406,9 +1360,9 @@ void InitializeSMVM(Arena* arena,Type type){
     exit(0);
   } break;
   case TestType::TYPE_GENERATE:{
+#ifdef PRINT
     printf("Size: %d,NZ: %d,BlockSize:%d \n",size,amountNZ,blockSize);
-
-    InitializeGotFloats(arena,size);
+#endif
     
     if(randomMat){
       mat = RandomMatrix(arena,size,amountNZ,1);
@@ -1417,8 +1371,10 @@ void InitializeSMVM(Arena* arena,Type type){
     }
     PushPageAlign(arena);
 
+#ifdef PRINT
     printf("Generated mat\n");
-
+#endif
+    
     // The previous code, ExampleMatrix can change size. Take care
     vec = PushArray<real>(arena,size);
     for(int i = 0; i < size; i++){
@@ -1457,17 +1413,21 @@ void InitializeSMVM(Arena* arena,Type type){
     case Type::BLOCKCSR:{
       Byte* start = PushBytes(arena,0);
 
+#ifdef PRINT
       printf("Start: %d %x\n",start,start);
+#endif
       block = ConvertMatBlockCSR(mat,arena,temp);
 
       Byte* end = PushBytes(arena,0);
 
+#ifdef PRINT
       printf("Total size: %d\n",end - start);
 
       printf("Start: %x\n",start);
       printf("End: %x\n",end);
       //PrintMemoryBlock(start,end-start);
-
+#endif
+      
 #ifdef HEAVY_PRINT
       PrintMemoryBlock(start,end-start);
 #endif
@@ -1502,8 +1462,6 @@ void InitializeSMVM(Arena* arena,Type type){
 
     printf("Start: %x\n",buffer);
     printf("End: %x\n",&buffer[fileSize]);
-    
-    InitializeGotFloats(arena,block->size);
     
 #ifdef HEAVY_PRINT
     PrintMemoryBlock(buffer,fileSize);
@@ -1562,5 +1520,7 @@ void InitializeSMVM(Arena* arena,Type type){
   }break;
   }
 
+#ifdef PRINT
   printf("Finished SMVM init\n");
+#endif
 }

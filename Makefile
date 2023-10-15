@@ -9,6 +9,9 @@ $(TESTS_BUILD):
 $(TESTS_RUN): $(TESTS_BUILD)
 	$(MAKE) pc-emul-run TEST=$(subst _run,,$@)
 
+#test-pc-build: $(TESTS_BUILD)
+
+# run with -jN and -s
 test-pc-emul: $(TESTS_RUN)
 
 ila-build: ilaFormat.txt
@@ -176,17 +179,6 @@ test-doc-clean:
 
 test-clean: test-pc-emul-clean test-sim-clean test-fpga-clean test-doc-clean
 
-$(TESTS):
-	$(MAKE) -C $(PC_DIR) build TEST=$@
-
-tests: $(TESTS)
-	$(foreach i, $(TESTS),$(MAKE) -s -C $(PC_DIR) run TEST=$i;)
-
-single-test:
-	@echo "Trying " $(TEST)
-	$(MAKE) -C $(PC_DIR) build TEST=$(TEST)
-	$(MAKE) -C $(PC_DIR) run
-
 versat-clean:
 	$(MAKE) -C ./submodules/VERSAT clean
 
@@ -204,7 +196,7 @@ debug:
 	test-sim test-sim-clean \
 	test-fpga test-fpga-clean \
 	test-doc test-doc-clean \
-	test test-clean \
+	test-clean \
 	debug
 	#ila-build ila-generate-vcd ila-clean
 

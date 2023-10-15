@@ -5,8 +5,8 @@
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 
 #ifdef __cplusplus
-#include "utils.hpp"
 #include "memory.hpp"
+#include "utils.hpp"
 #endif
 
 #include "versat_accel.h" // C++, include outside
@@ -54,12 +54,22 @@ extern "C" {
 
 static bool error = false; // Global keep track if a error occurred. Do not want to print error messages more than once
 
-static const int TEST_BUFFER_SIZE = Megabyte(1);
+static const int TEST_BUFFER_AMOUNT = 100000; // 100K should be around 400Kbs per buffer (expected and got)
 
-static char* expectedBuffer = nullptr;
-static char* gotBuffer = nullptr;
-static char* expectedPtr = nullptr;
-static char* gotPtr = nullptr;
+typedef enum {TEST_INTEGER,TEST_FLOAT} TestValueType;
+
+typedef struct {
+  union {
+    int i;
+    float f;
+  };
+  TestValueType type;
+} TestValue;
+
+static TestValue* expectedBuffer = nullptr;
+static int expectedIndex;
+static TestValue* gotBuffer = nullptr;
+static int gotIndex;
 
 #ifndef __cplusplus // C++ code already has access to these functions
   typedef union {
@@ -80,77 +90,156 @@ static char* gotPtr = nullptr;
   }
 #endif
 
+#ifdef __cplusplus // C++ code already has access to these functions
+#include <cmath>
+#endif
+
+#include "float.h"
+// A C version of the C++ code with fixed epsilon
+static bool MyFloatEqual(float f0,float f1){
+  if(f0 == f1){
+    return true;
+  }
+
+  float epsilon = 0.00001f;
+  float norm = fabs(f0) + fabs(f1);
+  if(norm > FLT_MAX) norm = FLT_MAX;
+  float diff = fabs(f0 - f1);
+
+  bool equal = diff < norm * epsilon;
+
+  return equal;
+}
+
 static void ResetTestBuffers(){
-  expectedPtr = expectedBuffer;
-  gotPtr = gotBuffer;
+  expectedIndex = 0;
+  gotIndex = 0;
+}
+
+static void PushExpected(TestValue val){
+  if(expectedIndex < TEST_BUFFER_AMOUNT){
+    expectedBuffer[expectedIndex++] = val;
+  } else {
+    static bool done = false;
+    if(!done){
+      done = true;
+      printf("Reached end of buffer for test samples!!!\n");
+    }
+  }
+}
+
+static void PushGot(TestValue val){
+  if(gotIndex < TEST_BUFFER_AMOUNT){
+    gotBuffer[gotIndex++] = val;
+  } else {
+    static bool done = false;
+    if(!done){
+      done = true;
+      printf("Reached end of buffer for test samples!!!\n");
+    }
+  }}
+
+static TestValue MakeTestValueInt(int i){
+  TestValue val = {};
+  val.i = i;
+  val.type = TEST_INTEGER;
+  return val;
+}
+
+static TestValue MakeTestValueFloat(float f){
+  TestValue val = {};
+  val.f = f;
+  val.type = TEST_FLOAT;
+  return val;
+}
+
+static bool TestValueEqual(TestValue v1,TestValue v2){
+  if(v1.type != v2.type){
+    return false;
+  }
+
+  bool res = false;
+  switch(v1.type){
+  case TEST_INTEGER:{
+    res = (v1.i == v2.i);
+  }break;
+  case TEST_FLOAT:{
+    res = MyFloatEqual(v1.f,v2.f);
+  }break;
+  }
+
+  return res;
+}
+
+static void PrintTestValue(TestValue val){
+  switch(val.type){
+  case TEST_INTEGER:{
+    printf("%d",val.i);
+  }break;
+  case TEST_FLOAT:{
+    printf("%f",val.f);
+  }break;
+  }
 }
 
 static void PushExpectedI(int val){
-  expectedPtr += sprintf(expectedPtr,"0x%x ",val);
+  PushExpected(MakeTestValueInt(val));
 }
 
 static void PushGotI(int val){
-  gotPtr += sprintf(gotPtr,"0x%x ",val);
+  PushGot(MakeTestValueInt(val));
 }
 
 static void PushExpectedF(float val){ // NOTE: Floating point rounding can make these fail. If so, just push a certain amount of decimal places
-   expectedPtr += sprintf(expectedPtr,"%f ",val);
+  PushExpected(MakeTestValueFloat(val));
 }
 
 static void PushGotF(float val){
-  gotPtr += sprintf(gotPtr,"%f ",val);
+  PushGot(MakeTestValueFloat(val));
 }
 
-static void PushExpectedS(const char* str){
-  expectedPtr += sprintf(expectedPtr,"%s ",str);
-}
-
-static void PushGotS(const char* str){
-  gotPtr += sprintf(gotPtr,"%s ",str);
-}
-
-static void PrintError(){
-  char* expected = expectedBuffer;
-  char* got = gotBuffer;
-
-  printf("\n");
-  printf("%s: Test Failed\n",acceleratorTypeName);
-  printf("    Expected: %s\n",expected);
-  printf("    Result:   %s\n",got);
-  printf("              ");
-  for(int i = 0; expected[i] != '\0'; i++){
-    if(got[i] == '\0'){
-      printf("^");
-      break;
-    }
-    if(got[i] != expected[i]){
-      printf("^");
-    } else {
-      printf(" ");
-    }
+#ifdef __cplusplus // C++ code already has access to these functions
+static void PushExpected(Array<int> arr){
+  for(int f : arr){
+    PushExpectedI(f);
   }
-
-  printf("\n");
 }
+
+static void PushExpected(Array<float> arr){
+  for(float f : arr){
+    PushExpectedF(f);
+  }
+}
+
+static void PushGot(Array<int> arr){
+  for(int f : arr){
+    PushGotI(f);
+  }
+}
+
+static void PushGot(Array<float> arr){
+  for(float f : arr){
+    PushGotF(f);
+  }
+}
+#endif
+
+// TODO: These functions should assert while running in PC-EMUL and only push values when running in embedded.
+//       Also, if we find problems in embedded, it might be useful to have a way of generating a breakpoint
+//       that matches the index of the failure in embedded, so that we can know when running the PC-EMUL
+//       the position of the error.
 
 static void Assert_Eq(int val1,int val2){
   PushExpectedI(val1);
   PushGotI(val2);
-
-  if(val1 != val2){
-    error = true;
-  }
 }
 
 static void Assert_EqF(float val1,float val2){
   PushExpectedF(val1);
   PushGotF(val2);
-
-  if(val1 != val2){
-    error = true;
-  }
 }
 
+#if 0
 static void Expect(const char* expected,const char* format, ...){
   va_list args;
   va_start(args,format);
@@ -168,21 +257,12 @@ static void Expect(const char* expected,const char* format, ...){
     PushGotS(buffer);
   }
 }
+#endif
 
-static void ExpectMemory(int* expected,int size, int* output){
-  bool result = (memcmp(expected,output,size) == 0);
-
-  if(!result){
-    error = true;
-    char expectedStr[1024 * 16];
-    char gotStr[1024 * 16];
-
-    char* expectedPtr = expectedStr;
-    char* gotPtr = gotPtr;
-    for(int i = 0; i < size; i++){
-      PushExpectedI(expected[i]);
-      PushGotI(output[i]);
-    }
+static void Assert_Eq_Array(int* expected,int* got,int size){
+  for(int i = 0; i < size; i++){
+    PushExpectedI(expected[i]);
+    PushGotI(got[i]);
   }
 }
 
@@ -211,7 +291,6 @@ static void ExpectMemory(int* expected,int size, int* output){
 
 #endif
 
-//static int *ddr = (int*) (0x80000000 + (1<<(FIRM_ADDR_W+2)));
 static int *ddr = (int*) (0x80000000 + (1<<(FIRM_ADDR_W+2)));
 
 void SingleTest(Arena* arena);
@@ -237,50 +316,43 @@ int main(int argc,char* argv[]){
   Arena* arena = &arenaInst;
 
   // Init testing buffers
-  expectedBuffer = (char*) PushBytes(arena,TEST_BUFFER_SIZE);
-  gotBuffer      = (char*) PushBytes(arena,TEST_BUFFER_SIZE);
-  expectedPtr = expectedBuffer;
-  gotPtr      = gotBuffer;
+  expectedBuffer = (TestValue*) PushBytes(arena,TEST_BUFFER_AMOUNT * sizeof(TestValue));
+  gotBuffer      = (TestValue*) PushBytes(arena,TEST_BUFFER_AMOUNT * sizeof(TestValue));
+  expectedIndex  = 0;
+  gotIndex       = 0;
   
   SingleTest(arena);
 
-  if(error){
-    PrintError();
-  } else {
-    int expectedDiff = (expectedPtr - expectedBuffer);
-    int gotDiff = (gotPtr - gotBuffer);
+  bool error = false;
+  if(expectedIndex != gotIndex){
+    error = true;
+    printf("%s: ERROR\n",acceleratorTypeName);
+    printf("Number of testing samples differ!\n");
+    printf("Expected samples: %d\n",expectedIndex);
+    printf("Got samples: %d\n",gotIndex);
 
-    bool passed = true;
-    if(expectedDiff != gotDiff){
-      passed = false;
-    } else {
-      for(int i = 0; i < expectedDiff; i++){
-        if(expectedBuffer[i] != gotBuffer[i]){
-          passed = false;
-          break;
-        }
+    return 0;
+  }
+
+  for(int i = 0; i < expectedIndex; i++){
+    if(!TestValueEqual(expectedBuffer[i],gotBuffer[i])){
+      if(!error){
+        error = true;
+        printf("%s: ERROR\n",acceleratorTypeName);
       }
-    }
-
-    if(passed){
-      printf("%s: OK\n",acceleratorTypeName);
-    } else {
-      printf("%s: ERROR\n",acceleratorTypeName);
-      printf("Exp:%s\n",expectedBuffer);
-      printf("Got:%s\n",gotBuffer);
-    }
-
-    if(!passed){
-      printf("Expected: %d, Got: %d\n",expectedDiff,gotDiff);
-      for(int i = 0; i < expectedDiff; i++){
-        if(expectedBuffer[i] != gotBuffer[i]){
-          printf("^");
-        } else {
-          printf(" ");
-        }
-      }
+        
+      printf("Obtained different values at: %d!\n",i);
+      printf("Expected: ");
+      PrintTestValue(expectedBuffer[i]);
+      printf("\n");
+      printf("Got:      ");
+      PrintTestValue(gotBuffer[i]);
       printf("\n");
     }
+  }
+
+  if(!error){
+    printf("%s: OK\n",acceleratorTypeName);
   }
   
   uart_finish();

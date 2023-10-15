@@ -18,100 +18,85 @@ struct CollapseArray<T[N]>{
 
 #define ADD_BYTE_TO_PTR(PTR,BYTES) ((CollapseArray<decltype(PTR)>::type) (((char*) PTR) + BYTES))
 
-#define SIZE 512
-int outputBuffer[SIZE * 2];
+#define SIZE 8
+int outputBuffer[SIZE * 4];
 
 void ClearCache(){
-  // 16 works
+#ifndef PC
   int size = 1024 * 8;
-  char* m = (char*) malloc(size);
+  char* m = (char*) malloc(size); // Should not use malloc but some random fixed ptr in embedded. No use calling malloc since we can always read at any point in memory without worrying about memory protection.
 
-  int val = 0;
-  for(int i = 0; i < size; i += 8){ // 8 increment works
+  // volatile and asm are used to make sure that gcc does not optimize away this loop that appears to do nothing
+  volatile int val = 0;
+  for(int i = 0; i < size; i += 8){
     val += m[i];
+    __asm__ volatile("" : "+g" (val) : :);
   }
-  printf("Got %d\n",val);
+  free(m);
+#endif
 }
 
 void SingleTest(Arena* arena){
-   #if 1
+  int inputBuffer[SIZE * 4];
 
-   int inputBuffer[SIZE * 2];
-
-   for(int i = 0; i < 4; i++){
+  for(int i = 0; i < 4; i++){
 #if 0
-   int* output = ADD_BYTE_TO_PTR(outputBuffer,4 * i);
-   int* input = ADD_BYTE_TO_PTR(inputBuffer,4 * i);
+    int* output = ADD_BYTE_TO_PTR(outputBuffer,4 * i);
+    int* input = ADD_BYTE_TO_PTR(inputBuffer,4 * i);
 #else
-  int* output = &outputBuffer[i];
-  int* input = &inputBuffer[i];
+    int* output = &outputBuffer[i];
+    int* input = &inputBuffer[i];
 #endif
-  
-   printf("I:%x %x\n",inputBuffer,input);
-   printf("O:%x %x\n",outputBuffer,output);  
-  
-   for(int i = 0; i < SIZE * 2; i++){
+
+#if 0
+    printf("I:%x %x\n",inputBuffer,input);
+    printf("O:%x %x\n",outputBuffer,output);  
+#endif
+    
+    for(int i = 0; i < SIZE * 2; i++){
       input[i] = i + 1;
-   }
+    }
 
-   ClearCache();
+    ClearCache();
      
-   int numberItems = SIZE;
+    int numberItems = SIZE;
 
-   // Memory side
-   ACCEL_TOP_read_incrA = 1;
-   ACCEL_TOP_read_perA = numberItems;
-   ACCEL_TOP_read_pingPong = 1;
-   //ACCEL_TOP_read_dutyA = ~0;
-   //ACCEL_TOP_read_shiftA = 1;
-   //ACCEL_TOP_read_iterA = 1;
-   //ACCEL_TOP_read_size = 8;
-   //ACCEL_TOP_read_int_addr = 0;
+    // Read side
+    ACCEL_TOP_read_incrA = 1;
+    //ACCEL_TOP_read_iterA = 1;
+    //ACCEL_TOP_read_dutyA = ~0;
+    ACCEL_TOP_read_ext_addr = (iptr) input;
+    ACCEL_TOP_read_perA = numberItems;
+    ACCEL_TOP_read_length = numberItems * sizeof(int);
+    ACCEL_TOP_read_pingPong = 1;
    
-   // B - versat side
-   ACCEL_TOP_read_iterB = numberItems;
-   ACCEL_TOP_read_incrB = 1;
-   ACCEL_TOP_read_perB = 1;
-   ACCEL_TOP_read_dutyB = 1;
-   ACCEL_TOP_read_ext_addr = (iptr) input;
-   ACCEL_TOP_read_length = numberItems * sizeof(int);
+    // Dataflow side
+    ACCEL_TOP_read_iterB = 1;
+    ACCEL_TOP_read_incrB = 1;
+    ACCEL_TOP_read_perB = numberItems;
+    ACCEL_TOP_read_dutyB = ~0;
 
-   // Write side
-   ACCEL_TOP_write_incrA = 1;
-   ACCEL_TOP_write_perA = numberItems ;
-   ACCEL_TOP_write_pingPong = 1;
-   ACCEL_TOP_write_length = numberItems * sizeof(int);
-   ACCEL_TOP_write_ext_addr = (iptr) output;
-   //ACCEL_TOP_write_iterA = 1;
-   //ACCEL_TOP_write_shiftA = 1;
-   //ACCEL_TOP_write_dutyA = ~0;
-   //ACCEL_TOP_write_size = 4;
-   //ACCEL_TOP_write_int_addr = 0;
+    // Write side
+    ACCEL_TOP_write_incrA = 1;
+    //ACCEL_TOP_write_iterA = 1;
+    //ACCEL_TOP_write_dutyA = ~0;
+    ACCEL_TOP_write_perA = numberItems;
+    ACCEL_TOP_write_length = numberItems * sizeof(int);
+    ACCEL_TOP_write_ext_addr = (iptr) output;
+    ACCEL_TOP_write_pingPong = 1;
    
-   // Memory side
-   ACCEL_TOP_write_iterB = numberItems;
-   ACCEL_TOP_write_perB = 1;
-   ACCEL_TOP_write_dutyB = 1;
-   ACCEL_TOP_write_incrB = 1;
+    // Dataflow side
+    ACCEL_TOP_write_iterB = 1;
+    ACCEL_TOP_write_incrB = 1;
+    ACCEL_TOP_write_dutyB = ~0;
+    ACCEL_TOP_write_perB = numberItems;
 
-   printf("\n");
-   RunAccelerator(1);
-   printf("\n");
-   RunAccelerator(1);
-   printf("\n");
-   RunAccelerator(1);
-   printf("\n");
+    RunAccelerator(3);
 
-   ClearCache();
+    ClearCache();
      
-#if 1
-   for(int i = 0; i < numberItems; i++){
-	 //printf("%d: %d - %d\n",i,input[i],output[i]);
-     if(input[i] != output[i]){
-	   printf("%d: %d - %d\n",i,input[i],output[i]);
-	 }
-   }
-#endif
-}
-#endif
+    for(int i = 0; i < numberItems; i++){
+      Assert_Eq(input[i],output[i]);
+    }
+  }
 }

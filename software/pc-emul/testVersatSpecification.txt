@@ -6,6 +6,14 @@ module VReadToVWrite(){
    read -> write;
 }
 
+module MemToMem(){
+   Mem start;
+   Mem end;
+#
+   start -> end;
+}
+
+/*
 module SMVMCPU(x,y){
    SignalMulAdd mul;
 #
@@ -38,6 +46,36 @@ module SMVMCOO(){
 
    row -> change:0;
    row -> change:1;
+
+   mul    -> accum:0;
+   change -> accum:1;
+
+   accum:0 -> output:0;
+   accum:1 -> output:1;
+}
+
+module SMVMCSR(){
+   Generator gen;
+   TimedFlag row;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
+   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
+   Mul mul;
+
+   ChangeDetect change;
+   SignalAccum accum;
+   SignalMemStorage output;
+   DoneCycle cycler;
+#
+   gen -> val;
+   gen -> col;
+   col -> vector;
+
+   val    -> mul:0;
+   vector -> mul:1;
+
+   //row -> change:0;
+   //row -> change:1;
 
    mul    -> accum:0;
    change -> accum:1;
@@ -165,7 +203,14 @@ module SMVMBlock3(){
    change2[3] -> output:1;
 }
 
-module SMVMBlock4(){
+module SMVMBlock5(){
+   SMVMBlock4 block0;
+   SMVMBlock4 block1;
+#
+}
+*/
+
+module SMVMBlockUnit(){
    TimedFlagRead #(.SIZE_W(16)) flag; // Row
    LookupTableRead2 #(.SIZE_W(16)) col; // Col
    LookupTableRead val; // Matrix val
@@ -174,7 +219,7 @@ module SMVMBlock4(){
    Generator gen;
    FloatMul mul;
 
-   FloatAddAccum accum; // MyFloatAccum 
+   MyFloatAccum accum;
    DoneCycle cycler;
 
    SignalMemWrite output;
@@ -195,48 +240,12 @@ module SMVMBlock4(){
    flag    -> output:1;
 }
 
-module SMVMBlock5(){
-   SMVMBlock4 block0;
-   SMVMBlock4 block1;
+module SMVMBlock(){
+   SMVMBlockUnit block0;
+   SMVMBlockUnit block1;
+   SMVMBlockUnit block2;
+   SMVMBlockUnit block3;
 #
-}
-
-module SMVMBlock6(){
-   SMVMBlock4 block0;
-   SMVMBlock4 block1;
-   SMVMBlock4 block2;
-   SMVMBlock4 block3;
-#
-}
-
-module SMVMCSR(){
-   Generator gen;
-   TimedFlag row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   //row -> change:0;
-   //row -> change:1;
-
-   mul    -> accum:0;
-   change -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
 }
 
 module TripleAdd(x,y,z){
@@ -3113,18 +3122,18 @@ module psycho() {
 }
 
 module Merge0(){
-   Mem m0;
-   Mem m1;
-   Mem output;
+   Const m0;
+   Const m1;
+   Reg output;
 #
    a = m0 + m1;
    a -> output;
 }
 
 module Merge1(){
-   Mem m0;
-   Mem m1;
-   Mem output;
+   Const m0;
+   Const m1;
+   Reg output;
 #
    a = m0 - m1;
    a -> output;

@@ -6,8 +6,8 @@
 
 IOBSOC_NAME:=IOBSOCSHA
 
-#TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVM VReadToVWrite SMVMCPU
-TESTS:= M_Stage F_Stage AddRoundKey LookupTable SMVMBlock6
+#TESTS:= M_Stage F_Stage AddRoundKey LookupTable MemToMem SMVM VReadToVWrite SMVMCPU
+TESTS:= M_Stage F_Stage AddRoundKey LookupTable MemToMem SMVMBlock VReadToVWrite
 
 TESTS_BUILD:=$(addsuffix _build,$(TESTS))
 TESTS_RUN:=$(addsuffix _run,$(TESTS))
@@ -22,7 +22,7 @@ ADDR_W := 32
 N_CORES := 1
 
 DDR_ADDR_W := 30
-MIG_BUS_W := 256
+MIG_BUS_W := 32
 
 #FIRMWARE SIZE (LOG2)
 FIRM_ADDR_W ?=18
