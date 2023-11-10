@@ -1,0 +1,8 @@
+module Test(x,y){
+   FloatAdd adder;
+#
+   x -> adder:0;
+   y -> adder:1;
+
+   adder -> out;
+}
