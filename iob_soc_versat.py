@@ -54,7 +54,7 @@ class iob_soc_versat(iob_soc):
                 {"interface": "iBus_axi_m_port"},
                 {"interface": "dBus_axi_m_portmap"},
                 {"interface": "iBus_axi_m_portmap"},
-                iob_vexriscv,
+                # iob_vexriscv,
                 iob_versat,
                 axil2iob,
                 iob_reset_sync,

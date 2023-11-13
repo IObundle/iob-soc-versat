@@ -26,7 +26,18 @@ static float UnpackInt(iptr i){
    return c.f;
 }
 
+static float fabs(float f){
+   if(f < 0.0f){
+      return -f;
+   } else {
+      return f;
+   }
+}
+
 int main(int argc,char* argv[]){
+   char pass_string[] = "Test passed!";
+   char fail_string[] = "Test failed!";
+
    uart_init(UART0_BASE,FREQ/BAUD);
    printf_init(&uart_putc);
    versat_init(VERSAT0_BASE);
@@ -38,7 +49,13 @@ int main(int argc,char* argv[]){
 
    RunAccelerator(1);
 
-   printf("%f\n",UnpackInt(ACCEL_TOP_output_0_currentValue));
+   float result = UnpackInt(ACCEL_TOP_output_0_currentValue); 
+   printf("%f\n",result);
+   if(fabs(result - 3.1f) < 0.01){
+      uart_sendfile("test.log", iob_strlen(pass_string), pass_string);
+   } else {
+      uart_sendfile("test.log", iob_strlen(fail_string), fail_string);
+   }
 
    uart_finish();
 
