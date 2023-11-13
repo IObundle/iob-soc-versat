@@ -80,7 +80,7 @@ debug:
 #########################################
 
 fw_emul: $(EMUL_HDR) $(EMUL_SRC) libaccel.a
-	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(EMUL_SRC) -lgcc -lc -lm -ldl libaccel.a -lstdc++
+	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(filter-out src/iob-versat.c,$(EMUL_SRC)) -lgcc -lc -lm -ldl libaccel.a -lstdc++
 
 build_emul: fw_emul
 	@echo "build"
