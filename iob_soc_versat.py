@@ -62,6 +62,8 @@ class iob_soc_versat(iob_soc):
             ]
             + extra_submodules
         )
+
+        """
         i = 0
         while i < len(cls.submodule_list):
             if type(cls.submodule_list[i]) == type and cls.submodule_list[i].name in [
@@ -71,60 +73,8 @@ class iob_soc_versat(iob_soc):
                 cls.submodule_list.pop(i)
                 continue
             i += 1
+        """
 
-    @classmethod
-    def _setup_confs(cls, extra_confs=[]):
-        # Append confs or override them if they exist
-        super()._setup_confs(
-            [
-                {
-                    "name": "INIT_MEM",
-                    "type": "M",
-                    "val": False,
-                    "min": "0",
-                    "max": "1",
-                    "descr": "Used to select running linux.",
-                },
-                {
-                    "name": "USE_EXTMEM",
-                    "type": "M",
-                    "val": True,
-                    "min": "0",
-                    "max": "1",
-                    "descr": "Always use external memory in the SoC.",
-                },
-                {
-                    "name": "N_CORES",
-                    "type": "P",
-                    "val": "1",
-                    "min": "1",
-                    "max": "32",
-                    "descr": "Number of CPU cores used in the SoC.",
-                },
-                {
-                    "name": "BOOTROM_ADDR_W",
-                    "type": "P",
-                    "val": "15",
-                    "min": "1",
-                    "max": "32",
-                    "descr": "Boot ROM address width",
-                },
-                {
-                    "name": "SRAM_ADDR_W",
-                    "type": "P",
-                    "val": "15",
-                    "min": "1",
-                    "max": "32",
-                    "descr": "SRAM address width",
-                },
-                {
-                    "name": "MEM_ADDR_W",
-                    "type": "P",
-                    "val": "26",
-                    "min": "1",
-                    "max": "32",
-                    "descr": "Memory bus address width",
-                },
-            ]
-            + extra_confs
-        )
+
+#    @classmethod
+#    def _setup_confs(cls, extra_confs=[]):
