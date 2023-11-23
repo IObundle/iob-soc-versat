@@ -34,7 +34,7 @@ INCLUDES ?=-I. -Isrc
 #########################################
 
 # compiler flags
-EMUL_CFLAGS=-g #-Os -std=gnu99 -Wl,--strip-debug
+EMUL_CFLAGS=-g -DPC #-Os -std=gnu99 -Wl,--strip-debug
 
 CONSOLE_CMD=rm -f soc2cnsl cnsl2soc; ../scripts/console.py -L
 
@@ -58,10 +58,19 @@ endif
 #            Embedded targets           #
 #########################################
 
+test_emb.o: src/test.cpp 
+	$(TOOLCHAIN_PREFIX)g++ -c -o $@ -Os -nostdlib -march=$(MFLAGS) -mabi=ilp32 $(INCLUDES) $< $(LLIBS)
+
 build: $(UTARGETS)
-%.elf: $(TEMPLATE_LDS) $(HDR) $(SRC)
+	
+iob_soc_versat_firmware.elf: $(TEMPLATE_LDS) $(HDR) $(SRC) test_emb.o
+	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(INCLUDES) $(SRC) test_emb.o $(LLIBS)
+	$(TOOLCHAIN_PREFIX)objdump -d $@ > assembly.asm
+	$(TOOLCHAIN_PREFIX)objcopy -O binary $@ iob_soc_versat_firmware.bin
+
+iob_soc_versat_boot.elf: $(TEMPLATE_LDS) $(HDR) $(SRC)
 	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(INCLUDES) $(SRC) $(LLIBS)
-	$(TOOLCHAIN_PREFIX)objcopy -O binary $@ $(*F).bin
+	$(TOOLCHAIN_PREFIX)objcopy -O binary $@ iob_soc_versat_boot.bin
 
 ifneq ($(BOARD),)
 FPGA_TOOL:=$(shell find ../hardware/fpga -name $(BOARD) | cut -d"/" -f5)
@@ -79,8 +88,11 @@ debug:
 #         PC emulation targets          #
 #########################################
 
-fw_emul: $(EMUL_HDR) $(EMUL_SRC) libaccel.a
-	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(filter-out src/iob-versat.c,$(EMUL_SRC)) -lgcc -lc -lm -ldl libaccel.a -lstdc++
+test.o: src/test.cpp 
+	g++ -c -o $@ $< $(EMUL_CFLAGS) $(EMUL_INCLUDES)
+
+fw_emul: $(EMUL_HDR) $(EMUL_SRC) test.o libaccel.a
+	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) test.o $(filter-out src/iob-versat.c,$(EMUL_SRC)) -lgcc -lc -lm -ldl libaccel.a -lstdc++
 
 build_emul: fw_emul
 	@echo "build"
