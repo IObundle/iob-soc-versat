@@ -1,206 +1,68 @@
-SHELL = /bin/bash
-MAKEFLAGS += --no-builtin-rules
-ROOT_DIR:=.
-include $(ROOT_DIR)/config.mk
+CORE := iob_soc_versat
 
-$(TESTS_BUILD):
-	$(MAKE) pc-emul-build TEST=$(subst _build,,$@)
+SIMULATOR ?= verilator
+BOARD ?= AES-KU040-DB-G
 
-$(TESTS_RUN): $(TESTS_BUILD)
-	$(MAKE) pc-emul-run TEST=$(subst _run,,$@)
+DISABLE_LINT:=1
 
-#test-pc-build: $(TESTS_BUILD)
+LIB_DIR:=submodules/IOBSOC/submodules/LIB
+include $(LIB_DIR)/setup.mk
 
-# run with -jN and -s
-test-pc-emul: $(TESTS_RUN)
+TESTS:= M_Stage SimpleCGRA F_Stage AddRoundKey LookupTable MemToMem VReadToVWrite # SMVMBlock 
 
-ila-build: ilaFormat.txt
-	$(ILA_PYTHON_DIR)/ilaGenerateSource.py ilaFormat.txt ila.c
-	$(ILA_PYTHON_DIR)/ilaGenerateVerilog.py ilaFormat.txt $(HW_DIR)/include/
-	cp ila.c $(FIRM_DIR)/
-	cp ila.c $(PC_DIR)/
+TESTS_SETUP:=$(addsuffix _setup,$(TESTS))
+TESTS_PC:=$(addsuffix _pc,$(TESTS))
+TESTS_SIM:=$(addsuffix _sim,$(TESTS))
+TESTS_DIR:=$(addsuffix _dir,$(TESTS))
 
-ila-generate-vcd: ilaFormat.txt ilaData.txt
-	$(ILA_PYTHON_DIR)/ilaDataToVCD.py ilaFormat.txt ilaData.txt ilaOut.vcd
+VCD ?= 1
+INIT_MEM ?= 1
+USE_EXTMEM ?= 0
 
-ila-clean:
-	@rm -f $(HW_DIR)/include/signal_inst.vh $(FIRM_DIR)/ila.c $(PC_DIR)/ila.c ila.c
-	$(MAKE) -C $(ILA_DIR) clean-all
+ifeq ($(INIT_MEM),1)
+SETUP_ARGS += INIT_MEM
+endif
 
-#
-# BUILD EMBEDDED SOFTWARE
-#
+ifeq ($(USE_EXTMEM),1)
+SETUP_ARGS += USE_EXTMEM
+endif
 
-fw-build: ila-build
-	$(MAKE) -C $(FIRM_DIR) build-all
+TEST:= M_Stage
 
-fw-clean:
-	$(MAKE) -C $(FIRM_DIR) clean-all
+# TODO: For now simply set the pc-emul-run to a simple example
+#N_TESTS := $(words $(TESTS))
+#RANDOM_N := $(shell python3 -c "import random; print(random.randint(1,$(N_TESTS)))")
+#RANDOM_TEST := $(word $(RANDOM),$(TESTS))
 
-fw-debug:
-	$(MAKE) -C $(FIRM_DIR) debug
+# Need to create dirs first because we need to store makefile output into a setup.txt file inside the folder
+# Could be a folder name but let's use phony names for now. Its not like the remaining part of the makefile keeps track of modified files
+$(TESTS_DIR): 
+	mkdir -p ../$(CORE)_V0.70_$(subst _dir,,$@)
 
-gen-versat:
-	$(MAKE) -C $(PC_DIR) gen-versat
+$(TESTS_SETUP): $(TESTS_DIR)
+	nix-shell --run 'make build-setup SETUP_ARGS="$(SETUP_ARGS) TEST=$(subst _setup,,$@)" &> ../$(CORE)_V0.70_$(subst _setup,,$@)/setup.txt'
 
-#
-# EMULATE ON PC
-#
+test-setup: $(TESTS_SETUP)
 
-pc-emul-build: ila-build
-	$(MAKE) -C $(PC_DIR) build
+$(TESTS_PC):  $(TESTS_SETUP)
+	nix-shell --run 'make -C ../$(CORE)_V0.70_$(subst _pc,,$@)/ pc-emul-run &> ../$(CORE)_V0.70_$(subst _pc,,$@)/pc-emul-run.txt'
 
-pc-emul-force-build:
-	$(MAKE) -C $(PC_DIR) force-build
+test-pc-emul-run: $(TESTS_PC)
 
-pc-emul-run: pc-emul-build 
-	$(MAKE) -C $(PC_DIR) run
+$(TESTS_SIM): $(TESTS_SETUP)
+	nix-shell --run 'make -C ../$(CORE)_V0.70_$(subst _sim,,$@)/ sim-run &> ../$(CORE)_V0.70_$(subst _sim,,$@)/sim-run.txt'
 
-pc-emul-clean: fw-clean
-	$(MAKE) -C $(PC_DIR) clean
+# TODO: Only test this after commiting to git
+#test-clean:
+#	rm -r "./$(CORE)_*"
 
-pc-emul-test: pc-emul-clean
-	$(MAKE) -C $(PC_DIR) test
+setup:
+	nix-shell --run 'make build-setup SETUP_ARGS="$(SETUP_ARGS) TEST=$(TEST)"'
 
-run-versat:
-	$(MAKE) -C $(PC_DIR) run-versat
+pc-emul-run:
+	nix-shell --run 'make clean setup && make -C ../$(CORE)_V0.70_$(TEST)/ pc-emul-run'
 
-#
-# SIMULATE RTL
-#
+sim-run:
+	nix-shell --run 'make clean setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-run SIMULATOR=$(SIMULATOR) VCD=$(VCD)'
 
-sim-build: ila-build
-	$(MAKE) fw-build
-	$(MAKE) -C $(SIM_DIR) build
-
-./hardware/src/versat_instance.v:
-	$(MAKE) -C $(PC_DIR) run
-	$(MAKE) fw-build SIM=1
-	$(MAKE) -C $(SIM_DIR) build
-
-sim-run: sim-build
-	$(MAKE) -C $(SIM_DIR) run
-
-sim-clean: fw-clean
-	$(MAKE) -C $(SIM_DIR) clean
-
-sim-one-build: pc-emul-force-build sim-build
-
-sim-test:
-	$(MAKE) -C $(SIM_DIR) test
-
-sim-versat-fus:
-	$(MAKE) -C $(SIM_DIR) xunitM SIMULATOR=icarus
-	$(MAKE) -C $(SIM_DIR) xunitF SIMULATOR=icarus
-
-sim-debug:
-	$(MAKE) -C $(SIM_DIR) debug
-
-#
-# HARDWARE BUILD AND RUN
-#
-
-fpga-fw-build: ila-build
-	$(MAKE) fw-build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
-
-fpga-boot:
-	$(MAKE) -C $(BOOT_DIR) build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
-
-fpga-build: ila-build fpga-boot
-	#$(MAKE) fw-build BAUD=$(BOARD_BAUD) FREQ=$(BOARD_FREQ)
-	$(MAKE) -C $(BOARD_DIR) build
-
-fpga-run:
-	$(MAKE) -C $(BOARD_DIR) run TEST_LOG="$(TEST_LOG)"
-
-fpga-clean: fw-clean
-	$(MAKE) -C $(BOARD_DIR) clean
-
-fpga-veryclean:
-	$(MAKE) -C $(BOARD_DIR) veryclean
-
-fpga-debug:
-	$(MAKE) -C $(BOARD_DIR) debug
-
-fpga-test:
-	$(MAKE) -C $(BOARD_DIR) test
-
-#
-# COMPILE DOCUMENTS
-#
-doc-build:
-	$(MAKE) -C $(DOC_DIR) $(DOC).pdf
-
-doc-clean:
-	$(MAKE) -C $(DOC_DIR) clean
-
-doc-test:
-	$(MAKE) -C $(DOC_DIR) test
-
-#
-# CLEAN
-#
-
-clean: pc-emul-clean sim-clean fpga-clean doc-clean ila-clean
-
-#
-# TEST ALL PLATFORMS
-#
-
-test-pc-emul-clean: pc-emul-clean
-
-test-sim:
-	$(MAKE) sim-test SIMULATOR=verilator
-	$(MAKE) sim-test SIMULATOR=icarus
-
-test-sim-clean:
-	$(MAKE) sim-clean SIMULATOR=verilator
-	$(MAKE) sim-clean SIMULATOR=icarus
-
-test-fpga:
-	$(MAKE) fpga-test BOARD=CYCLONEV-GT-DK
-	$(MAKE) fpga-test BOARD=AES-KU040-DB-G
-
-test-fpga-clean:
-	$(MAKE) fpga-clean BOARD=CYCLONEV-GT-DK
-	$(MAKE) fpga-clean BOARD=AES-KU040-DB-G
-
-test-doc:
-	$(MAKE) fpga-clean BOARD=CYCLONEV-GT-DK
-	$(MAKE) fpga-clean BOARD=AES-KU040-DB-G
-	$(MAKE) fpga-build BOARD=CYCLONEV-GT-DK
-	$(MAKE) fpga-build BOARD=AES-KU040-DB-G
-	$(MAKE) doc-test DOC=pb
-	$(MAKE) doc-test DOC=presentation
-
-test-doc-clean:
-	$(MAKE) doc-clean DOC=pb
-	$(MAKE) doc-clean DOC=presentation
-
-test-clean: test-pc-emul-clean test-sim-clean test-fpga-clean test-doc-clean
-
-versat-clean:
-	$(MAKE) -C ./submodules/VERSAT clean
-
-debug:
-	@echo $(UART_DIR)
-	@echo $(CACHE_DIR)
-
-.PHONY: fw-build fw-clean fw-debug \
-	pc-emul-build pc-emul-run pc-emul-clean pc-emul-test \
-	sim-build sim-run sim-clean sim-test \
-	fpga-build fpga-run fpga-clean fpga-test \
-	doc-build doc-clean doc-test \
-	clean \
-	test-pc-emul test-pc-emul-clean \
-	test-sim test-sim-clean \
-	test-fpga test-fpga-clean \
-	test-doc test-doc-clean \
-	test-clean \
-	debug
-	#ila-build ila-generate-vcd ila-clean
-
-Makefile: ;
-
-.SUFFIXES:
-
+.PHONY: setup test-setup

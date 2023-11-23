@@ -16,10 +16,11 @@ module Mux4 #(
     input [DATA_W-1:0]            in1,
     input [DATA_W-1:0]            in2,
     input [DATA_W-1:0]            in3,
-    input [DATA_W-1:0]            in4,
 
-    (* versat_latency = 1 *) output reg [DATA_W-1:0]       out0
+    (* versat_latency = 1 *) output reg [DATA_W-1:0]       out0,
     
+    input [1:0]                   sel
+
     );
 
 
@@ -28,7 +29,7 @@ begin
    if(rst) begin
       out0 <= 0;
    end else begin
-      case(in4[1:0])
+      case(sel)
       2'b00: out0 <= in0;
       2'b01: out0 <= in1;
       2'b10: out0 <= in2;
