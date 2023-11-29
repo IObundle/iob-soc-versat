@@ -114,6 +114,11 @@ class iob_soc_versat(iob_soc):
             f"{cls.build_dir}/software/src/",
         )
 
+        shutil.copy(
+            f"{cls.build_dir}/software/src/Tests/unitConfiguration.hpp",
+            f"{cls.build_dir}/software/src/",
+        )
+
         shutil.rmtree(f"{cls.build_dir}/software/src/Tests")
 
 

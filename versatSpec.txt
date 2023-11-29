@@ -949,14 +949,14 @@ module ShaState(x0,x1,x2,x3,x4,x5,x6,x7){
 }
 
 module Constants(){
-   static Mem mem(1,16,16,0,0,1);
+   static Mem mem;
 #
    mem -> out:0;
 }
 
 module SHA(){
    VRead MemRead;
-   SwapEndian Swap(1);
+   SwapEndian Swap;
    xunitF F0;
    xunitF F1;
    xunitF F2;
@@ -973,25 +973,10 @@ module SHA(){
 #
    MemRead -> Swap;
    
-   State:0..7 -> F0:0..7;
-   cMem0      -> F0:8;
-   Swap       -> F0:9;
-
-   //State:0..7 -> iF0:0..7;
-   //cMem0      -> iF0:8;
-   //Swap       -> iF0:9;
-
-   F0:0..7    -> F1:0..7;
-   cMem1      -> F1:8;
-   M0         -> F1:9;
-
-   F1:0..7    -> F2:0..7;
-   cMem2      -> F2:8;
-   M1         -> F2:9;
-
-   F2:0..7    -> F3:0..7;
-   cMem3      -> F3:8;
-   M2         -> F3:9;
+   {State:0..7,cMem0,Swap} -> F0:0..9;
+   {F0:0..7   ,cMem1,M0} -> F1:0..9;
+   {F1:0..7   ,cMem2,M1} -> F2:0..9;
+   {F2:0..7   ,cMem3,M2} -> F3:0..9;
 
    Swap -> M0;
    M0 -> M1;
