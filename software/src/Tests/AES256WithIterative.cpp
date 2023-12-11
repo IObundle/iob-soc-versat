@@ -83,6 +83,11 @@ void FillFirstLineKey(FirstLineKeyAddr addr){
    FillLookupTable(addr.b1);
 }
 
+void FillFourthLineKey(FourthLineKeyAddr addr){
+   FillLookupTable(addr.b0);
+   FillLookupTable(addr.b1);
+}
+
 void FillMixColumns(MixColumnsAddr addr){
    FillRow(addr.d0);
    FillRow(addr.d1);
@@ -101,8 +106,9 @@ void FillSBox(SBoxAddr addr){
    FillLookupTable(addr.s7);
 }
 
-void FillKeySchedule(KeyScheduleAddr addr){
+void FillKeySchedule(KeySchedule256Addr addr){
    FillFirstLineKey(addr.s);
+   FillFourthLineKey(addr.q);
 }
 
 void FillMainRound(MainRoundAddr addr){
@@ -110,8 +116,9 @@ void FillMainRound(MainRoundAddr addr){
    FillMixColumns(addr.mixColumns);
 }
 
-void FillRoundPairAndKey(MainRoundAndKeyAddr addr){
-   FillMainRound(addr.round);
+void FillRoundPairAndKey(RoundPairAndKeyAddr addr){
+   FillMainRound(addr.round1);
+   FillMainRound(addr.round2);
    FillKeySchedule(addr.key);
 }
 
@@ -132,18 +139,11 @@ void int_to_byte(int *in, uint8_t *out, int size) {
 }
 
 void Versat_init_AES() {
-   AES_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   AES256WithIterative_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   FillRoundPairAndKey(addr.simple.mk0);
-   FillRoundPairAndKey(addr.simple.mk1);
-   FillRoundPairAndKey(addr.simple.mk2);
-   FillRoundPairAndKey(addr.simple.mk3);
-   FillRoundPairAndKey(addr.simple.mk4);
-   FillRoundPairAndKey(addr.simple.mk5);
-   FillRoundPairAndKey(addr.simple.mk6);
-   FillRoundPairAndKey(addr.simple.mk7);
-   FillRoundPairAndKey(addr.simple.mk8);
-   FillKeySchedule(addr.simple.key9);
+   FillRoundPairAndKey(addr.simple.mk0.roundPairAndKey);
+   FillMainRound(addr.simple.round0);
+   FillKeySchedule(addr.simple.key6);
    FillSBox(addr.simple.subBytes);
 
    ACCEL_TOP_simple_rcon0_constant = 0x01;
@@ -200,9 +200,40 @@ unsigned char* GetHexadecimal(const unsigned char* text, int str_size){
    return buffer;
 }
 
+static char HexToInt(char ch){
+   if('0' <= ch && ch <= '9'){
+      return (ch - '0');
+   } else if('a' <= ch && ch <= 'f'){
+      return ch - 'a' + 10;
+   } else if('A' <= ch && ch <= 'F'){
+      return ch - 'A' + 10;
+   } else {
+      printf("Error, invalid character inside hex string:%c",ch);
+      return 0;
+   }
+}
+
+// Make sure that buffer is capable of storing the whole thing. Returns number of bytes inserted
+int HexStringToHex(char* buffer,const char* str){
+   int inserted = 0;
+   for(int i = 0; ; i += 2){
+      char upper = str[i];
+      char lower = str[i+1];
+
+      if(upper == '\0' || lower == '\0'){
+         if(upper != '\0') printf("Warning: HexString was not divisible by 2\n");
+         break;
+      }   
+
+      buffer[inserted++] = HexToInt(upper) * 16 + HexToInt(lower);
+   }
+
+   return inserted;
+}
+
 void SingleTest(Arena* arena){
    #if 0
-   uint8_t cypher[] = {0x19,0xa0,0x9a,0xe9,
+   uint8_t plain[] = {0x19,0xa0,0x9a,0xe9,
                        0x3d,0xf4,0xc6,0xf8,
                        0xe3,0xe2,0x8d,0x48,
                        0xbe,0x2b,0x2a,0x08};
@@ -213,13 +244,26 @@ void SingleTest(Arena* arena){
                     0x17,0xb1,0x39,0x05};
    #endif
 
-   uint8_t cypher[] = {0x01,0x47,0x30,0xf8,0x0a,0xc6,0x25,0xfe,0x84,0xf0,0x26,0xc6,0x0b,0xfd,0x54,0x7d};
+   uint8_t key[128] = {};
+   uint8_t plain[128] = {};
+
+   int keyIndex = HexStringToHex((char*) key,"cc22da787f375711c76302bef0979d8eddf842829c2b99ef3dd04e23e54cc24b");
+   int plainIndex = HexStringToHex((char*) plain,"ccc62c6b0a09a671d64456818db29a4d");
+
+   printf("keyIndex: %d\n",keyIndex);
+   printf("plainIndex: %d\n",plainIndex);
+
+   #if 0
+   uint8_t plain[] = {0x01,0x47,0x30,0xf8,0x0a,0xc6,0x25,0xfe,0x84,0xf0,0x26,0xc6,0x0b,0xfd,0x54,0x7d};
    uint8_t key[]    = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
                        0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+   #endif
 
    uint8_t result[AES_BLK_SIZE] = {};
 
-   VersatAES(result,cypher,key);
+   Versat_init_AES();
+
+   VersatAES(result,plain,key);
 
    Assert_Eq(1,1);
    printf("%s\n",GetHexadecimal(result, AES_BLK_SIZE));

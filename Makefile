@@ -8,7 +8,7 @@ DISABLE_LINT:=1
 LIB_DIR:=submodules/IOBSOC/submodules/LIB
 include $(LIB_DIR)/setup.mk
 
-TESTS:= M_Stage SimpleCGRA F_Stage AddRoundKey LookupTable MemToMem VReadToVWrite # SMVMBlock 
+TESTS:= M_Stage F_Stage SimpleCGRA AddRoundKey LookupTable MemToMem VReadToVWrite SimpleIterative # SMVMBlock 
 
 TESTS_SETUP:=$(addsuffix _setup,$(TESTS))
 TESTS_PC:=$(addsuffix _pc,$(TESTS))

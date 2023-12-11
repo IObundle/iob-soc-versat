@@ -23,7 +23,7 @@ def GetTestName():
     # Check for test type
     testName = "M_Stage"  # Default test
     for arg in sys.argv[1:]:
-        if "TEST=" == arg[:5]:
+        if arg[:5] == "TEST=":
             testName = arg[5:]
 
     return testName
