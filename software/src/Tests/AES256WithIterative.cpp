@@ -184,18 +184,15 @@ void VersatAES(uint8_t *result, uint8_t *cypher, uint8_t *key) {
    return;
 }
 
-unsigned char* GetHexadecimal(const unsigned char* text, int str_size){
-   static unsigned char buffer[2048+1];
+char* GetHexadecimal(const char* text,char* buffer, int str_size){
    int i;
-
    for(i = 0; i< str_size; i++){
       int ch = (int) ((unsigned char) text[i]);
 
       buffer[i*2] = GetHexadecimalChar(ch / 16);
       buffer[i*2+1] = GetHexadecimalChar(ch % 16);
    }
-
-   buffer[(i)*2] = '\0';
+   buffer[(i+1)*2] = '\0';
 
    return buffer;
 }
@@ -265,6 +262,9 @@ void SingleTest(Arena* arena){
 
    VersatAES(result,plain,key);
 
-   Assert_Eq(1,1);
-   printf("%s\n",GetHexadecimal(result, AES_BLK_SIZE));
+   char buffer[2048];
+   GetHexadecimal((char*) result,buffer, AES_BLK_SIZE);
+
+   Assert_Eq("df8634ca02b13a125b786e1dce90658b",buffer);
 }
+   

@@ -32,6 +32,17 @@ module FloatTest(x,y,z){
    float2int -> out:8;
 }
 
+module TestDiffDelays(x,y,z){
+   FloatMul mul;
+   FloatMul mul2;
+#
+   {x,y} -> mul:0..1;
+
+   {mul,z} -> mul2:0..1;
+
+   mul2 -> out:0;
+   y -> out:1;
+}
 
 module VReadToVWrite(){
    VRead #(.AXI_ADDR_W(AXI_ADDR_W)) read;

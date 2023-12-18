@@ -7,9 +7,10 @@ from mk_configuration import update_define
 from verilog_tools import inplace_change
 
 from iob_soc import iob_soc
+from iob_module import iob_module
 from iob_vexriscv import iob_vexriscv
 from iob_uart import iob_uart
-from iob_versat import iob_versat
+from iob_versat import CreateVersatClass
 from axil2iob import axil2iob
 from iob2axil import iob2axil
 from iob_reset_sync import iob_reset_sync
@@ -17,6 +18,8 @@ from iob_reset_sync import iob_reset_sync
 VERSAT_SPEC = "versatSpec.txt"
 VERSAT_TOP = "Test"
 VERSAT_EXTRA_UNITS = os.path.join(os.path.dirname(__file__), "hardware/src/units")
+
+print("IOB_SOC_VERSAT", file=sys.stderr)
 
 
 def GetTestName():
@@ -48,24 +51,23 @@ class iob_soc_versat(iob_soc):
     def _create_instances(cls):
         super()._create_instances()
         # Verilog modules instances if we have them in the setup list (they may not be in the list if a subclass decided to remove them).
-        print(cls.submodule_list, file=sys.stderr)
-
-        if iob_versat in cls.submodule_list:
-            cls.versat = iob_versat(
-                "VERSAT0",
-                parameters={
-                    "versat_spec": VERSAT_SPEC,
-                    "versat_top": GetTestName(),
-                    "extra_units": VERSAT_EXTRA_UNITS,
-                },
-            )
+        if cls.versat_type in cls.submodule_list:
+            cls.versat = cls.versat_type("VERSAT0")
             cls.peripherals.append(cls.versat)
-        # if iob_vexriscv in cls.submodule_list:
-        #    cls.cpu = iob_vexriscv("cpu_0")
 
     @classmethod
     def _create_submodules_list(cls, extra_submodules=[]):
         """Create submodules list with dependencies of this module"""
+
+        pc_emul = False
+        for arg in sys.argv[1:]:
+            if arg == "PC_EMUL":
+                pc_emul = True
+
+        cls.versat_type = CreateVersatClass(
+            pc_emul, VERSAT_SPEC, GetTestName(), VERSAT_EXTRA_UNITS
+        )
+
         super()._create_submodules_list(
             [
                 {"interface": "peripheral_axi_wire"},
@@ -76,12 +78,9 @@ class iob_soc_versat(iob_soc):
                 {"interface": "iBus_axi_m_port"},
                 {"interface": "dBus_axi_m_portmap"},
                 {"interface": "iBus_axi_m_portmap"},
-                # iob_vexriscv,
-                iob_versat,
-                # axil2iob,
-                # iob2axil,
+                cls.versat_type,
+                # iob_versat,
                 iob_reset_sync,
-                # (iob_uart, {"purpose": "simulation"}),
             ]
             + extra_submodules
         )
@@ -102,8 +101,6 @@ class iob_soc_versat(iob_soc):
     def _post_setup(cls):
         super()._post_setup()
 
-        print("=== SOC_VERSAT ===")
-
         shutil.copy(
             f"{cls.build_dir}/software/src/Tests/{GetTestName()}.cpp",
             f"{cls.build_dir}/software/src/test.cpp",
@@ -119,8 +116,51 @@ class iob_soc_versat(iob_soc):
             f"{cls.build_dir}/software/src/",
         )
 
+        shutil.copytree(
+            f"{cls.setup_dir}/hardware/src/units",
+            f"{cls.build_dir}/hardware/src",
+            dirs_exist_ok=True,
+        )
+
         shutil.rmtree(f"{cls.build_dir}/software/src/Tests")
 
-
-#    @classmethod
-#    def _setup_confs(cls, extra_confs=[]):
+    @classmethod
+    def _setup_confs(cls, extra_confs=[]):
+        print("Top confs", file=sys.stderr)
+        # Append confs or override them if they exist
+        super()._setup_confs(
+            [
+                {
+                    "name": "SRAM_ADDR_W",
+                    "type": "P",
+                    "val": "16",
+                    "min": "1",
+                    "max": "32",
+                    "descr": "SRAM address width",
+                },
+                {
+                    "name": "USE_EXTMEM",
+                    "type": "M",
+                    "val": True,
+                    "min": "0",
+                    "max": "1",
+                    "descr": "Versat AXI implies External memory",
+                },
+                {
+                    "name": "AXI_ID_W",
+                    "type": "P",
+                    "val": "2",
+                    "min": "1",
+                    "max": "?",
+                    "descr": "description here",
+                },
+                {
+                    "name": "AXI_LEN_W",
+                    "type": "P",
+                    "val": "8",
+                    "min": "1",
+                    "max": "?",
+                    "descr": "description here",
+                },
+            ]
+        )

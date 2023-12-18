@@ -92,7 +92,7 @@ test.o: src/test.cpp
 	g++ -c -o $@ $< $(EMUL_CFLAGS) $(EMUL_INCLUDES)
 
 fw_emul: $(EMUL_HDR) $(EMUL_SRC) test.o libaccel.a
-	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) test.o $(filter-out src/iob-versat.c,$(EMUL_SRC)) -lgcc -lc -lm -ldl libaccel.a -lstdc++
+	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) test.o $(abspath $(filter-out src/iob-versat.c,$(EMUL_SRC))) -lgcc -lc -lm -ldl libaccel.a -lstdc++
 
 build_emul: fw_emul
 	@echo "build"
@@ -103,8 +103,11 @@ BOARD_GRAB_CMD=../scripts/board_client.py grab 300
 run_emul: build_emul
 	$(BOARD_GRAB_CMD) -s './fw_emul' -c '$(CONSOLE_CMD)'
 
+DIR := $(abspath $(CURDIR)/../)
+
 test_emul: run_emul
-	test "$$(cat test.log)" = "Test passed!"
+	@-test "$$(cat test.log)" = "Test passed!" || echo "$(DIR): Failed"  1>&2
+	@-test "$$(cat test.log)" = "Test passed!" && echo "$(DIR): Success" 1>&2
 
 .PHONY: build_emul run_emul test_emul
 
