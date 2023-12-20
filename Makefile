@@ -54,7 +54,7 @@ $(TESTS_PC): $(TESTS_SETUP_PC)
 test-pc-emul: $(TESTS_PC)
 
 $(TESTS_SIM): $(TESTS_SETUP)
-	nix-shell --run 'make -C ../$(CORE)_V0.70_$(subst _sim,,$@)/ sim-run SIMULATOR=$(SIMULATOR) 1> ../$(CORE)_V0.70_$(subst _sim,,$@)/sim-test.txt'
+	nix-shell --run 'make -C ../$(CORE)_V0.70_$(subst _sim,,$@)/ sim-run SIMULATOR=$(SIMULATOR) VCD=$(VCD) 1> ../$(CORE)_V0.70_$(subst _sim,,$@)/sim-test.txt'
 
 test-sim: $(TESTS_SIM)
 
@@ -70,6 +70,9 @@ setup_pc:
 
 pc-emul-run:
 	nix-shell --run 'make clean setup_pc && make -C ../$(CORE)_V0.70_$(TEST)/ pc-emul-run'
+
+sim-build:
+	nix-shell --run 'make clean setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-build SIMULATOR=$(SIMULATOR)'
 
 sim-run:
 	nix-shell --run 'make clean setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-run SIMULATOR=$(SIMULATOR) VCD=$(VCD)'

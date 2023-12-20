@@ -21,14 +21,15 @@ struct CollapseArray<T[N]>{
 #define SIZE 8
 int outputBuffer[SIZE * 4];
 
+// ClearCache is very important otherwise sim-run might read past values
 void ClearCache(){
 #ifndef PC
-  int size = 1024 * 8;
+  int size = 1024 * 16;
   char* m = (char*) malloc(size); // Should not use malloc but some random fixed ptr in embedded. No use calling malloc since we can always read at any point in memory without worrying about memory protection.
 
   // volatile and asm are used to make sure that gcc does not optimize away this loop that appears to do nothing
   volatile int val = 0;
-  for(int i = 0; i < size; i += 8){
+  for(int i = 0; i < size; i += 16){
     val += m[i];
     __asm__ volatile("" : "+g" (val) : :);
   }
@@ -40,25 +41,14 @@ void SingleTest(Arena* arena){
   int inputBuffer[SIZE * 4];
 
   for(int i = 0; i < 4; i++){
-#if 0
-    int* output = ADD_BYTE_TO_PTR(outputBuffer,4 * i);
-    int* input = ADD_BYTE_TO_PTR(inputBuffer,4 * i);
-#else
+    printf("Loop: %d\n",i);
     int* output = &outputBuffer[i];
     int* input = &inputBuffer[i];
-#endif
 
-#if 0
-    printf("I:%x %x\n",inputBuffer,input);
-    printf("O:%x %x\n",outputBuffer,output);  
-#endif
-    
     for(int i = 0; i < SIZE * 2; i++){
       input[i] = i + 1;
     }
-
-    ClearCache();
-     
+    
     int numberItems = SIZE;
 
     // Read side

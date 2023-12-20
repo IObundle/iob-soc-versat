@@ -22,6 +22,6 @@ void SingleTest(Arena* arena){
   
   for(int i = 0; i < numberItems; i++){
     int read = VersatUnitRead(TOP_end_addr,i);
-    Assert_Eq(read,i + 1);
+    Assert_Eq(i + 1,read);
   }
 }

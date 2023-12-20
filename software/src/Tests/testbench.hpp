@@ -286,18 +286,7 @@ static void PrintTestValue(TestValue* value){
 
 TestValue* PushTestValue(Arena* arena,int val,const char* marker){
   TestValueSimples* s = (TestValueSimples*) PushBytes(arena,sizeof(TestValueSimples));
-  //printf("%p\n",s);
-  s->size = sizeof(TestValueSimples); 
-  //printf("X\n");
-  s->i = val; 
-  //printf("Y\n");
-  s->marker = marker; 
-  //printf("Z\n");
-  s->type = TestValueType_INTEGER;
-  //printf("W\n");
-  //printf("Q\n");
-  //printf("%p\n",s);
-  //printf("E\n");
+  s->size = sizeof(TestValueSimples); s->i = val; s->marker = marker; s->type = TestValueType_INTEGER;
   return s;
 }
 
@@ -325,10 +314,8 @@ TestValue* PushTestValue(Arena* arena,const char* val,const char* marker){
 }
 
 static void Assert_Eq(int val1,int val2,const char* marker = ""){
-  printf("A\n");
-  printf("%p\n",PushTestValue(&expectedArena,val1,marker));
-  printf("B\n");
-  printf("%p\n",PushTestValue(&gotArena     ,val2,marker));
+  PushTestValue(&expectedArena,val1,marker);
+  PushTestValue(&gotArena     ,val2,marker);
 }
 
 static void Assert_Eq(unsigned int val1,unsigned int val2,const char* marker = ""){
@@ -371,8 +358,6 @@ extern "C" int RunTest(int versatBase){
 
   SingleTest(arena);
 
-  return TEST_PASSED;
-
   bool differentSizes = (expectedArena.used != gotArena.used);
 
   char* expectedPtr = (char*) expectedArena.mem;
@@ -400,7 +385,7 @@ extern "C" int RunTest(int versatBase){
     } else if(expectedPtr < expectedEnd){
       expectedIndex += 1;
       expectedPtr += testExpected->size;
-    } else if(expectedPtr < expectedEnd){
+    } else if(gotPtr < gotEnd){
       gotIndex += 1;
       gotPtr += testGot->size;
     } else {
@@ -453,11 +438,12 @@ extern "C" int RunTest(int versatBase){
         printf("Got:      ");
         PrintTestValue(testGot);
         printf("\n");
+        valuesToShow -= 1;
       }
       expectedPtr += testExpected->size;
       gotPtr += testGot->size;
 
-      valuesToShow -= 1;
+      i += 1;
     }
   } else {
     printf("NOT_POSSIBLE");
