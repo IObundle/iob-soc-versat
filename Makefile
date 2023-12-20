@@ -71,6 +71,9 @@ setup_pc:
 pc-emul-run:
 	nix-shell --run 'make clean setup_pc && make -C ../$(CORE)_V0.70_$(TEST)/ pc-emul-run'
 
+fpga-run:
+	nix-shell --run 'make clean setup BOARD=$(BOARD) && make -C ../$(CORE)_V0.70_$(TEST)/ fpga-run BOARD=$(BOARD)'
+
 sim-build:
 	nix-shell --run 'make clean setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-build SIMULATOR=$(SIMULATOR)'
 
