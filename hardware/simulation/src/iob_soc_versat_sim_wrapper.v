@@ -37,132 +37,7 @@ module iob_soc_versat_sim_wrapper (
    wire clk = clk_i;
    wire arst = rst_i;
 
-   wire               uart_txd_o;
-   wire               uart_rxd_i;
-   wire               uart_cts_i;
-   wire               uart_rts_o;
-
-   //DDR AXI interface signals
-`ifdef IOB_SOC_VERSAT_USE_EXTMEM
-`ifdef VERSAT_IO
-   wire [2*AXI_ID_W-1:0] axi_awid;  //Address write channel ID.
-   wire [2*AXI_ADDR_W-1:0] axi_awaddr;  //Address write channel address.
-   wire [2*AXI_LEN_W-1:0] axi_awlen;  //Address write channel burst length.
-   wire [2*3-1:0] axi_awsize; //Address write channel burst size. This signal indicates the size of each transfer in the burst.
-   wire [2*2-1:0] axi_awburst;  //Address write channel burst type.
-   wire [2*2-1:0] axi_awlock;  //Address write channel lock type.
-   wire [2*4-1:0] axi_awcache; //Address write channel memory type. Set to 0000 if master output; ignored if slave input.
-   wire [2*3-1:0] axi_awprot; //Address write channel protection type. Set to 000 if master output; ignored if slave input.
-   wire [2*4-1:0] axi_awqos;  //Address write channel quality of service.
-   wire [2*1-1:0] axi_awvalid;  //Address write channel valid.
-   wire [2*1-1:0] axi_awready;  //Address write channel ready.
-   wire [2*AXI_DATA_W-1:0] axi_wdata;  //Write channel data.
-   wire [2*(AXI_DATA_W/8)-1:0] axi_wstrb;  //Write channel write strobe.
-   wire [2*1-1:0] axi_wlast;  //Write channel last word flag.
-   wire [2*1-1:0] axi_wvalid;  //Write channel valid.
-   wire [2*1-1:0] axi_wready;  //Write channel ready.
-   wire [2*AXI_ID_W-1:0] axi_bid;  //Write response channel ID.
-   wire [2*2-1:0] axi_bresp;  //Write response channel response.
-   wire [2*1-1:0] axi_bvalid;  //Write response channel valid.
-   wire [2*1-1:0] axi_bready;  //Write response channel ready.
-   wire [2*AXI_ID_W-1:0] axi_arid;  //Address read channel ID.
-   wire [2*AXI_ADDR_W-1:0] axi_araddr;  //Address read channel address.
-   wire [2*AXI_LEN_W-1:0] axi_arlen;  //Address read channel burst length.
-   wire [2*3-1:0] axi_arsize; //Address read channel burst size. This signal indicates the size of each transfer in the burst.
-   wire [2*2-1:0] axi_arburst;  //Address read channel burst type.
-   wire [2*2-1:0] axi_arlock;  //Address read channel lock type.
-   wire [2*4-1:0] axi_arcache; //Address read channel memory type. Set to 0000 if master output; ignored if slave input.
-   wire [2*3-1:0] axi_arprot; //Address read channel protection type. Set to 000 if master output; ignored if slave input.
-   wire [2*4-1:0] axi_arqos;  //Address read channel quality of service.
-   wire [2*1-1:0] axi_arvalid;  //Address read channel valid.
-   wire [2*1-1:0] axi_arready;  //Address read channel ready.
-   wire [2*AXI_ID_W-1:0] axi_rid;  //Read channel ID.
-   wire [2*AXI_DATA_W-1:0] axi_rdata;  //Read channel data.
-   wire [2*2-1:0] axi_rresp;  //Read channel response.
-   wire [2*1-1:0] axi_rlast;  //Read channel last word.
-   wire [2*1-1:0] axi_rvalid;  //Read channel valid.
-   wire [2*1-1:0] axi_rready;  //Read channel ready.
-`else
-   // Wires for the system and its peripherals
-   wire [AXI_ID_W-1:0] axi_awid;  //Address write channel ID.
-   wire [AXI_ADDR_W-1:0] axi_awaddr;  //Address write channel address.
-   wire [AXI_LEN_W-1:0] axi_awlen;  //Address write channel burst length.
-   wire [3-1:0] axi_awsize; //Address write channel burst size. This signal indicates the size of each transfer in the burst.
-   wire [2-1:0] axi_awburst;  //Address write channel burst type.
-   wire [2-1:0] axi_awlock;  //Address write channel lock type.
-   wire [4-1:0] axi_awcache; //Address write channel memory type. Set to 0000 if master output; ignored if slave input.
-   wire [3-1:0] axi_awprot; //Address write channel protection type. Set to 000 if master output; ignored if slave input.
-   wire [4-1:0] axi_awqos;  //Address write channel quality of service.
-   wire [1-1:0] axi_awvalid;  //Address write channel valid.
-   wire [1-1:0] axi_awready;  //Address write channel ready.
-   wire [AXI_DATA_W-1:0] axi_wdata;  //Write channel data.
-   wire [(AXI_DATA_W/8)-1:0] axi_wstrb;  //Write channel write strobe.
-   wire [1-1:0] axi_wlast;  //Write channel last word flag.
-   wire [1-1:0] axi_wvalid;  //Write channel valid.
-   wire [1-1:0] axi_wready;  //Write channel ready.
-   wire [AXI_ID_W-1:0] axi_bid;  //Write response channel ID.
-   wire [2-1:0] axi_bresp;  //Write response channel response.
-   wire [1-1:0] axi_bvalid;  //Write response channel valid.
-   wire [1-1:0] axi_bready;  //Write response channel ready.
-   wire [AXI_ID_W-1:0] axi_arid;  //Address read channel ID.
-   wire [AXI_ADDR_W-1:0] axi_araddr;  //Address read channel address.
-   wire [AXI_LEN_W-1:0] axi_arlen;  //Address read channel burst length.
-   wire [3-1:0] axi_arsize; //Address read channel burst size. This signal indicates the size of each transfer in the burst.
-   wire [2-1:0] axi_arburst;  //Address read channel burst type.
-   wire [2-1:0] axi_arlock;  //Address read channel lock type.
-   wire [4-1:0] axi_arcache; //Address read channel memory type. Set to 0000 if master output; ignored if slave input.
-   wire [3-1:0] axi_arprot; //Address read channel protection type. Set to 000 if master output; ignored if slave input.
-   wire [4-1:0] axi_arqos;  //Address read channel quality of service.
-   wire [1-1:0] axi_arvalid;  //Address read channel valid.
-   wire [1-1:0] axi_arready;  //Address read channel ready.
-   wire [AXI_ID_W-1:0] axi_rid;  //Read channel ID.
-   wire [AXI_DATA_W-1:0] axi_rdata;  //Read channel data.
-   wire [2-1:0] axi_rresp;  //Read channel response.
-   wire [1-1:0] axi_rlast;  //Read channel last word.
-   wire [1-1:0] axi_rvalid;  //Read channel valid.
-   wire [1-1:0] axi_rready;  //Read channel ready.
-`endif
-
-   // Wires to connect the interconnect with the memory
-   wire [AXI_ID_W-1:0] memory_axi_awid;  //Address write channel ID.
-   wire [AXI_ADDR_W-1:0] memory_axi_awaddr;  //Address write channel address.
-   wire [AXI_LEN_W-1:0] memory_axi_awlen;  //Address write channel burst length.
-   wire [3-1:0] memory_axi_awsize; //Address write channel burst size. This signal indicates the size of each transfer in the burst.
-   wire [2-1:0] memory_axi_awburst;  //Address write channel burst type.
-   wire [2-1:0] memory_axi_awlock;  //Address write channel lock type.
-   wire [4-1:0] memory_axi_awcache; //Address write channel memory type. Set to 0000 if master output; ignored if slave input.
-   wire [3-1:0] memory_axi_awprot; //Address write channel protection type. Set to 000 if master output; ignored if slave input.
-   wire [4-1:0] memory_axi_awqos;  //Address write channel quality of service.
-   wire [1-1:0] memory_axi_awvalid;  //Address write channel valid.
-   wire [1-1:0] memory_axi_awready;  //Address write channel ready.
-   wire [AXI_DATA_W-1:0] memory_axi_wdata;  //Write channel data.
-   wire [(AXI_DATA_W/8)-1:0] memory_axi_wstrb;  //Write channel write strobe.
-   wire [1-1:0] memory_axi_wlast;  //Write channel last word flag.
-   wire [1-1:0] memory_axi_wvalid;  //Write channel valid.
-   wire [1-1:0] memory_axi_wready;  //Write channel ready.
-   wire [AXI_ID_W-1:0] memory_axi_bid;  //Write response channel ID.
-   wire [2-1:0] memory_axi_bresp;  //Write response channel response.
-   wire [1-1:0] memory_axi_bvalid;  //Write response channel valid.
-   wire [1-1:0] memory_axi_bready;  //Write response channel ready.
-   wire [AXI_ID_W-1:0] memory_axi_arid;  //Address read channel ID.
-   wire [AXI_ADDR_W-1:0] memory_axi_araddr;  //Address read channel address.
-   wire [AXI_LEN_W-1:0] memory_axi_arlen;  //Address read channel burst length.
-   wire [3-1:0] memory_axi_arsize; //Address read channel burst size. This signal indicates the size of each transfer in the burst.
-   wire [2-1:0] memory_axi_arburst;  //Address read channel burst type.
-   wire [2-1:0] memory_axi_arlock;  //Address read channel lock type.
-   wire [4-1:0] memory_axi_arcache; //Address read channel memory type. Set to 0000 if master output; ignored if slave input.
-   wire [3-1:0] memory_axi_arprot; //Address read channel protection type. Set to 000 if master output; ignored if slave input.
-   wire [4-1:0] memory_axi_arqos;  //Address read channel quality of service.
-   wire [1-1:0] memory_axi_arvalid;  //Address read channel valid.
-   wire [1-1:0] memory_axi_arready;  //Address read channel ready.
-   wire [AXI_ID_W-1:0] memory_axi_rid;  //Read channel ID.
-   wire [AXI_DATA_W-1:0] memory_axi_rdata;  //Read channel data.
-   wire [2-1:0] memory_axi_rresp;  //Read channel response.
-   wire [1-1:0] memory_axi_rlast;  //Read channel last word.
-   wire [1-1:0] memory_axi_rvalid;  //Read channel valid.
-   wire [1-1:0] memory_axi_rready;  //Read channel ready.
-`endif
-
+   `include "iob_soc_versat_wrapper_pwires.vs"
 
    /////////////////////////////////////////////
    // TEST PROCEDURE
@@ -189,52 +64,7 @@ module iob_soc_versat_sim_wrapper (
       .AXI_ADDR_W(AXI_ADDR_W),
       .AXI_DATA_W(AXI_DATA_W)
    ) iob_soc_versat0 (
-      .uart_txd_o(uart_txd_o),
-      .uart_rxd_i(uart_rxd_i),
-      .uart_cts_i(uart_cts_i),
-      .uart_rts_o(uart_rts_o),
-
-`ifdef IOB_SOC_VERSAT_USE_EXTMEM
-      .axi_awid_o(axi_awid),  //Address write channel ID.
-      .axi_awaddr_o(axi_awaddr),  //Address write channel address.
-      .axi_awlen_o(axi_awlen),  //Address write channel burst length.
-      .axi_awsize_o(axi_awsize), //Address write channel burst size. This signal indicates the size of each transfer in the burst.
-      .axi_awburst_o(axi_awburst),  //Address write channel burst type.
-      .axi_awlock_o(axi_awlock),  //Address write channel lock type.
-      .axi_awcache_o(axi_awcache), //Address write channel memory type. Set to 0000 if master output; ignored if slave input.
-      .axi_awprot_o(axi_awprot), //Address write channel protection type. Set to 000 if master output; ignored if slave input.
-      .axi_awqos_o(axi_awqos),  //Address write channel quality of service.
-      .axi_awvalid_o(axi_awvalid),  //Address write channel valid.
-      .axi_awready_i(axi_awready),  //Address write channel ready.
-      .axi_wdata_o(axi_wdata),  //Write channel data.
-      .axi_wstrb_o(axi_wstrb),  //Write channel write strobe.
-      .axi_wlast_o(axi_wlast),  //Write channel last word flag.
-      .axi_wvalid_o(axi_wvalid),  //Write channel valid.
-      .axi_wready_i(axi_wready),  //Write channel ready.
-      .axi_bid_i(axi_bid),  //Write response channel ID.
-      .axi_bresp_i(axi_bresp),  //Write response channel response.
-      .axi_bvalid_i(axi_bvalid),  //Write response channel valid.
-      .axi_bready_o(axi_bready),  //Write response channel ready.
-      .axi_arid_o(axi_arid),  //Address read channel ID.
-      .axi_araddr_o(axi_araddr),  //Address read channel address.
-      .axi_arlen_o(axi_arlen),  //Address read channel burst length.
-      .axi_arsize_o(axi_arsize), //Address read channel burst size. This signal indicates the size of each transfer in the burst.
-      .axi_arburst_o(axi_arburst),  //Address read channel burst type.
-      .axi_arlock_o(axi_arlock),  //Address read channel lock type.
-      .axi_arcache_o(axi_arcache), //Address read channel memory type. Set to 0000 if master output; ignored if slave input.
-      .axi_arprot_o(axi_arprot), //Address read channel protection type. Set to 000 if master output; ignored if slave input.
-      .axi_arqos_o(axi_arqos),  //Address read channel quality of service.
-      .axi_arvalid_o(axi_arvalid),  //Address read channel valid.
-      .axi_arready_i(axi_arready),  //Address read channel ready.
-      .axi_rid_i(axi_rid),  //Read channel ID.
-      .axi_rdata_i(axi_rdata),  //Read channel data.
-      .axi_rresp_i(axi_rresp),  //Read channel response.
-      .axi_rlast_i(axi_rlast),  //Read channel last word.
-      .axi_rvalid_i(axi_rvalid),  //Read channel valid.
-      .axi_rready_o(axi_rready),  //Read channel ready.
-`endif
-
-      `include "versat_external_memory_portmap.vh"
+      `include "iob_soc_versat_pportmaps.vs"
 
       .clk_i(clk),
       .cke_i(1'b1),
@@ -242,7 +72,9 @@ module iob_soc_versat_sim_wrapper (
       .trap_o(trap_o)
    );
 
+`include "iob_soc_versat_interconnect.vs"
 
+/*
 `ifdef IOB_SOC_VERSAT_USE_EXTMEM
 `ifdef VERSAT_IO
    //instantiate axi interconnect
@@ -456,6 +288,7 @@ module iob_soc_versat_sim_wrapper (
    );
 `endif
 `endif
+*/
 
 
 `ifdef IOB_SOC_VERSAT_USE_EXTMEM
