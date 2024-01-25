@@ -1,4 +1,5 @@
-#include "versat_accel.h"
+#ifndef INCLUDED_UNIT_CONFIGURATION
+#define INCLUDED_UNIT_CONFIGURATION
 
 void IntSet(volatile void* buffer,int value,int byteSize){
    volatile int* asInt = (int*) buffer;
@@ -84,17 +85,32 @@ void ConfigureRightSideMatrixVRead(VReadConfig* inst, int iterations){
 }
 #endif
 
+#if 0
+   inst->incrA = 1;
+   inst->perA = numberItems;
+   inst->pingPong = 1;
+   inst->ext_addr = (iptr) memory;
+   inst->length = numberItems * sizeof(int);
+   //inst->iterA = 1;
+   //inst->dutyA = numberItems;
+   //inst->int_addr = 0;
+
+   // B - versat side
+   inst->iterB = 1;
+   inst->incrB = 1;
+   inst->perB = numberItems;
+   inst->dutyB = 1;
+#endif
+
 #ifdef VERSAT_DEFINED_VWrite
+// Not being used for now.
 void ConfigureSimpleVWrite(VWriteConfig* inst, int numberItems,int* memory){
    IntSet(inst,0,sizeof(VWriteConfig));
 
    // Write side
    inst->incrA = 1;
-   inst->iterA = 1;
    inst->perA = numberItems;
-   inst->dutyA = numberItems;
-   inst->size = 8;
-   inst->int_addr = 0;
+   //inst->int_addr = 0;
    inst->pingPong = 1;
    inst->length = numberItems * sizeof(int);
    inst->ext_addr = (iptr) memory;
@@ -106,6 +122,7 @@ void ConfigureSimpleVWrite(VWriteConfig* inst, int numberItems,int* memory){
    inst->incrB = 1;
 }
 
+#if 0
 void ConfigureMatrixVWrite(VWriteConfig* inst,int amountOfData){
    IntSet(inst,0,sizeof(VWriteConfig));
 
@@ -123,6 +140,7 @@ void ConfigureMatrixVWrite(VWriteConfig* inst,int amountOfData){
    inst->dutyB = 1;
    inst->incrB = 1;
 }
+#endif
 #endif
 
 #ifdef VERSAT_DEFINED_Mem
@@ -196,3 +214,4 @@ void ConfigureMemoryReceive(MemConfig* inst, int amountOfData,int interdataDelay
 }
 #endif
 
+#endif // INCLUDED_UNIT_CONFIGURATION

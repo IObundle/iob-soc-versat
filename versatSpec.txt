@@ -359,20 +359,13 @@ module SimpleShareConfig(){
       b1;
       b2;
    }
-   Reg out0;
-   Reg out1;
-   Reg out2;
-   Reg out3;
-   Const extra;
 #
    a = a1 + a2;
    b = b1 + b2;
    c = a1 + b1;
+   d = a2 + b2;
 
-   a -> out0;
-   b -> out1;
-   c -> out2;
-   extra -> out3;
+   {a,b,c,d} -> out:0..3;
 }
 
 module StaticConst(){
@@ -3253,11 +3246,6 @@ module Merge1(){
    A -> Output;
 }
 
-merge MergeTest = Merge0:a | Merge1:b {
-   a.m0 - b.M1;
-   a.m1 - b.M0;
-}
-
 module SimpleFU(in0,in1){
    Const constant;
    Mul mul;
@@ -3365,3 +3353,36 @@ module SimpleCGRA(){
    l2:0..3 -> l3:0..3;
    l3:0..3 -> loop:0..3;
 }
+
+// Some bug in which the Simple version delay is not matching the actual positions.
+// Maybe due to the way we implement the Simple version 
+module Variety1(x,y){
+   VRead read;
+   Mem mem;
+   Const constant;
+//   Reg reg; There is a bug because of the SOURCE_AND_SINK problem
+#
+   c = x + y + read + mem + constant;
+
+//   c -> reg;
+   c -> out;
+}
+
+module Variety2(x,y,z){
+   VRead read; // Same name as variety1
+   Mem memButDiffName;
+   VWrite write;
+#
+   total = x + y + z + read + memButDiffName;
+   total -> write;
+}
+
+//merge MergeTest = Merge0:a | Merge1:b {
+//   a.m0 - b.M1;
+//   a.m1 - b.M0;
+//}
+
+// merge VarietyMerge = Variety1 | Variety2;
+
+merge SHA_AES = SHA | AES256WithIterative | VectorLikeOperation;
+

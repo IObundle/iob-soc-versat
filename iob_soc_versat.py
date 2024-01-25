@@ -17,7 +17,9 @@ from iob_reset_sync import iob_reset_sync
 
 VERSAT_SPEC = "versatSpec.txt"
 VERSAT_TOP = "Test"
-VERSAT_EXTRA_UNITS = os.path.join(os.path.dirname(__file__), "hardware/src/units")
+VERSAT_EXTRA_UNITS = os.path.realpath(
+    os.path.join(os.path.dirname(__file__), "hardware/src/units")
+)
 
 print("IOB_SOC_VERSAT", file=sys.stderr)
 
@@ -36,8 +38,20 @@ def GetBuildDir(name):
     testName = GetTestName()
 
     # TODO: Remove default test and use the version string if not running a test
+    return os.path.realpath(f"../{name}_V0.70_{testName}")
 
-    return f"../{name}_V0.70_{testName}"
+
+pc_emul = False
+for arg in sys.argv[1:]:
+    if arg == "PC_EMUL":
+        pc_emul = True
+iob_versat = CreateVersatClass(
+    pc_emul,
+    VERSAT_SPEC,
+    GetTestName(),
+    VERSAT_EXTRA_UNITS,
+    GetBuildDir("iob_soc_versat"),
+)
 
 
 class iob_soc_versat(iob_soc):
@@ -64,9 +78,7 @@ class iob_soc_versat(iob_soc):
             if arg == "PC_EMUL":
                 pc_emul = True
 
-        cls.versat_type = CreateVersatClass(
-            pc_emul, VERSAT_SPEC, GetTestName(), VERSAT_EXTRA_UNITS
-        )
+        cls.versat_type = iob_versat
 
         super()._create_submodules_list(
             [

@@ -137,6 +137,7 @@ void InitVersatSHA(){
    ACCEL_TOP_Swap_enabled = 1;
 }
 
+#if 0
 unsigned char* GetHexadecimal(const unsigned char* text, int str_size){
   static unsigned char buffer[2048+1];
   int i;
@@ -152,6 +153,7 @@ unsigned char* GetHexadecimal(const unsigned char* text, int str_size){
 
   return buffer;
 }
+#endif
 
 void SingleTest(Arena* arena){
    unsigned char msg_64[] = { 0x5a, 0x86, 0xb7, 0x37, 0xea, 0xea, 0x8e, 0xe9, 0x76, 0xa0, 0xa2, 0x4d, 0xa6, 0x3e, 0x7e, 0xd7, 0xee, 0xfa, 0xd1, 0x8a, 0x10, 0x1c, 0x12, 0x11, 0xe2, 0xb3, 0x65, 0x0c, 0x51, 0x87, 0xc2, 0xa8, 0xa6, 0x50, 0x54, 0x72, 0x08, 0x25, 0x1f, 0x6d, 0x42, 0x37, 0xe6, 0x61, 0xc7, 0xbf, 0x4c, 0x77, 0xf3, 0x35, 0x39, 0x03, 0x94, 0xc3, 0x7f, 0xa1, 0xa9, 0xf9, 0xbe, 0x83, 0x6a, 0xc2, 0x85, 0x09 };
@@ -166,7 +168,8 @@ void SingleTest(Arena* arena){
 
    VersatSHA(digest,msg_64,64);
 
-   Assert_Eq(1,1); 
-   printf("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa\n");
-   printf("%s\n",GetHexadecimal(digest, HASH_SIZE));
+   char buffer[2048];
+   GetHexadecimal((char*) digest,buffer, HASH_SIZE);
+   //Assert_Eq("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa",buffer);
+   Assert_Eq("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa",buffer); 
 }

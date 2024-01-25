@@ -11,6 +11,8 @@
 #include "iob-uart.h"
 #include "printf.h"
 
+#include "unitConfiguration.hpp"
+
 #define TEST_PASSED 0
 #define TEST_FAILED 1
 
@@ -146,7 +148,7 @@ int GetMaxDigitSize(Array<float> array){
   return 2; // Floating points is hard to figure out how many digits. 2 should be enough
 }
 
-char GetHexadecimalChar(int value){
+char GetHexadecimalChar(unsigned char value){
   if(value < 10){
     return '0' + value;
   } else{
@@ -154,20 +156,17 @@ char GetHexadecimalChar(int value){
   }
 }
 
-char* GetHexadecimal(const char* text, int str_size,char* buffer){
-  int i;
-
-  //Assert(str_size * 2 < 64);
-  for(i = 0; i < str_size; i++){
-    int ch = (int) ((unsigned char) text[i]);
-
-    buffer[64 - 3 - i*2] = GetHexadecimalChar(ch / 16);
-    buffer[64 - 3 - i*2+1] = GetHexadecimalChar(ch % 16);
+char* GetHexadecimal(const char* text,char* buffer,int str_size){
+  int i = 0;
+  unsigned char* view = (unsigned char*) text;
+  for(; i< str_size; i++){
+    buffer[i*2] = GetHexadecimalChar(view[i] / 16);
+    buffer[i*2+1] = GetHexadecimalChar(view[i] % 16);
   }
 
-  buffer[64 - 1] = '\0';
+  buffer[i*2] = '\0';
 
-  return &buffer[64 - str_size * 2 - 1];
+  return buffer;
 }
 
 typedef union {
