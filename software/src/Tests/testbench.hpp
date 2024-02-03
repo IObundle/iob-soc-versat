@@ -417,23 +417,15 @@ extern "C" int RunTest(int versatBase){
     return TEST_PASSED;
   }
 
-  printf("Error\n");
+  printf("Error ");
   if(expectedArena.used == 0 || gotArena.used == 0){
-    printf("Got 0 samples\n");
+    printf("(0 samples)\n");
   } else if(differentIndexes && !differentValues){
-    printf("Number of testing samples differ!\n");
-    printf("Expected amount: %d\n",expectedIndex);
-    printf("Got amount:      %d\n",gotIndex);
+    printf("(%d/%d)\n",gotIndex,expectedIndex);
   } else if(differentValues){
-    printf("Obtained different values for %d cases!\n",differentValuesCount);
+    printf("(%d/%d)\n",gotIndex,expectedIndex);
 
-    if(differentIndexes){
-      printf("The amount of samples also differ\n");
-      printf("Its possible that the majority of missmatches occured\n");
-      printf("Because samples are not properly matched\n");
-      printf("Expected amount: %d\n",expectedIndex);
-      printf("Got amount:      %d\n",gotIndex);
-    }
+    printf("Obtained different values for %d cases!\n",differentValuesCount);
 
     int valuesToShow = std::min(differentValuesCount,10);
     printf("Showcasing the first %d missmatches values\n",valuesToShow);

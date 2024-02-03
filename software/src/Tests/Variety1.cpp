@@ -5,7 +5,7 @@ void ConfigureVariety1(Variety1Config* config){
 
    ConfigureSimpleVRead(&config->read,1,&memory);
 
-   ConfigureMemoryLinear(&config->mem,1,0);
+   ConfigureSimpleMemory(&config->mem,1,0);
    VersatUnitWrite(TOP_simple_mem_addr,0,2);
 
    config->constant.constant = 1;

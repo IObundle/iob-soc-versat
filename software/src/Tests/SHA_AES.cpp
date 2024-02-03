@@ -7,7 +7,7 @@
 #define AES_BLK_SIZE (16)
 #define AES_KEY_SIZE (32)
 
-const uint32_t sbox[256] = {
+const uint8_t sbox[256] = {
    0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
    0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
    0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -25,7 +25,7 @@ const uint32_t sbox[256] = {
    0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
    0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 };
 
-const uint32_t mul2[] = {
+const uint8_t mul2[] = {
    0x00,0x02,0x04,0x06,0x08,0x0a,0x0c,0x0e,0x10,0x12,0x14,0x16,0x18,0x1a,0x1c,0x1e,
    0x20,0x22,0x24,0x26,0x28,0x2a,0x2c,0x2e,0x30,0x32,0x34,0x36,0x38,0x3a,0x3c,0x3e,
    0x40,0x42,0x44,0x46,0x48,0x4a,0x4c,0x4e,0x50,0x52,0x54,0x56,0x58,0x5a,0x5c,0x5e,
@@ -44,7 +44,7 @@ const uint32_t mul2[] = {
    0xfb,0xf9,0xff,0xfd,0xf3,0xf1,0xf7,0xf5,0xeb,0xe9,0xef,0xed,0xe3,0xe1,0xe7,0xe5
 };
 
-const uint32_t mul3[] = {
+const uint8_t mul3[] = {
    0x00,0x03,0x06,0x05,0x0c,0x0f,0x0a,0x09,0x18,0x1b,0x1e,0x1d,0x14,0x17,0x12,0x11,
    0x30,0x33,0x36,0x35,0x3c,0x3f,0x3a,0x39,0x28,0x2b,0x2e,0x2d,0x24,0x27,0x22,0x21,
    0x60,0x63,0x66,0x65,0x6c,0x6f,0x6a,0x69,0x78,0x7b,0x7e,0x7d,0x74,0x77,0x72,0x71,
@@ -64,11 +64,11 @@ const uint32_t mul3[] = {
 };
 
 void FillLookupTable(LookupTableAddr addr){
-   VersatMemoryCopy(addr.addr,(int*) sbox,256 * sizeof(int));
+   VersatMemoryCopy(addr.addr,(int*) sbox,256 * sizeof(uint8_t));
 }
 
-void FillMul(LookupTableAddr addr,const uint32_t* mem,int size){
-   VersatMemoryCopy(addr.addr,(int*) mem,size * sizeof(int));
+void FillMul(LookupTableAddr addr,const uint8_t* mem,int size){
+   VersatMemoryCopy(addr.addr,(int*) mem,size * sizeof(uint8_t));
 }
 
 void FillRow(DoRowAddr addr){
@@ -138,23 +138,21 @@ void int_to_byte(int *in, uint8_t *out, int size) {
    return;
 }
 
-void Versat_init_AES() {
+void Versat_init_AES(AES256WithIterativeConfig* aes) {
    SHA_AES_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
    FillRoundPairAndKey(addr.simple.mk0.roundPairAndKey);
-   FillMainRound(*((MainRoundAddr*) &(addr.simple.round0_subBytes_s0)));
-   FillKeySchedule(*((KeySchedule256Addr*) &(addr.simple.key6_s_b0)));
-   FillSBox(*((SBoxAddr*) &(addr.simple.subBytes_s0)));
+   FillMainRound(addr.simple.round0);
+   FillKeySchedule(addr.simple.key6);
+   FillSBox(addr.simple.subBytes);
 
-   ACCEL_TOP_simple_rcon0_constant = 0x01;
-   ACCEL_TOP_simple_rcon1_constant = 0x02;
-   ACCEL_TOP_simple_rcon2_constant = 0x04;
-   ACCEL_TOP_simple_rcon3_constant = 0x08;
-   ACCEL_TOP_simple_rcon4_constant = 0x10;
-   ACCEL_TOP_simple_rcon5_constant = 0x20;
-   ACCEL_TOP_simple_rcon6_constant = 0x40;
-
-   return;
+   aes->rcon0.constant = 0x01;
+   aes->rcon1.constant = 0x02;
+   aes->rcon2.constant = 0x04;
+   aes->rcon3.constant = 0x08;
+   aes->rcon4.constant = 0x10;
+   aes->rcon5.constant = 0x20;
+   aes->rcon6.constant = 0x40;
 }
 
 void VersatAES(uint8_t *result, uint8_t *cypher, uint8_t *key) {
@@ -183,21 +181,6 @@ void VersatAES(uint8_t *result, uint8_t *cypher, uint8_t *key) {
 
    return;
 }
-
-#if 0
-char* GetHexadecimal(const char* text,char* buffer, int str_size){
-   int i;
-   for(i = 0; i< str_size; i++){
-      int ch = (int) ((unsigned char) text[i]);
-
-      buffer[i*2] = GetHexadecimalChar(ch / 16);
-      buffer[i*2+1] = GetHexadecimalChar(ch % 16);
-   }
-   buffer[(i+1)*2] = '\0';
-
-   return buffer;
-}
-#endif
 
 static char HexToInt(char ch){
    if('0' <= ch && ch <= '9'){
@@ -253,7 +236,7 @@ static void store_bigendian_32(uint8_t *x, uint32_t u) {
 
 static size_t versat_crypto_hashblocks_sha256(const uint8_t *in, size_t inlen) {
    while (inlen >= 64) {
-      ACCEL_TOP_simple_MemRead_ext_addr = (iptr) in;
+      ACCEL_TOP_simple_MemRead_row_ext_addr = (iptr) in;
 
       // Loads data + performs work
       RunAccelerator(1);
@@ -294,8 +277,8 @@ void VersatSHA(uint8_t *out, const uint8_t *in, size_t inlen) {
    if (inlen < 56) {
       for (size_t i = inlen + 1; i < 56; ++i) {
          padded[i] = 0;
-      }
-      padded[56] = (uint8_t) (bytes >> 53);
+      
+    }  padded[56] = (uint8_t) (bytes >> 53);
       padded[57] = (uint8_t) (bytes >> 45);
       padded[58] = (uint8_t) (bytes >> 37);
       padded[59] = (uint8_t) (bytes >> 29);
@@ -333,25 +316,15 @@ void VersatSHA(uint8_t *out, const uint8_t *in, size_t inlen) {
    initVersat = false; // At the end of each run, reset
 }
 
-void InitVersatSHA(){
-   static bool initialized = false;
-
-   if(initialized){
-      return;
-   }
-
-   iptr* view = (iptr*) accelConfig;
-   SHA_AESConfig* sha = (SHA_AESConfig*) &view[48]; 
-
+void InitVersatSHA(SHAConfig* sha){
    ConfigureSimpleVRead(&sha->MemRead,16,nullptr);
-   //ConfigureSimpleVRead(read,16,nullptr); // read address is configured before accelerator run
 
-   ACCEL_TOP_simple_cMem3_mem_iterA = 1;
-   ACCEL_TOP_simple_cMem3_mem_incrA = 1;
-   ACCEL_TOP_simple_cMem3_mem_perA = 16;
-   ACCEL_TOP_simple_cMem3_mem_dutyA = 16;
-   ACCEL_TOP_simple_cMem3_mem_startA = 0;
-   ACCEL_TOP_simple_cMem3_mem_shiftA = 0;
+   ACCEL_Constants_mem_iterA = 1;
+   ACCEL_Constants_mem_incrA = 1;
+   ACCEL_Constants_mem_perA = 16;
+   ACCEL_Constants_mem_dutyA = 16;
+   ACCEL_Constants_mem_startA = 0;
+   ACCEL_Constants_mem_shiftA = 0;
 
    for(int ii = 0; ii < 16; ii++){
       VersatUnitWrite(TOP_simple_cMem0_mem_addr,ii,kConstants[0][ii]);
@@ -369,30 +342,15 @@ void InitVersatSHA(){
    ACCEL_TOP_simple_Swap_enabled = 1;
 }
 
-#if 0
-unsigned char* GetHexadecimal(const unsigned char* text, int str_size){
-  static unsigned char buffer[2048+1];
-  int i;
-
-  for(i = 0; i< str_size; i++){
-    int ch = (int) ((unsigned char) text[i]);
-
-    buffer[i*2] = GetHexadecimalChar(ch / 16);
-    buffer[i*2+1] = GetHexadecimalChar(ch % 16);
-  }
-
-  buffer[(i)*2] = '\0';
-
-  return buffer;
-}
-#endif
-
 void SingleTest(Arena* arena){
-#if 1
+   SHA_AES_SimpleConfig* config = (SHA_AES_SimpleConfig*) accelConfig;
+
+   // SHA
+   {
    unsigned char msg_64[] = { 0x5a, 0x86, 0xb7, 0x37, 0xea, 0xea, 0x8e, 0xe9, 0x76, 0xa0, 0xa2, 0x4d, 0xa6, 0x3e, 0x7e, 0xd7, 0xee, 0xfa, 0xd1, 0x8a, 0x10, 0x1c, 0x12, 0x11, 0xe2, 0xb3, 0x65, 0x0c, 0x51, 0x87, 0xc2, 0xa8, 0xa6, 0x50, 0x54, 0x72, 0x08, 0x25, 0x1f, 0x6d, 0x42, 0x37, 0xe6, 0x61, 0xc7, 0xbf, 0x4c, 0x77, 0xf3, 0x35, 0x39, 0x03, 0x94, 0xc3, 0x7f, 0xa1, 0xa9, 0xf9, 0xbe, 0x83, 0x6a, 0xc2, 0x85, 0x09 };
    static const int HASH_SIZE = (256/8);
    
-   InitVersatSHA();
+   InitVersatSHA(&config->simple.SHA);
 
    unsigned char digest[256];
    for(int i = 0; i < 256; i++){
@@ -401,25 +359,13 @@ void SingleTest(Arena* arena){
 
    VersatSHA(digest,msg_64,64);
 
-   {
    char buffer[2048];
    GetHexadecimal((char*) digest,buffer, HASH_SIZE);
    Assert_Eq("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa",buffer); 
    }
-#endif
-#if 1
-   #if 0
-   uint8_t plain[] = {0x19,0xa0,0x9a,0xe9,
-                       0x3d,0xf4,0xc6,0xf8,
-                       0xe3,0xe2,0x8d,0x48,
-                       0xbe,0x2b,0x2a,0x08};
 
-   uint8_t key[] = {0xa0,0x88,0x23,0x2a,
-                    0xfa,0x54,0xa3,0x6c,
-                    0xfe,0x2c,0x39,0x76,
-                    0x17,0xb1,0x39,0x05};
-   #endif
-
+   // AES
+   {
    uint8_t key[128] = {};
    uint8_t plain[128] = {};
 
@@ -429,22 +375,37 @@ void SingleTest(Arena* arena){
    printf("keyIndex: %d\n",keyIndex);
    printf("plainIndex: %d\n",plainIndex);
 
-   #if 0
-   uint8_t plain[] = {0x01,0x47,0x30,0xf8,0x0a,0xc6,0x25,0xfe,0x84,0xf0,0x26,0xc6,0x0b,0xfd,0x54,0x7d};
-   uint8_t key[]    = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
-                       0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-   #endif
-
    uint8_t result[AES_BLK_SIZE] = {};
 
-   Versat_init_AES();
+   Versat_init_AES(&config->simple.AES256WithIterative);
 
    VersatAES(result,plain,key);
 
-   {
    char buffer[2048];
    GetHexadecimal((char*) result,buffer, AES_BLK_SIZE);
    Assert_Eq("df8634ca02b13a125b786e1dce90658b",buffer);
    }
-#endif
+
+   // VectorLikeOperation
+   {
+      SHA_AES_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+      int testRow[8] = {0x19,0x2a,0x3b,0x4c,0x5d,0x6e,0x7f,0x80};
+      int testMem[8] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08};
+
+      VectorLikeOperationConfig* vec = &config->simple.VectorLikeOperation;
+
+      vec->mask.constant = 0x0f;
+
+      ConfigureSimpleVRead(&vec->row,8,testRow);      
+      ConfigureSimpleMemory(&vec->mat,8,0,addr.simple.mat,testMem);
+      ConfigureMemoryReceive(&vec->output,8);
+
+      int result[8] = {};
+      RunAccelerator(2);
+
+      for(int i = 0; i < 8; i++){
+         result[i] = VersatUnitRead((iptr) addr.simple.output.addr,i);
+         Assert_Eq(result[i],0x08);
+      }
+   }
 }
