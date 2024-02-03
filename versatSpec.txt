@@ -1,3 +1,6 @@
+module Nothing(){
+#
+}
 
 module FloatTest(x,y,z){
    FloatAdd add;

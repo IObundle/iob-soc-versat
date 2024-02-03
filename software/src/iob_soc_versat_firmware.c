@@ -7,7 +7,6 @@
 #include "iob_soc_versat_periphs.h"
 
 #include "iob-uart.h"
-#include "iob_str.h"
 #include "printf.h"
 
 #ifdef __cplusplus
@@ -25,12 +24,13 @@ int main(int argc,char* argv[]){
    uart_init(UART0_BASE,FREQ/BAUD);
    printf_init(&uart_putc);
 
-   int result = RunTest(VERSAT0_BASE);
+   //int result = RunTest(VERSAT0_BASE);
+   int result = 1;
 
    if(result){
-      uart_sendfile("test.log", iob_strlen(fail_string), fail_string);
+      uart_sendfile("test.log", 12, fail_string);
    } else {
-      uart_sendfile("test.log", iob_strlen(pass_string), pass_string);
+      uart_sendfile("test.log", 12, pass_string);
    }
 
    printf("Gonna call uart finish\n");

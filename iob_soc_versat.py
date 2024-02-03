@@ -10,7 +10,8 @@ from iob_soc import iob_soc
 from iob_module import iob_module
 from iob_vexriscv import iob_vexriscv
 from iob_uart import iob_uart
-from iob_versat import CreateVersatClass
+
+# from iob_versat import CreateVersatClass
 from axil2iob import axil2iob
 from iob2axil import iob2axil
 from iob_reset_sync import iob_reset_sync
@@ -41,6 +42,7 @@ def GetBuildDir(name):
     return os.path.realpath(f"../{name}_V0.70_{testName}")
 
 
+"""
 pc_emul = False
 for arg in sys.argv[1:]:
     if arg == "PC_EMUL":
@@ -52,6 +54,7 @@ iob_versat = CreateVersatClass(
     VERSAT_EXTRA_UNITS,
     GetBuildDir("iob_soc_versat"),
 )
+"""
 
 
 class iob_soc_versat(iob_soc):
@@ -65,37 +68,35 @@ class iob_soc_versat(iob_soc):
     def _create_instances(cls):
         super()._create_instances()
         # Verilog modules instances if we have them in the setup list (they may not be in the list if a subclass decided to remove them).
-        if cls.versat_type in cls.submodule_list:
-            cls.versat = cls.versat_type("VERSAT0")
-            cls.peripherals.append(cls.versat)
+        # if cls.versat_type in cls.submodule_list:
+        #    cls.versat = cls.versat_type("VERSAT0", "Versat accelerator")
+        #    cls.peripherals.append(cls.versat)
 
     @classmethod
     def _create_submodules_list(cls, extra_submodules=[]):
         """Create submodules list with dependencies of this module"""
 
-        pc_emul = False
-        for arg in sys.argv[1:]:
-            if arg == "PC_EMUL":
-                pc_emul = True
+        # cls.versat_type = iob_versat
 
-        cls.versat_type = iob_versat
-
+        super()._create_submodules_list(extra_submodules)
+'''
         super()._create_submodules_list(
             [
-                {"interface": "peripheral_axi_wire"},
-                {"interface": "intmem_axi_wire"},
-                {"interface": "dBus_axi_wire"},
-                {"interface": "iBus_axi_wire"},
-                {"interface": "dBus_axi_m_port"},
-                {"interface": "iBus_axi_m_port"},
-                {"interface": "dBus_axi_m_portmap"},
-                {"interface": "iBus_axi_m_portmap"},
-                cls.versat_type,
+                #{"interface": "peripheral_axi_wire"},
+                #{"interface": "intmem_axi_wire"},
+                #{"interface": "dBus_axi_wire"},
+                #{"interface": "iBus_axi_wire"},
+                #{"interface": "dBus_axi_m_port"},
+                #{"interface": "iBus_axi_m_port"},
+                #{"interface": "dBus_axi_m_portmap"},
+                #{"interface": "iBus_axi_m_portmap"},
+                # cls.versat_type,
                 # iob_versat,
-                iob_reset_sync,
+                #iob_reset_sync,
             ]
             + extra_submodules
         )
+'''
 
         # Remove iob_picorv32 because we want vexriscv
         """
@@ -138,7 +139,8 @@ class iob_soc_versat(iob_soc):
 
     @classmethod
     def _setup_confs(cls, extra_confs=[]):
-        print("Top confs", file=sys.stderr)
+        pass
+        '''
         # Append confs or override them if they exist
         super()._setup_confs(
             [
@@ -176,3 +178,4 @@ class iob_soc_versat(iob_soc):
                 },
             ]
         )
+        '''
