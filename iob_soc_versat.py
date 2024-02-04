@@ -144,29 +144,5 @@ class iob_soc_versat(iob_soc):
                     "max": "32",
                     "descr": "SRAM address width",
                 },
-                {
-                    "name": "USE_EXTMEM",
-                    "type": "M",
-                    "val": True,
-                    "min": "0",
-                    "max": "1",
-                    "descr": "Versat AXI implies External memory",
-                },
-                {
-                    "name": "AXI_ID_W",
-                    "type": "P",
-                    "val": "2",
-                    "min": "1",
-                    "max": "?",
-                    "descr": "description here",
-                },
-                {
-                    "name": "AXI_LEN_W",
-                    "type": "P",
-                    "val": "8",
-                    "min": "1",
-                    "max": "?",
-                    "descr": "description here",
-                },
             ]
         )

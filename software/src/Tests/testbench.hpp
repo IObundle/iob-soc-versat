@@ -1,3 +1,5 @@
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 #ifndef INCLUDED_TESTBENCH
 #define INCLUDED_TESTBENCH
 

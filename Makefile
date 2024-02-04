@@ -117,6 +117,10 @@ fpga-run:
 fpga-run-only:
 	+nix-shell --run "make -C ../$(CORE)_V0.70_$(TEST)/ fpga-run BOARD=$(BOARD)"
 
+fpga-run-2:
+	nix-shell --run 'make clean setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) && make -C ../$(CORE)_V0.70_$(TEST)/ fpga-fw-build BOARD=$(BOARD)'
+	make -C ../$(CORE)_V0.70_$(TEST)/ fpga-run BOARD=$(BOARD)
+
 sim-build:
 	+nix-shell --run 'make setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-build SIMULATOR=$(SIMULATOR)'
 
