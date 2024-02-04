@@ -41,6 +41,7 @@ def GetBuildDir(name):
     # TODO: Remove default test and use the version string if not running a test
     return os.path.realpath(f"../{name}_V0.70_{testName}")
 
+
 pc_emul = False
 for arg in sys.argv[1:]:
     if arg == "PC_EMUL":
@@ -52,6 +53,7 @@ iob_versat = CreateVersatClass(
     VERSAT_EXTRA_UNITS,
     GetBuildDir("iob_soc_versat"),
 )
+
 
 class iob_soc_versat(iob_soc):
     name = "iob_soc_versat"
