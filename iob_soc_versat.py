@@ -134,15 +134,29 @@ class iob_soc_versat(iob_soc):
     @classmethod
     def _setup_confs(cls, extra_confs=[]):
         # Append confs or override them if they exist
-        super()._setup_confs(
-            [
+
+        confs = [
+            {
+                "name": "SRAM_ADDR_W",
+                "type": "P",
+                "val": "16",
+                "min": "1",
+                "max": "32",
+                "descr": "SRAM address width",
+            }
+        ]
+
+        if cls.versat_type.USE_EXTMEM:
+            print("USING EXT MEM BECAUSE VERSAT", file=sys.stderr)
+            confs.append(
                 {
-                    "name": "SRAM_ADDR_W",
-                    "type": "P",
-                    "val": "16",
-                    "min": "1",
-                    "max": "32",
-                    "descr": "SRAM address width",
-                },
-            ]
-        )
+                    "name": "USE_EXTMEM",
+                    "type": "M",
+                    "val": True,
+                    "min": "0",
+                    "max": "1",
+                    "descr": "Versat AXI implies External memory",
+                }
+            )
+
+        super()._setup_confs(confs)

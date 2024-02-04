@@ -13,7 +13,7 @@ module iob_soc_versat_fpga_wrapper (
    output txd_o,
    input  rxd_i,
 
-`ifdef IOB_SOC_VERSAT_USE_EXTMEM
+`ifdef IOB_SOC_USE_EXTMEM
    output        c0_ddr4_act_n,
    output [16:0] c0_ddr4_adr,
    output [ 1:0] c0_ddr4_ba,
@@ -30,7 +30,7 @@ module iob_soc_versat_fpga_wrapper (
    inout  [ 3:0] c0_ddr4_dqs_t,
 `endif
 
-`ifdef IOB_SOC_VERSAT_USE_ETHERNET
+`ifdef IOB_SOC_USE_ETHERNET1
    output ENET_RESETN,
    input  ENET_RX_CLK,
    output ENET_GTX_CLK,
@@ -65,9 +65,9 @@ module iob_soc_versat_fpga_wrapper (
    // 
    // Logic to contatenate data pins and ethernet clock
    //
-`ifdef IOB_SOC_VERSAT_USE_ETHERNET
+`ifdef IOB_SOC_USE_ETHERNET
    //buffered eth clock
-   wire ETH_Clk;
+   wire       ETH_Clk;
 
    //eth clock
    IBUFG rxclk_buf (
@@ -100,7 +100,6 @@ module iob_soc_versat_fpga_wrapper (
    assign ETH0_MCrS = 1'b0;
 `endif
 
-
    //
    // IOb-SoC
    //
@@ -124,7 +123,7 @@ module iob_soc_versat_fpga_wrapper (
    );
 
    // UART
-   assign txd_o      = uart_txd_o;
+   assign txd_o = uart_txd_o;
    assign uart_rxd_i = rxd_i;
    assign uart_cts_i = 1'b1;
    // uart_rts_o unconnected
@@ -133,53 +132,17 @@ module iob_soc_versat_fpga_wrapper (
    // DDR4 CONTROLLER
    //
 
-`ifdef IOB_SOC_VERSAT_USE_EXTMEM
+`ifdef IOB_SOC_USE_EXTMEM
    localparam DDR4_AXI_ID_W = AXI_ID_W;
    localparam DDR4_AXI_LEN_W = AXI_LEN_W;
    localparam DDR4_AXI_ADDR_W = AXI_ADDR_W;
    localparam DDR4_AXI_DATA_W = AXI_DATA_W;
 
 
-   wire [1-1:0] rstn;
-   assign arst = ~rstn[0];
+   `include "iob_soc_versat_ku040_rstn.vs"
+
    //axi wires between ddr4 contrl and axi interconnect
-   wire [DDR4_AXI_ID_W-1:0] ddr4_axi_awid;  //Address write channel ID.
-   wire [DDR4_AXI_ADDR_W-1:0] ddr4_axi_awaddr;  //Address write channel address.
-   wire [DDR4_AXI_LEN_W-1:0] ddr4_axi_awlen;  //Address write channel burst length.
-   wire [3-1:0] ddr4_axi_awsize; //Address write channel burst size. This signal indicates the size of each transfer in the burst.
-   wire [2-1:0] ddr4_axi_awburst;  //Address write channel burst type.
-   wire [2-1:0] ddr4_axi_awlock;  //Address write channel lock type.
-   wire [4-1:0] ddr4_axi_awcache; //Address write channel memory type. Set to 0000 if master output; ignored if slave input.
-   wire [3-1:0] ddr4_axi_awprot; //Address write channel protection type. Set to 000 if master output; ignored if slave input.
-   wire [4-1:0] ddr4_axi_awqos;  //Address write channel quality of service.
-   wire [1-1:0] ddr4_axi_awvalid;  //Address write channel valid.
-   wire [1-1:0] ddr4_axi_awready;  //Address write channel ready.
-   wire [DDR4_AXI_DATA_W-1:0] ddr4_axi_wdata;  //Write channel data.
-   wire [(DDR4_AXI_DATA_W/8)-1:0] ddr4_axi_wstrb;  //Write channel write strobe.
-   wire [1-1:0] ddr4_axi_wlast;  //Write channel last word flag.
-   wire [1-1:0] ddr4_axi_wvalid;  //Write channel valid.
-   wire [1-1:0] ddr4_axi_wready;  //Write channel ready.
-   wire [DDR4_AXI_ID_W-1:0] ddr4_axi_bid;  //Write response channel ID.
-   wire [2-1:0] ddr4_axi_bresp;  //Write response channel response.
-   wire [1-1:0] ddr4_axi_bvalid;  //Write response channel valid.
-   wire [1-1:0] ddr4_axi_bready;  //Write response channel ready.
-   wire [DDR4_AXI_ID_W-1:0] ddr4_axi_arid;  //Address read channel ID.
-   wire [DDR4_AXI_ADDR_W-1:0] ddr4_axi_araddr;  //Address read channel address.
-   wire [DDR4_AXI_LEN_W-1:0] ddr4_axi_arlen;  //Address read channel burst length.
-   wire [3-1:0] ddr4_axi_arsize; //Address read channel burst size. This signal indicates the size of each transfer in the burst.
-   wire [2-1:0] ddr4_axi_arburst;  //Address read channel burst type.
-   wire [2-1:0] ddr4_axi_arlock;  //Address read channel lock type.
-   wire [4-1:0] ddr4_axi_arcache; //Address read channel memory type. Set to 0000 if master output; ignored if slave input.
-   wire [3-1:0] ddr4_axi_arprot; //Address read channel protection type. Set to 000 if master output; ignored if slave input.
-   wire [4-1:0] ddr4_axi_arqos;  //Address read channel quality of service.
-   wire [1-1:0] ddr4_axi_arvalid;  //Address read channel valid.
-   wire [1-1:0] ddr4_axi_arready;  //Address read channel ready.
-   wire [DDR4_AXI_ID_W-1:0] ddr4_axi_rid;  //Read channel ID.
-   wire [DDR4_AXI_DATA_W-1:0] ddr4_axi_rdata;  //Read channel data.
-   wire [2-1:0] ddr4_axi_rresp;  //Read channel response.
-   wire [1-1:0] ddr4_axi_rlast;  //Read channel last word.
-   wire [1-1:0] ddr4_axi_rvalid;  //Read channel valid.
-   wire [1-1:0] ddr4_axi_rready;  //Read channel ready.
+   `include "ddr4_axi_wire.vs"
 
    //DDR4 controller axi side clocks and resets
    wire c0_ddr4_ui_clk;  //controller output clock 200MHz
@@ -197,60 +160,7 @@ module iob_soc_versat_fpga_wrapper (
       .INTERCONNECT_ACLK   (c0_ddr4_ui_clk),           //from ddr4 controller 
       .INTERCONNECT_ARESETN(~c0_ddr4_ui_clk_sync_rst), //from ddr4 controller
 
-
-      //
-      // External memory connection 0
-      //
-      .S00_AXI_ARESET_OUT_N(rstn[0]),  //to system reset
-      .S00_AXI_ACLK        (clk),      //from ddr4 controller PLL to be used by system
-
-      //Write address
-      .S00_AXI_AWID   (axi_awid[0*AXI_ID_W+:1]),
-      .S00_AXI_AWADDR (axi_awaddr[0*AXI_ADDR_W+:AXI_ADDR_W]),
-      .S00_AXI_AWLEN  (axi_awlen[0*AXI_LEN_W+:AXI_LEN_W]),
-      .S00_AXI_AWSIZE (axi_awsize[0*3+:3]),
-      .S00_AXI_AWBURST(axi_awburst[0*2+:2]),
-      .S00_AXI_AWLOCK (axi_awlock[0*2+:1]),
-      .S00_AXI_AWCACHE(axi_awcache[0*4+:4]),
-      .S00_AXI_AWPROT (axi_awprot[0*3+:3]),
-      .S00_AXI_AWQOS  (axi_awqos[0*4+:4]),
-      .S00_AXI_AWVALID(axi_awvalid[0*1+:1]),
-      .S00_AXI_AWREADY(axi_awready[0*1+:1]),
-
-      //Write data
-      .S00_AXI_WDATA (axi_wdata[0*AXI_DATA_W+:AXI_DATA_W]),
-      .S00_AXI_WSTRB (axi_wstrb[0*(AXI_DATA_W/8)+:(AXI_DATA_W/8)]),
-      .S00_AXI_WLAST (axi_wlast[0*1+:1]),
-      .S00_AXI_WVALID(axi_wvalid[0*1+:1]),
-      .S00_AXI_WREADY(axi_wready[0*1+:1]),
-
-      //Write response
-      .S00_AXI_BID   (axi_bid[0*AXI_ID_W+:1]),
-      .S00_AXI_BRESP (axi_bresp[0*2+:2]),
-      .S00_AXI_BVALID(axi_bvalid[0*1+:1]),
-      .S00_AXI_BREADY(axi_bready[0*1+:1]),
-
-      //Read address
-      .S00_AXI_ARID   (axi_arid[0*AXI_ID_W+:1]),
-      .S00_AXI_ARADDR (axi_araddr[0*AXI_ADDR_W+:AXI_ADDR_W]),
-      .S00_AXI_ARLEN  (axi_arlen[0*AXI_LEN_W+:AXI_LEN_W]),
-      .S00_AXI_ARSIZE (axi_arsize[0*3+:3]),
-      .S00_AXI_ARBURST(axi_arburst[0*2+:2]),
-      .S00_AXI_ARLOCK (axi_arlock[0*2+:1]),
-      .S00_AXI_ARCACHE(axi_arcache[0*4+:4]),
-      .S00_AXI_ARPROT (axi_arprot[0*3+:3]),
-      .S00_AXI_ARQOS  (axi_arqos[0*4+:4]),
-      .S00_AXI_ARVALID(axi_arvalid[0*1+:1]),
-      .S00_AXI_ARREADY(axi_arready[0*1+:1]),
-
-      //Read data
-      .S00_AXI_RID   (axi_rid[0*AXI_ID_W+:1]),
-      .S00_AXI_RDATA (axi_rdata[0*AXI_DATA_W+:AXI_DATA_W]),
-      .S00_AXI_RRESP (axi_rresp[0*2+:2]),
-      .S00_AXI_RLAST (axi_rlast[0*1+:1]),
-      .S00_AXI_RVALID(axi_rvalid[0*1+:1]),
-      .S00_AXI_RREADY(axi_rready[0*1+:1]),
-
+      `include "iob_soc_versat_ku040_interconnect_s_portmap.vs"
 
       //
       // DDR CONTROLLER SIDE (master)
