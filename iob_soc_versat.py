@@ -46,13 +46,6 @@ pc_emul = False
 for arg in sys.argv[1:]:
     if arg == "PC_EMUL":
         pc_emul = True
-iob_versat = CreateVersatClass(
-    pc_emul,
-    VERSAT_SPEC,
-    GetTestName(),
-    VERSAT_EXTRA_UNITS,
-    GetBuildDir("iob_soc_versat"),
-)
 
 
 class iob_soc_versat(iob_soc):
@@ -74,7 +67,13 @@ class iob_soc_versat(iob_soc):
     def _create_submodules_list(cls, extra_submodules=[]):
         """Create submodules list with dependencies of this module"""
 
-        cls.versat_type = iob_versat
+        cls.versat_type = CreateVersatClass(
+            pc_emul,
+            VERSAT_SPEC,
+            GetTestName(),
+            VERSAT_EXTRA_UNITS,
+            GetBuildDir("iob_soc_versat"),
+        )
 
         super()._create_submodules_list(
             [
