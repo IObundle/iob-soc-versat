@@ -19,15 +19,17 @@ struct CollapseArray<T[N]>{
 #define ADD_BYTE_TO_PTR(PTR,BYTES) ((CollapseArray<decltype(PTR)>::type) (((char*) PTR) + BYTES))
 
 #define SIZE 8
-int outputBuffer[SIZE * 4];
 
 void SingleTest(Arena* arena){
-  int inputBuffer[SIZE * 4];
+  int* outputBuffer = (int*) PushBytes(arena,sizeof(int) * SIZE * 2);
+  int* inputBuffer = (int*) PushBytes(arena,sizeof(int) * SIZE * 2);
 
   for(int i = 0; i < 4; i++){
     printf("Loop: %d\n",i);
     int* output = &outputBuffer[i];
     int* input = &inputBuffer[i];
+
+    printf("%p %p %p\n",arena->mem,output,input);
 
     for(int i = 0; i < SIZE * 2; i++){
       input[i] = i + 1;
@@ -37,8 +39,6 @@ void SingleTest(Arena* arena){
 
     // Read side
     ACCEL_TOP_read_incrA = 1;
-    //ACCEL_TOP_read_iterA = 1;
-    //ACCEL_TOP_read_dutyA = ~0;
     ACCEL_TOP_read_ext_addr = (iptr) input;
     ACCEL_TOP_read_perA = numberItems;
     ACCEL_TOP_read_length = numberItems * sizeof(int);
@@ -52,8 +52,6 @@ void SingleTest(Arena* arena){
 
     // Write side
     ACCEL_TOP_write_incrA = 1;
-    //ACCEL_TOP_write_iterA = 1;
-    //ACCEL_TOP_write_dutyA = ~0;
     ACCEL_TOP_write_perA = numberItems;
     ACCEL_TOP_write_length = numberItems * sizeof(int);
     ACCEL_TOP_write_ext_addr = (iptr) output;

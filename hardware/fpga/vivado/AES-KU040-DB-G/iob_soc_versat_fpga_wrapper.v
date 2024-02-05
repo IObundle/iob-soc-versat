@@ -13,7 +13,7 @@ module iob_soc_versat_fpga_wrapper (
    output txd_o,
    input  rxd_i,
 
-`ifdef IOB_SOC_USE_EXTMEM
+`ifdef IOB_SOC_VERSAT_USE_EXTMEM
    output        c0_ddr4_act_n,
    output [16:0] c0_ddr4_adr,
    output [ 1:0] c0_ddr4_ba,
@@ -30,7 +30,7 @@ module iob_soc_versat_fpga_wrapper (
    inout  [ 3:0] c0_ddr4_dqs_t,
 `endif
 
-`ifdef IOB_SOC_USE_ETHERNET1
+`ifdef IOB_SOC_VERSAT_USE_ETHERNET1
    output ENET_RESETN,
    input  ENET_RX_CLK,
    output ENET_GTX_CLK,
@@ -65,7 +65,7 @@ module iob_soc_versat_fpga_wrapper (
    // 
    // Logic to contatenate data pins and ethernet clock
    //
-`ifdef IOB_SOC_USE_ETHERNET
+`ifdef IOB_SOC_VERSAT_USE_ETHERNET
    //buffered eth clock
    wire       ETH_Clk;
 
@@ -132,7 +132,7 @@ module iob_soc_versat_fpga_wrapper (
    // DDR4 CONTROLLER
    //
 
-`ifdef IOB_SOC_USE_EXTMEM
+`ifdef IOB_SOC_VERSAT_USE_EXTMEM
    localparam DDR4_AXI_ID_W = AXI_ID_W;
    localparam DDR4_AXI_LEN_W = AXI_LEN_W;
    localparam DDR4_AXI_ADDR_W = AXI_ADDR_W;
