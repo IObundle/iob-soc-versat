@@ -90,10 +90,10 @@ debug:
 #########################################
 
 test.o: src/test.cpp 
-	g++ -c -o $@ $< $(EMUL_CFLAGS) $(EMUL_INCLUDES)
+	g++ -c -o $@ $< -Os $(EMUL_INCLUDES)
 
-fw_emul: $(EMUL_HDR) $(EMUL_SRC) test.cpp libaccel.a
-	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(EMUL_SRC) test.o -lgcc -lc -lm -ldl libaccel.a -lstdc++
+fw_emul: $(EMUL_HDR) $(EMUL_SRC) test.o libaccel.a
+	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(abspath $(filter-out src/iob-versat.c,$(EMUL_SRC))) test.o -lgcc -lc -lm -ldl libaccel.a -lstdc++
 
 build_emul: fw_emul
 	@echo "build"
@@ -106,6 +106,12 @@ test.log: build_emul
 
 run_emul: test.log
 	test "$$(cat test.log)" = "Test passed!"
+
+DIR := $(abspath $(CURDIR)/../)
+
+test_emul: test.log
+	@-test "$$(cat test.log)" = "Test passed!" || echo "$(DIR): Failed"  1>&2
+	@-test "$$(cat test.log)" = "Test passed!" && echo "$(DIR): Success" 1>&2
 
 .PHONY: build_emul run_emul
 

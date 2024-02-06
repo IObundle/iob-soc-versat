@@ -2,6 +2,5 @@
 
 test=$1
 
-cd ..;
-
-make setup TEST=$1
+mkdir -p ../iob_soc_versat_V0.70_$test
+make setup TEST=$test &> ../iob_soc_versat_V0.70_$test/setup.txt
