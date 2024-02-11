@@ -39,7 +39,7 @@ TOOLCHAIN_PREFIX ?=riscv64-unknown-elf-
 CFLAGS ?=-Os -nostdlib -march=$(MFLAGS) -mabi=ilp32 --specs=nano.specs -Wcast-align=strict $(USER_CFLAGS)
 LFLAGS ?= -Wl,-Bstatic,-T,$(TEMPLATE_LDS),--strip-debug
 LLIBS ?=-lgcc -lc -lnosys
-INCLUDES ?=-I. -Isrc
+INCLUDES ?=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
 
 #########################################
 #         PC emulation settings         #
@@ -50,11 +50,11 @@ EMUL_CFLAGS ?=-Os -std=gnu99 -Wl,--strip-debug
 
 CONSOLE_CMD ?=rm -f soc2cnsl cnsl2soc; ../scripts/console.py -L
 
-EMUL_INCLUDES ?=-I. -Isrc
+EMUL_INCLUDES ?=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
 
 EMUL_HDR+=$(wildcard src/*_emul.h)
 
-EMUL_SRC+=$(wildcard src/*_emul.c)
+EMUL_SRC+=$(wildcard src/*_emul.c) $(wildcard src/McEliece/*.c) $(wildcard src/McEliece/common/*.c)
 
 #########################################
 #            Embedded targets           #
@@ -67,6 +67,7 @@ build: $(UTARGETS)
 
 iob_soc_versat_firmware.elf: $(TEMPLATE_LDS) $(HDR) test_emb.o  $(SRC) 
 	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(INCLUDES) $(SRC) test_emb.o $(LLIBS)
+	$(TOOLCHAIN_PREFIX)objdump -d $@ > assembly.asm
 	$(TOOLCHAIN_PREFIX)objcopy -O binary $@ iob_soc_versat_firmware.bin
 
 iob_soc_versat_boot.elf: $(TEMPLATE_LDS) $(HDR) $(SRC) 

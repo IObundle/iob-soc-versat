@@ -1,6 +1,10 @@
 #ifndef INCLUDED_UNIT_CONFIGURATION
 #define INCLUDED_UNIT_CONFIGURATION
 
+extern "C" {
+   #include "printf.h" 
+}
+
 void IntSet(volatile void* buffer,int value,int byteSize){
    volatile int* asInt = (int*) buffer;
 

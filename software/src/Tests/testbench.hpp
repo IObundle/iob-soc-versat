@@ -171,6 +171,37 @@ char* GetHexadecimal(const char* text,char* buffer,int str_size){
   return buffer;
 }
 
+static char HexToInt(char ch){
+   if('0' <= ch && ch <= '9'){
+      return (ch - '0');
+   } else if('a' <= ch && ch <= 'f'){
+      return ch - 'a' + 10;
+   } else if('A' <= ch && ch <= 'F'){
+      return ch - 'A' + 10;
+   } else {
+      printf("Error, invalid character inside hex string:%c",ch);
+      return 0;
+   }
+}
+
+// Make sure that buffer is capable of storing the whole thing. Returns number of bytes inserted
+int HexStringToHex(char* buffer,const char* str){
+   int inserted = 0;
+   for(int i = 0; ; i += 2){
+      char upper = str[i];
+      char lower = str[i+1];
+
+      if(upper == '\0' || lower == '\0'){
+         if(upper != '\0') printf("Warning: HexString was not divisible by 2\n");
+         break;
+      }   
+
+      buffer[inserted++] = HexToInt(upper) * 16 + HexToInt(lower);
+   }
+
+   return inserted;
+}
+
 typedef union {
   iptr i;
   float f;
