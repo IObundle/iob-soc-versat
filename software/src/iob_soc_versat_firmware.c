@@ -10,7 +10,9 @@
 // MARKED
 // McEliece
 #include "api.h"
-#include "nistkatrng.h"
+//#include "nistkatrng.h"
+
+void nist_kat_init(unsigned char *entropy_input, unsigned char *personalization_string, int security_strength);
 
 #ifdef __cplusplus
 extern "C"{
@@ -96,7 +98,7 @@ int main(int argc,char* argv[]){
 
    // McEliece
    {
-    InitMcEliece(VERSAT0_BASE);
+    //InitMcEliece(VERSAT0_BASE);
 
     unsigned char public_key[PQCLEAN_MCELIECE348864_CLEAN_CRYPTO_PUBLICKEYBYTES];
     unsigned char secret_key[PQCLEAN_MCELIECE348864_CLEAN_CRYPTO_SECRETKEYBYTES];
@@ -105,7 +107,7 @@ int main(int argc,char* argv[]){
 
     HexStringToHex(seed,"061550234D158C5EC95595FE04EF7A25767F2E24CC2BC479D09D86DC9ABCFDE7056A8C266F9EF97ED08541DBD2E1FFA1");
 
-    InitArena(4*1024*1024); // 4 megabytes should suffice
+    //InitArena(4*1024*1024); // 4 megabytes should suffice
 
     nist_kat_init(seed, NULL, 256);
 

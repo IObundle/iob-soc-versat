@@ -2,6 +2,8 @@
   This file is for public-key generation
 */
 
+#if 0
+
 #include "versat_accel.h"
 #include "unitConfiguration.hpp"
 
@@ -398,4 +400,6 @@ int pk_gen(unsigned char *pk, unsigned char *sk, const uint32_t *perm, int16_t *
 
     return 0;
 }
+#endif
+
 #endif
