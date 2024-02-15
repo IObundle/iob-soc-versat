@@ -2,7 +2,7 @@
 /* See David Nassimi, Sartaj Sahni "Parallel algorithms to set up the Benes permutationnetwork" */
 /* See also https://cr.yp.to/papers/controlbits-20200923.pdf */
 
-#include "compat.h"
+//#include "compat.h"
 #include "controlbits.h"
 #include "crypto_declassify.h"
 #include "int32_sort.h"
@@ -12,6 +12,9 @@ typedef int32_t int32;
 #include "crypto_int32.h"
 #define int32_min crypto_int32_min
 #include "crypto_int16.h"
+
+#include "arena.h"
+#include "printf.h"
 
 /* parameters: 1 <= w <= 14; n = 2^w */
 /* input: permutation pi of {0,1,...,n-1} */
@@ -27,6 +30,11 @@ static void cbrecursion(unsigned char *out, long long pos, long long step, const
 
     long long x, y, i, j, k;
 
+#if 0
+    static int times = 0;
+    printf("%d\n",times++);
+#endif
+  
     if (w == 1) {
         out[pos >> 3] ^= pi[0] << (pos & 7);
         return;
@@ -198,13 +206,21 @@ static void layer(int16_t *p, const unsigned char *cb, int s, int n) {
     }
 }
 
+# define PQCLEAN_VLA(__t,__x,__s) __t __x[__s]
+
 /* parameters: 1 <= w <= 14; n = 2^w */
 /* input: permutation pi of {0,1,...,n-1} */
 /* output: (2m-1)n/2 control bits at positions 0,1,... */
 /* output position pos is by definition 1&(out[pos/8]>>(pos&7)) */
 void controlbitsfrompermutation(unsigned char *out, const int16 *pi, long long w, long long n) {
-    PQCLEAN_VLA(int32, temp, (size_t)(2 * n));
-    PQCLEAN_VLA(int16, pi_test, (size_t)n);
+    //PQCLEAN_VLA(int32, temp, (size_t)(2 * n));
+    //PQCLEAN_VLA(int16, pi_test, (size_t)n);
+
+    int mark = MarkArena();
+
+    int32* temp = PushBytes(2 * n * sizeof(int32));
+    int16* pi_test = PushBytes(n * sizeof(int16));
+
     int16 diff;
     int i;
     unsigned char *ptr;
@@ -244,4 +260,6 @@ void controlbitsfrompermutation(unsigned char *out, const int16 *pi, long long w
             break;
         }
     }
-}
+
+    PopArena(mark);
+}   

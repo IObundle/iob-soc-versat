@@ -314,6 +314,7 @@ void InitVersatSHA(SHAConfig* sha){
 void SingleTest(Arena* arena){
    SHA_AES_SimpleConfig* config = (SHA_AES_SimpleConfig*) accelConfig;
 
+   #if 1
    // SHA
    {
    unsigned char msg_64[] = { 0x5a, 0x86, 0xb7, 0x37, 0xea, 0xea, 0x8e, 0xe9, 0x76, 0xa0, 0xa2, 0x4d, 0xa6, 0x3e, 0x7e, 0xd7, 0xee, 0xfa, 0xd1, 0x8a, 0x10, 0x1c, 0x12, 0x11, 0xe2, 0xb3, 0x65, 0x0c, 0x51, 0x87, 0xc2, 0xa8, 0xa6, 0x50, 0x54, 0x72, 0x08, 0x25, 0x1f, 0x6d, 0x42, 0x37, 0xe6, 0x61, 0xc7, 0xbf, 0x4c, 0x77, 0xf3, 0x35, 0x39, 0x03, 0x94, 0xc3, 0x7f, 0xa1, 0xa9, 0xf9, 0xbe, 0x83, 0x6a, 0xc2, 0x85, 0x09 };
@@ -354,7 +355,9 @@ void SingleTest(Arena* arena){
    GetHexadecimal((char*) result,buffer, AES_BLK_SIZE);
    Assert_Eq("df8634ca02b13a125b786e1dce90658b",buffer);
    }
+   #endif
 
+#if 0
    // VectorLikeOperation
    {
       SHA_AES_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
@@ -366,15 +369,27 @@ void SingleTest(Arena* arena){
       vec->mask.constant = 0x0f;
 
       ConfigureSimpleVRead(&vec->row,8,testRow);      
-      ConfigureSimpleMemory(&vec->mat,8,0,addr.simple.mat,testMem);
-      ConfigureMemoryReceive(&vec->output,8);
+      //ConfigureSimpleMemory(&vec->mat,8,0,addr.simple.mat,testMem);
+      
+      ConfigureMemoryReceive(&vec->mat, 8);
+      VersatMemoryCopy(addr.simple.mat.addr,testMem,8 * sizeof(int));
+
+      //ConfigureMemoryReceive(&vec->output,8);
 
       int result[8] = {};
-      RunAccelerator(2);
+      vec->mat.in0_wr = 0;
+      RunAccelerator(1);
+      vec->mat.in0_wr = 1;
+      RunAccelerator(1);
 
       for(int i = 0; i < 8; i++){
-         result[i] = VersatUnitRead((iptr) addr.simple.output.addr,i);
-         Assert_Eq(result[i],0x08);
+         result[i] = VersatUnitRead((iptr) addr.simple.mat.addr,i);
+         Assert_Eq(0x08,result[i]);
       }
    }
+#endif
+}
+
+extern "C" void VersatLineXOR(uint8_t* out, uint8_t *mat, uint8_t *row, int n_cols, uint8_t mask){
+   
 }

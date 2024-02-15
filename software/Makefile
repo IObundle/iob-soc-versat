@@ -36,7 +36,7 @@ endif
 
 #default compiler settings
 TOOLCHAIN_PREFIX ?=riscv64-unknown-elf-
-CFLAGS ?=-Os -nostdlib -march=$(MFLAGS) -mabi=ilp32 --specs=nano.specs -Wcast-align=strict $(USER_CFLAGS)
+CFLAGS ?=-Os -O2 -nostdlib -march=$(MFLAGS) -mabi=ilp32 --specs=nano.specs -Wcast-align=strict $(USER_CFLAGS)
 LFLAGS ?= -Wl,-Bstatic,-T,$(TEMPLATE_LDS),--strip-debug
 LLIBS ?=-lgcc -lc -lnosys
 INCLUDES ?=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
@@ -46,7 +46,7 @@ INCLUDES ?=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
 #########################################
 
 # compiler flags
-EMUL_CFLAGS ?=-Os -std=gnu99 -Wl,--strip-debug
+EMUL_CFLAGS ?=-g -std=gnu99 -march=native
 
 CONSOLE_CMD ?=rm -f soc2cnsl cnsl2soc; ../scripts/console.py -L
 
@@ -91,16 +91,16 @@ debug:
 #########################################
 
 test.o: src/test.cpp 
-	g++ -c -o $@ $< -Os $(EMUL_INCLUDES)
+	g++ -c -o $@ $< -O2 -march=native $(EMUL_INCLUDES)
 
 fw_emul: $(EMUL_HDR) $(EMUL_SRC) test.o libaccel.a
-	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(abspath $(filter-out src/iob-versat.c,$(EMUL_SRC))) test.o -lgcc -lc -lm -ldl libaccel.a -lstdc++
+	gcc -o $@ -O2 $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(abspath $(filter-out src/iob-versat.c,$(EMUL_SRC))) test.o -lgcc -lc -lm -ldl libaccel.a -lstdc++
 
 build_emul: fw_emul
 	@echo "build"
 
 #board client command
-BOARD_GRAB_CMD ?=../scripts/board_client.py grab 300
+BOARD_GRAB_CMD ?=../scripts/board_client.py grab 1000
 
 test.log: build_emul
 	$(BOARD_GRAB_CMD) -s './fw_emul' -c '$(CONSOLE_CMD)'

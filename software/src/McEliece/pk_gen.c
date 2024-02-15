@@ -4,7 +4,6 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "controlbits.h"
@@ -17,6 +16,10 @@
 #include "uint64_sort.h"
 #include "util.h"
 
+#include "printf.h"
+#include "arena.h"
+
+#if 0
 static crypto_uint64 uint64_is_equal_declassify(uint64_t t, uint64_t u) {
     crypto_uint64 mask = crypto_uint64_equal_mask(t, u);
     crypto_declassify(&mask, sizeof mask);
@@ -29,22 +32,47 @@ static crypto_uint64 uint64_is_zero_declassify(uint64_t t) {
     return mask;
 }
 
+// Matrix Allocate
+#define MA(Y,X,TYPE) PushBytes(sizeof(TYPE) * (X) * (Y))
+// Matrix Index
+
+#define MI(Y,X,ROWSIZE) ((Y) * (ROWSIZE) + (X)) 
+//#define MI(Y,X,ROWSIZE) Y][X 
+
+void VersatLineXOR(uint8_t* out, uint8_t *mat, uint8_t *row, int n_cols, uint8_t mask);
+
 /* input: secret key sk */
 /* output: public key pk */
 int pk_gen(unsigned char *pk, unsigned char *sk, const uint32_t *perm, int16_t *pi) {
     int i, j, k;
     int row, c;
 
-    uint64_t buf[ 1 << GFBITS ];
+#if 0  
+    static int times = 0;
+    printf("%d\n",times++);
+#endif
+  
+    int mark = MarkArena();
+  
+    //uint64_t buf[ 1 << GFBITS ];
+    uint64_t* buf = PushArray(1 << GFBITS,uint64_t);
+  
+    //unsigned char mat[ PK_NROWS ][ SYS_N / 8 ];
+    unsigned char* mat = MA(PK_NROWS,SYS_N / 8,unsigned char);
 
-    unsigned char mat[ PK_NROWS ][ SYS_N / 8 ];
     unsigned char mask;
     unsigned char b;
 
+#if  0
     gf g[ SYS_T + 1 ]; // Goppa polynomial
     gf L[ SYS_N ]; // support
     gf inv[ SYS_N ];
+#endif
 
+    gf* g = PushArray(SYS_T + 1,gf);
+    gf* L = PushArray(SYS_N,gf); // support
+    gf* inv = PushArray(SYS_N,gf);
+  
     //
 
     g[ SYS_T ] = 1;
@@ -64,7 +92,8 @@ int pk_gen(unsigned char *pk, unsigned char *sk, const uint32_t *perm, int16_t *
 
     for (i = 1; i < (1 << GFBITS); i++) {
         if (uint64_is_equal_declassify(buf[i - 1] >> 31, buf[i] >> 31)) {
-            return -1;
+          PopArena(mark);
+           return -1;
         }
     }
 
@@ -85,7 +114,7 @@ int pk_gen(unsigned char *pk, unsigned char *sk, const uint32_t *perm, int16_t *
 
     for (i = 0; i < PK_NROWS; i++) {
         for (j = 0; j < SYS_N / 8; j++) {
-            mat[i][j] = 0;
+          mat[MI(i , j ,SYS_N / 8)] = 0;
         }
     }
 
@@ -108,7 +137,7 @@ int pk_gen(unsigned char *pk, unsigned char *sk, const uint32_t *perm, int16_t *
                 b <<= 1;
                 b |= (inv[j + 0] >> k) & 1;
 
-                mat[ i * GFBITS + k ][ j / 8 ] = b;
+                mat[MI( i * GFBITS + k, j / 8,SYS_N / 8)] = b;
             }
         }
 
@@ -118,8 +147,8 @@ int pk_gen(unsigned char *pk, unsigned char *sk, const uint32_t *perm, int16_t *
 
     }
 
-    // gaussian elimination
-
+#if 1
+    // This entiry thing needs to be speedup.
     for (i = 0; i < (PK_NROWS + 7) / 8; i++) {
         for (j = 0; j < 8; j++) {
             row = i * 8 + j;
@@ -129,37 +158,51 @@ int pk_gen(unsigned char *pk, unsigned char *sk, const uint32_t *perm, int16_t *
             }
 
             for (k = row + 1; k < PK_NROWS; k++) {
-                mask = mat[ row ][ i ] ^ mat[ k ][ i ];
+                mask = mat[MI( row , i,SYS_N / 8) ] ^ mat[MI( k , i ,SYS_N / 8)];
                 mask >>= j;
                 mask &= 1;
                 mask = -mask;
 
+                // Each loop, k changes, row remains constant inside this loop.
+                // So out and mat remain constant inside each loop.
+                // Basically, load mat[row], use vread to load 
+
+                
+
+                VersatLineXOR(&(mat[row*(SYS_N/8)+0]), &(mat[row*(SYS_N/8)+0]), &(mat[k*(SYS_N/8)+0]), SYS_N / 8, mask);
+#if 0             
                 for (c = 0; c < SYS_N / 8; c++) {
-                    mat[ row ][ c ] ^= mat[ k ][ c ] & mask;
+                  
+                  //mat[MI( row , c ,SYS_N / 8)] ^= mat[MI( k , c ,SYS_N / 8) ] & mask;
                 }
+#endif             
             }
 
-            if ( uint64_is_zero_declassify((mat[ row ][ i ] >> j) & 1) ) { // return if not systematic
+            if ( uint64_is_zero_declassify((mat[ MI( row , i ,SYS_N / 8) ] >> j) & 1) ) { // return if not systematic
+                PopArena(mark);
                 return -1;
             }
 
             for (k = 0; k < PK_NROWS; k++) {
                 if (k != row) {
-                    mask = mat[ k ][ i ] >> j;
+                    mask = mat[MI( k , i ,SYS_N / 8)] >> j;
                     mask &= 1;
                     mask = -mask;
 
                     for (c = 0; c < SYS_N / 8; c++) {
-                        mat[ k ][ c ] ^= mat[ row ][ c ] & mask;
+                        mat[MI( k , c ,SYS_N / 8)] ^= mat[MI( row , c ,SYS_N / 8)] & mask;
                     }
                 }
             }
         }
     }
+#endif
 
     for (i = 0; i < PK_NROWS; i++) {
-        memcpy(pk + i * PK_ROW_BYTES, mat[i] + PK_NROWS / 8, PK_ROW_BYTES);
+      memcpy(pk + i * PK_ROW_BYTES, &(mat[i*(SYS_N/8)]) + PK_NROWS / 8, PK_ROW_BYTES);
     }
 
+    PopArena(mark);
     return 0;
 }
+#endif

@@ -138,7 +138,7 @@ class iob_soc_versat(iob_soc):
             {
                 "name": "SRAM_ADDR_W",
                 "type": "P",
-                "val": "16",
+                "val": "18",
                 "min": "1",
                 "max": "32",
                 "descr": "SRAM address width",

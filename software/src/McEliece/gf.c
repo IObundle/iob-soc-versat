@@ -6,6 +6,8 @@
 
 #include "params.h"
 
+#include "arena.h"
+
 gf gf_iszero(gf a) {
     uint32_t t = a;
 
@@ -111,8 +113,11 @@ gf gf_frac(gf den, gf num) {
 void GF_mul(gf *out, gf *in0, gf *in1) {
     int i, j;
 
-    gf prod[ SYS_T * 2 - 1 ];
-
+    int mark = MarkArena();
+  
+    //gf prod[ SYS_T * 2 - 1 ];
+    gf* prod = PushArray(SYS_T * 2 - 1,gf);
+  
     for (i = 0; i < SYS_T * 2 - 1; i++) {
         prod[i] = 0;
     }
@@ -134,4 +139,6 @@ void GF_mul(gf *out, gf *in0, gf *in1) {
     for (i = 0; i < SYS_T; i++) {
         out[i] = prod[i];
     }
+
+    PopArena(mark);
 }

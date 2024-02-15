@@ -12,11 +12,21 @@
 #include "randombytes.h"
 #include "util.h"
 
+#include "printf.h"
+#include "arena.h"
+
 static inline crypto_uint16 gf_is_zero_declassify(gf t) {
     crypto_uint16 mask = crypto_uint16_zero_mask(t);
     crypto_declassify(&mask, sizeof mask);
     return mask;
 }
+
+// Matrix Allocate
+#define MA(Y,X,TYPE) PushBytes(sizeof(TYPE) * (X) * (Y))
+// Matrix Index
+
+#define MI(Y,X,ROWSIZE) ((Y) * (ROWSIZE) + (X)) 
+//#define MI(Y,X,ROWSIZE) Y ][ X 
 
 /* input: f, element in GF((2^m)^t) */
 /* output: out, minimal polynomial of f */
@@ -24,61 +34,67 @@ static inline crypto_uint16 gf_is_zero_declassify(gf t) {
 int genpoly_gen(gf *out, gf *f) {
     int i, j, k, c;
 
-    gf mat[ SYS_T + 1 ][ SYS_T ];
+    int mark = MarkArena();
+  
+    gf* mat = MA(SYS_T + 1,SYS_T,gf); 
+    //gf mat[ SYS_T + 1 ][ SYS_T ];
+
     gf mask, inv, t;
 
     // fill matrix
-
-    mat[0][0] = 1;
+    mat[MI(0,0,SYS_T)] = 1;
 
     for (i = 1; i < SYS_T; i++) {
-        mat[0][i] = 0;
+      mat[MI(0,i,SYS_T)] = 0;
     }
 
     for (i = 0; i < SYS_T; i++) {
-        mat[1][i] = f[i];
+        mat[MI(1,i,SYS_T)] = f[i];
     }
 
     for (j = 2; j <= SYS_T; j++) {
-        GF_mul(mat[j], mat[j - 1], f);
+      //GF_mul(mat[j], mat[(j - 1)], f);
+      GF_mul(&mat[j * SYS_T], &mat[(j - 1) * SYS_T], f);
     }
-
-    // gaussian
-
+  
+    // TODO: Potential place to accelerate using Versat
     for (j = 0; j < SYS_T; j++) {
         for (k = j + 1; k < SYS_T; k++) {
-            mask = gf_iszero(mat[ j ][ j ]);
+            mask = gf_iszero(mat[MI(j,j,SYS_T)]);
 
             for (c = j; c < SYS_T + 1; c++) {
-                mat[ c ][ j ] ^= mat[ c ][ k ] & mask;
+                mat[MI(c,j,SYS_T)] ^= mat[MI(c,k,SYS_T)] & mask;
             }
 
         }
 
-        if ( gf_is_zero_declassify(mat[ j ][ j ]) ) { // return if not systematic
+        if ( gf_is_zero_declassify(mat[MI(j,j,SYS_T)]) ) { // return if not systematic
+            PopArena(mark);
             return -1;
         }
 
-        inv = gf_inv(mat[j][j]);
+        inv = gf_inv(mat[MI(j,j,SYS_T)]);
 
         for (c = j; c < SYS_T + 1; c++) {
-            mat[ c ][ j ] = gf_mul(mat[ c ][ j ], inv) ;
+            mat[MI(c,j,SYS_T) ] = gf_mul(mat[MI(c,j,SYS_T)], inv) ;
         }
 
         for (k = 0; k < SYS_T; k++) {
             if (k != j) {
-                t = mat[ j ][ k ];
+                t = mat[MI(j,k,SYS_T)];
 
                 for (c = j; c < SYS_T + 1; c++) {
-                    mat[ c ][ k ] ^= gf_mul(mat[ c ][ j ], t);
+                    mat[MI(c,k,SYS_T)] ^= gf_mul(mat[MI(c,j,SYS_T)], t);
                 }
             }
         }
     }
 
     for (i = 0; i < SYS_T; i++) {
-        out[i] = mat[ SYS_T ][ i ];
+        out[i] = mat[MI(SYS_T,i,SYS_T)];
     }
+
+    PopArena(mark);
 
     return 0;
 }

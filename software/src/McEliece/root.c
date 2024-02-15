@@ -6,8 +6,6 @@
 #include "gf.h"
 #include "params.h"
 
-#include <stdio.h>
-
 /* input: polynomial f and field element a */
 /* return f(a) */
 gf eval(gf *f, gf a) {

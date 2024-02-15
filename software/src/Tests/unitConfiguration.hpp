@@ -16,28 +16,67 @@ void IntSet(volatile void* buffer,int value,int byteSize){
 }
 
 #ifdef VERSAT_DEFINED_VRead
-void ConfigureSimpleVRead(VReadConfig* inst, int numberItems,int* memory){
+void ConfigureSimpleVReadBare(VReadConfig* inst){
    IntSet(inst,0,sizeof(VReadConfig));
 
    // Memory side
    inst->incrA = 1;
-   inst->perA = numberItems;
    inst->pingPong = 1;
-   inst->ext_addr = (iptr) memory;
-   inst->length = numberItems * sizeof(int);
 
    // B - versat side
    inst->iterB = 1;
    inst->incrB = 1;
-   inst->perB = numberItems;
    inst->dutyB = 1;
+}
+
+void ConfigureSimpleVReadShallow(VReadConfig* inst, int numberItems,int* memory){
+   //inst->enableRead = 1;
+
+   // Memory side
+   inst->perA = numberItems;
+   inst->ext_addr = (iptr) memory;
+   inst->length = numberItems * sizeof(int);
+
+   // B - versat side
+   inst->perB = numberItems;
+}
+
+void ConfigureSimpleVRead(VReadConfig* inst, int numberItems,int* memory){
+   ConfigureSimpleVReadBare(inst);
+   ConfigureSimpleVReadShallow(inst,numberItems,memory);
 }
 #endif
 
 #ifdef VERSAT_DEFINED_VWrite
-// Not being used for now.
+void ConfigureSimpleVWriteBare(VWriteConfig* inst){
+   IntSet(inst,0,sizeof(VWriteConfig));
+
+   // Write side
+   inst->incrA = 1;
+   inst->pingPong = 1;
+
+   // Memory side
+   inst->iterB = 1;
+   inst->dutyB = 1;
+   inst->incrB = 1;
+}
+
+void ConfigureSimpleVWriteShallow(VWriteConfig* inst, int numberItems,int* memory){
+   //inst->enableWrite = 1;
+
+   // Write side
+   inst->perA = numberItems;
+   inst->length = numberItems * sizeof(int);
+   inst->ext_addr = (iptr) memory;
+
+   // Memory side
+   inst->perB = numberItems;
+}
+
 void ConfigureSimpleVWrite(VWriteConfig* inst, int numberItems,int* memory){
    IntSet(inst,0,sizeof(VWriteConfig));
+
+   //inst->enableWrite = 1;
 
    // Write side
    inst->incrA = 1;
@@ -48,8 +87,8 @@ void ConfigureSimpleVWrite(VWriteConfig* inst, int numberItems,int* memory){
    inst->ext_addr = (iptr) memory;
 
    // Memory side
-   inst->iterB = numberItems;
-   inst->perB = 1;
+   inst->iterB = 1;
+   inst->perB = numberItems;
    inst->dutyB = 1;
    inst->incrB = 1;
 }
@@ -78,7 +117,7 @@ void ConfigureSimpleMemory(MemConfig* inst, int amountOfData){
    inst->perA = amountOfData;
    inst->dutyA = amountOfData;
    inst->incrA = 1;
-   inst->in0_wr = 1;
+   //inst->in0_wr = 1;
 }
 
 void ConfigureMemoryReceive(MemConfig* inst, int amountOfData){

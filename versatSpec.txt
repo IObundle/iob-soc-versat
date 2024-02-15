@@ -2463,15 +2463,29 @@ module TestConfigOrder(){
 }
 
 module VectorLikeOperation(){
-   Mem mat; // mat[row]
-   VRead row; // mat[k]
-   Mem output; 
+   ReadWriteMem mat;
+   VRead row;
+   // VWrite writer;
    Const mask;
 #
    a = row & mask;
    b = mat ^ a;
 
-   b -> output;
+   b -> mat;
+   // b -> writer;
+}
+
+module VectorLikeOperation2(){
+   ReadWriteMem mat; // mat[row]
+   VRead row; // mat[k]
+   //Mem output; 
+   Const mask;
+#
+   a = row & mask;
+   b = mat ^ a;
+
+   b -> mat;
+   //b -> output;
 }
 
 module SimpleFFTCalc(even,odd){

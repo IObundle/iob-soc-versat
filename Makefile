@@ -12,7 +12,7 @@ TESTS:= M_Stage F_Stage SimpleCGRA AddRoundKey LookupTable MemToMem VReadToVWrit
 
 VCD ?= 1
 INIT_MEM ?= 1
-USE_EXTMEM ?= 0
+USE_EXTMEM ?= 1
 
 ifeq ($(INIT_MEM),1)
 SETUP_ARGS += INIT_MEM
@@ -75,6 +75,13 @@ fast:
 
 fast-pc-emul:
 	nix-shell --run "make fast TEST=$(TEST); make -C ../$(CORE)_V0.70_$(TEST) pc-emul-test"
+
+fast-software-emul:
+	cp -R ./software/src/ ../$(CORE)_V0.70_$(TEST)/software/
+	cp ./software/src/Tests/$(TEST).cpp ../$(CORE)_V0.70_$(TEST)/software/src/test.cpp
+	cp ./software/src/Tests/testbench.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
+	cp ./software/src/Tests/unitConfiguration.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
+	make -C ../$(CORE)_V0.70_$(TEST) pc-emul-test
 
 # Multi test rules
 

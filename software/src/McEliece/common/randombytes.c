@@ -54,7 +54,6 @@ THE SOFTWARE.
 # include <fcntl.h>
 # include <poll.h>
 # include <stdint.h>
-# include <stdio.h>
 # include <sys/ioctl.h>
 # if defined(__linux__) && defined(__GLIBC__) && ((__GLIBC__ > 2) || (__GLIBC_MINOR__ > 24))
 #  define USE_GLIBC

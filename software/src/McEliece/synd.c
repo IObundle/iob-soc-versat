@@ -7,8 +7,6 @@
 #include "params.h"
 #include "root.h"
 
-#include <stdio.h>
-
 /* input: Goppa polynomial f, support L, received word r */
 /* output: out, the syndrome of length 2t */
 void synd(gf *out, gf *f, gf *L, const unsigned char *r) {

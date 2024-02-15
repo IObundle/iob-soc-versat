@@ -3,7 +3,6 @@
 */
 
 #include "decrypt.h"
-#include <stdio.h>
 
 #include "benes.h"
 #include "bm.h"
