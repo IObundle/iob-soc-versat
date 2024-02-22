@@ -58,7 +58,9 @@ class iob_soc_versat(iob_soc):
     @classmethod
     def _create_instances(cls):
         super()._create_instances()
-        # Verilog modules instances if we have them in the setup list (they may not be in the list if a subclass decided to remove them).
+
+        if iob_vexriscv in cls.submodule_list:
+            cls.cpu = iob_vexriscv("cpu_0")
         if cls.versat_type in cls.submodule_list:
             cls.versat = cls.versat_type("VERSAT0", "Versat accelerator")
             cls.peripherals.append(cls.versat)
@@ -85,6 +87,7 @@ class iob_soc_versat(iob_soc):
                 {"interface": "iBus_axi_m_port"},
                 {"interface": "dBus_axi_m_portmap"},
                 {"interface": "iBus_axi_m_portmap"},
+                iob_vexriscv,
                 cls.versat_type,
                 iob_reset_sync,
             ]
@@ -92,16 +95,15 @@ class iob_soc_versat(iob_soc):
         )
 
         # Remove iob_picorv32 because we want vexriscv
-        """
-        i = 0
-        while i < len(cls.submodule_list):
-            if type(cls.submodule_list[i]) == type and cls.submodule_list[i].name in [
-                "iob_picorv32"
-            ]:
-                cls.submodule_list.pop(i)
-                continue
-            i += 1
-        """
+        # i = 0
+        # while i < len(cls.submodule_list):
+        #    if type(cls.submodule_list[i]) == type and cls.submodule_list[i].name in [
+        #        "iob_picorv32",
+        #        # "iob_cache",
+        #    ]:
+        #        cls.submodule_list.pop(i)
+        #        continue
+        #    i += 1
 
     @classmethod
     def _post_setup(cls):

@@ -1,3 +1,5 @@
+#if 0
+
 #include "testbench.hpp"
 #include "unitConfiguration.hpp"
 
@@ -138,44 +140,43 @@ void int_to_byte(int *in, uint8_t *out, int size) {
    return;
 }
 
-void Versat_init_AES(AES256WithIterativeConfig* aes) {
-   SHA_AES_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+void Versat_init_AES(ReadWriteAES256Config* aes) {
+   *aes = {};
 
-   FillRoundPairAndKey(addr.simple.mk0.roundPairAndKey);
-   FillMainRound(addr.simple.round0);
-   FillKeySchedule(addr.simple.key6);
-   FillSBox(addr.simple.subBytes);
+   ActivateMergedAccelerator(MergeType::ReadWriteAES256);
 
-   aes->rcon0.constant = 0x01;
-   aes->rcon1.constant = 0x02;
-   aes->rcon2.constant = 0x04;
-   aes->rcon3.constant = 0x08;
-   aes->rcon4.constant = 0x10;
-   aes->rcon5.constant = 0x20;
-   aes->rcon6.constant = 0x40;
+   SHA_AESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+
+   FillRoundPairAndKey(addr.aes.mk0.roundPairAndKey);
+   FillMainRound(addr.aes.round0);
+   FillKeySchedule(addr.aes.key6);
+   FillSBox(addr.aes.subBytes);
+
+   aes->aes.rcon0.constant = 0x01;
+   aes->aes.rcon1.constant = 0x02;
+   aes->aes.rcon2.constant = 0x04;
+   aes->aes.rcon3.constant = 0x08;
+   aes->aes.rcon4.constant = 0x10;
+   aes->aes.rcon5.constant = 0x20;
+   aes->aes.rcon6.constant = 0x40;
 }
 
 void VersatAES(uint8_t *result, uint8_t *cypher, uint8_t *key) {
-   int cypher_int[AES_BLK_SIZE] = {0};
-   int key_int[AES_KEY_SIZE] = {0};
-   int result_int[AES_BLK_SIZE] = {0};
+   static int cypher_int[AES_BLK_SIZE] = {0};
+   static int key_int[AES_KEY_SIZE] = {0};
+   static int result_int[AES_BLK_SIZE] = {0};
 
    byte_to_int(cypher, cypher_int, AES_BLK_SIZE);
    byte_to_int(key, key_int, AES_KEY_SIZE);
 
-   int i = 0;
-   for(i = 0; i < AES_BLK_SIZE; i++){
-      SimpleInputStart[i] = cypher_int[i];
-   }
-   for(i = 0; i < AES_KEY_SIZE; i++){
-      SimpleInputStart[i+AES_BLK_SIZE] = key_int[i];
-   }
+   SHA_AESConfig* config = (SHA_AESConfig*) accelConfig;
+   ReadWriteAES256Config* con = (ReadWriteAES256Config*) &config->ReadWriteAES256;
 
-   RunAccelerator(1);
+   ConfigureSimpleVRead(&con->cypher,AES_BLK_SIZE,cypher_int);
+   ConfigureSimpleVRead(&con->key,AES_KEY_SIZE,key_int);
+   ConfigureSimpleVWrite(&con->results,AES_BLK_SIZE,result_int);
 
-   for(i = 0; i < AES_BLK_SIZE; i++){
-      result_int[i] = SimpleOutputStart[i];
-   }
+   RunAccelerator(3);
 
    int_to_byte(result_int, result, AES_BLK_SIZE);
 
@@ -205,20 +206,20 @@ static void store_bigendian_32(uint8_t *x, uint32_t u) {
 
 static size_t versat_crypto_hashblocks_sha256(const uint8_t *in, size_t inlen) {
    while (inlen >= 64) {
-      ACCEL_TOP_simple_MemRead_row_ext_addr = (iptr) in;
+      ACCEL_TOP_MemRead_key_ext_addr = (iptr) in;
 
       // Loads data + performs work
       RunAccelerator(1);
 
       if(!initVersat){
-         VersatUnitWrite(TOP_simple_State_s0_reg_addr,0,initialStateValues[0]);
-         VersatUnitWrite(TOP_simple_State_s1_reg_addr,0,initialStateValues[1]);
-         VersatUnitWrite(TOP_simple_State_s2_reg_addr,0,initialStateValues[2]);
-         VersatUnitWrite(TOP_simple_State_s3_reg_addr,0,initialStateValues[3]);
-         VersatUnitWrite(TOP_simple_State_s4_reg_addr,0,initialStateValues[4]);
-         VersatUnitWrite(TOP_simple_State_s5_reg_addr,0,initialStateValues[5]);
-         VersatUnitWrite(TOP_simple_State_s6_reg_addr,0,initialStateValues[6]);
-         VersatUnitWrite(TOP_simple_State_s7_reg_addr,0,initialStateValues[7]);
+         VersatUnitWrite(TOP_State_s0_reg_addr,0,initialStateValues[0]);
+         VersatUnitWrite(TOP_State_s1_reg_addr,0,initialStateValues[1]);
+         VersatUnitWrite(TOP_State_s2_reg_addr,0,initialStateValues[2]);
+         VersatUnitWrite(TOP_State_s3_reg_addr,0,initialStateValues[3]);
+         VersatUnitWrite(TOP_State_s4_reg_addr,0,initialStateValues[4]);
+         VersatUnitWrite(TOP_State_s5_reg_addr,0,initialStateValues[5]);
+         VersatUnitWrite(TOP_State_s6_reg_addr,0,initialStateValues[6]);
+         VersatUnitWrite(TOP_State_s7_reg_addr,0,initialStateValues[7]);
          initVersat = true;
       }
 
@@ -273,19 +274,21 @@ void VersatSHA(uint8_t *out, const uint8_t *in, size_t inlen) {
 
    RunAccelerator(1);
 
-   store_bigendian_32(&out[0*4],(uint32_t) VersatUnitRead(TOP_simple_State_s0_reg_addr,0));
-   store_bigendian_32(&out[1*4],(uint32_t) VersatUnitRead(TOP_simple_State_s1_reg_addr,0));
-   store_bigendian_32(&out[2*4],(uint32_t) VersatUnitRead(TOP_simple_State_s2_reg_addr,0));
-   store_bigendian_32(&out[3*4],(uint32_t) VersatUnitRead(TOP_simple_State_s3_reg_addr,0));
-   store_bigendian_32(&out[4*4],(uint32_t) VersatUnitRead(TOP_simple_State_s4_reg_addr,0));
-   store_bigendian_32(&out[5*4],(uint32_t) VersatUnitRead(TOP_simple_State_s5_reg_addr,0));
-   store_bigendian_32(&out[6*4],(uint32_t) VersatUnitRead(TOP_simple_State_s6_reg_addr,0));
-   store_bigendian_32(&out[7*4],(uint32_t) VersatUnitRead(TOP_simple_State_s7_reg_addr,0));
+   store_bigendian_32(&out[0*4],(uint32_t) VersatUnitRead(TOP_State_s0_reg_addr,0));
+   store_bigendian_32(&out[1*4],(uint32_t) VersatUnitRead(TOP_State_s1_reg_addr,0));
+   store_bigendian_32(&out[2*4],(uint32_t) VersatUnitRead(TOP_State_s2_reg_addr,0));
+   store_bigendian_32(&out[3*4],(uint32_t) VersatUnitRead(TOP_State_s3_reg_addr,0));
+   store_bigendian_32(&out[4*4],(uint32_t) VersatUnitRead(TOP_State_s4_reg_addr,0));
+   store_bigendian_32(&out[5*4],(uint32_t) VersatUnitRead(TOP_State_s5_reg_addr,0));
+   store_bigendian_32(&out[6*4],(uint32_t) VersatUnitRead(TOP_State_s6_reg_addr,0));
+   store_bigendian_32(&out[7*4],(uint32_t) VersatUnitRead(TOP_State_s7_reg_addr,0));
 
    initVersat = false; // At the end of each run, reset
 }
 
 void InitVersatSHA(SHAConfig* sha){
+   ActivateMergedAccelerator(MergeType::SHA);
+
    ConfigureSimpleVRead(&sha->MemRead,16,nullptr);
 
    ACCEL_Constants_mem_iterA = 1;
@@ -296,23 +299,23 @@ void InitVersatSHA(SHAConfig* sha){
    ACCEL_Constants_mem_shiftA = 0;
 
    for(int ii = 0; ii < 16; ii++){
-      VersatUnitWrite(TOP_simple_cMem0_mem_addr,ii,kConstants[0][ii]);
+      VersatUnitWrite(TOP_cMem0_mem_addr,ii,kConstants[0][ii]);
    }
    for(int ii = 0; ii < 16; ii++){
-      VersatUnitWrite(TOP_simple_cMem1_mem_addr,ii,kConstants[1][ii]);
+      VersatUnitWrite(TOP_cMem1_mem_addr,ii,kConstants[1][ii]);
    }
    for(int ii = 0; ii < 16; ii++){
-      VersatUnitWrite(TOP_simple_cMem2_mem_addr,ii,kConstants[2][ii]);
+      VersatUnitWrite(TOP_cMem2_mem_addr,ii,kConstants[2][ii]);
    }
    for(int ii = 0; ii < 16; ii++){
-      VersatUnitWrite(TOP_simple_cMem3_mem_addr,ii,kConstants[3][ii]);
+      VersatUnitWrite(TOP_cMem3_mem_addr,ii,kConstants[3][ii]);
    }
 
-   ACCEL_TOP_simple_Swap_enabled = 1;
+   ACCEL_TOP_Swap_enabled = 1;
 }
 
 void SingleTest(Arena* arena){
-   SHA_AES_SimpleConfig* config = (SHA_AES_SimpleConfig*) accelConfig;
+   SHA_AESConfig* config = (SHA_AESConfig*) accelConfig;
 
    #if 1
    // SHA
@@ -320,7 +323,7 @@ void SingleTest(Arena* arena){
    unsigned char msg_64[] = { 0x5a, 0x86, 0xb7, 0x37, 0xea, 0xea, 0x8e, 0xe9, 0x76, 0xa0, 0xa2, 0x4d, 0xa6, 0x3e, 0x7e, 0xd7, 0xee, 0xfa, 0xd1, 0x8a, 0x10, 0x1c, 0x12, 0x11, 0xe2, 0xb3, 0x65, 0x0c, 0x51, 0x87, 0xc2, 0xa8, 0xa6, 0x50, 0x54, 0x72, 0x08, 0x25, 0x1f, 0x6d, 0x42, 0x37, 0xe6, 0x61, 0xc7, 0xbf, 0x4c, 0x77, 0xf3, 0x35, 0x39, 0x03, 0x94, 0xc3, 0x7f, 0xa1, 0xa9, 0xf9, 0xbe, 0x83, 0x6a, 0xc2, 0x85, 0x09 };
    static const int HASH_SIZE = (256/8);
    
-   InitVersatSHA(&config->simple.SHA);
+   InitVersatSHA(&config->SHA);
 
    unsigned char digest[256];
    for(int i = 0; i < 256; i++){
@@ -347,7 +350,7 @@ void SingleTest(Arena* arena){
 
    uint8_t result[AES_BLK_SIZE] = {};
 
-   Versat_init_AES(&config->simple.AES256WithIterative);
+   Versat_init_AES(&config->ReadWriteAES256);
 
    VersatAES(result,plain,key);
 
@@ -393,3 +396,8 @@ void SingleTest(Arena* arena){
 extern "C" void VersatLineXOR(uint8_t* out, uint8_t *mat, uint8_t *row, int n_cols, uint8_t mask){
    
 }
+
+#endif
+
+struct Arena;
+void SingleTest(Arena* arena){};

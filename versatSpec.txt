@@ -961,6 +961,15 @@ module Constants(){
    mem -> out:0;
 }
 
+/*
+module SHA(){
+   VRead MemRead;
+   Reg output;
+#
+   MemRead -> output;
+}
+*/
+
 module SHA(){
    VRead MemRead;
    SwapEndian Swap;
@@ -971,7 +980,6 @@ module SHA(){
    xunitM M0;
    xunitM M1;
    xunitM M2;
-   //Iterative_SHA_F iF0;
    Constants cMem0;
    Constants cMem1;
    Constants cMem2;
@@ -2465,27 +2473,17 @@ module TestConfigOrder(){
 module VectorLikeOperation(){
    ReadWriteMem mat;
    VRead row;
-   // VWrite writer;
+   VWrite writer;
    Const mask;
 #
    a = row & mask;
    b = mat ^ a;
 
-   b -> mat;
-   // b -> writer;
-}
-
-module VectorLikeOperation2(){
-   ReadWriteMem mat; // mat[row]
-   VRead row; // mat[k]
-   //Mem output; 
-   Const mask;
-#
-   a = row & mask;
-   b = mat ^ a;
+   c = mat & mask;
+   d = row ^ c;
 
    b -> mat;
-   //b -> output;
+   d -> writer;
 }
 
 module SimpleFFTCalc(even,odd){
@@ -3401,5 +3399,44 @@ module Variety2(x,y,z){
 
 // merge VarietyMerge = Variety1 | Variety2;
 
-merge SHA_AES = SHA | AES256WithIterative | VectorLikeOperation;
+module Simple(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,k10,k11,k12,k13,k14,k15,k16,k17,k18,k19,k1a,k1b,k1c,k1d,k1e,k1f){
+#
+   w0 = x0 & k0 & k1;
+   w1 = x1 & k2 & k3;
+   w2 = x2 & k4 & k5;
+   w3 = x3 & k6 & k7;
+   w4 = x4 & k8 & k9;
+   w5 = x5 & ka & kb;
+   w6 = x6 & kc & kd;
+   w7 = x7 & ke & kf;
+   w8 = x8 & k10 & k11;
+   w9 = x9 & k12 & k13;
+   wa = xa & k14 & k15;
+   wb = xb & k16 & k17;
+   wc = xc & k18 & k19;
+   wd = xd & k1a & k1b;
+   we = xe & k1c & k1d;
+   wf = xf & k1e & k1f;
+
+   {w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,wa,wb,wc,wd,we,wf} -> out:0..15;
+}
+
+module ReadWriteAES256(){
+   VRead cypher;
+   VRead key;
+   VWrite results;
+   Merge merge;
+   // Simple aes;
+   AES256WithIterative aes;
+#
+   
+   cypher[0..15] -> aes:0..15;
+   key[0..31] -> aes:16..47;
+
+   aes:0..15 -> merge:0..15;
+
+   merge -> results;
+}
+
+merge SHA_AES = SHA | ReadWriteAES256 | VectorLikeOperation;
 

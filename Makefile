@@ -48,7 +48,10 @@ fpga-run:
 	make -C ../$(CORE)_V0.70_$(TEST)/ fpga-run BOARD=$(BOARD)
 
 fpga-run-only:
-	+nix-shell --run "make -C ../$(CORE)_V0.70_$(TEST)/ fpga-run BOARD=$(BOARD)"
+	cp ./software/src/Tests/$(TEST).cpp ../$(CORE)_V0.70_$(TEST)/software/src/test.cpp
+	cp ./software/src/Tests/testbench.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
+	cp ./software/src/Tests/unitConfiguration.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
+	+nix-shell --run "make -C ../$(CORE)_V0.70_$(TEST)/ fpga-fw-build fpga-run BOARD=$(BOARD)"
 
 sim-build:
 	+nix-shell --run 'make setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-build SIMULATOR=$(SIMULATOR) VCD=$(VCD)'

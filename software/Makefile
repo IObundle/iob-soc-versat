@@ -54,7 +54,7 @@ EMUL_INCLUDES ?=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
 
 EMUL_HDR+=$(wildcard src/*_emul.h)
 
-EMUL_SRC+=$(wildcard src/*_emul.c) $(wildcard src/McEliece/*.c) $(wildcard src/McEliece/common/*.c)
+EMUL_SRC+=$(wildcard src/*_emul.c) #$(wildcard src/McEliece/*.c) $(wildcard src/McEliece/common/*.c)
 
 #########################################
 #            Embedded targets           #
@@ -100,7 +100,7 @@ build_emul: fw_emul
 	@echo "build"
 
 #board client command
-BOARD_GRAB_CMD ?=../scripts/board_client.py grab 1000
+BOARD_GRAB_CMD ?=../scripts/board_client.py grab 10000
 
 test.log: build_emul
 	$(BOARD_GRAB_CMD) -s './fw_emul' -c '$(CONSOLE_CMD)'

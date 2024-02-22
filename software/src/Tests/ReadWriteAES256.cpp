@@ -139,30 +139,37 @@ void int_to_byte(int *in, uint8_t *out, int size) {
 }
 
 void Versat_init_AES() {
-   AES256WithIterative_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   ReadWriteAES256Addr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   FillRoundPairAndKey(addr.simple.mk0.roundPairAndKey);
-   FillMainRound(addr.simple.round0);
-   FillKeySchedule(addr.simple.key6);
-   FillSBox(addr.simple.subBytes);
+   FillRoundPairAndKey(addr.aes.mk0.roundPairAndKey);
+   FillMainRound(addr.aes.round0);
+   FillKeySchedule(addr.aes.key6);
+   FillSBox(addr.aes.subBytes);
 
-   ACCEL_TOP_simple_rcon0_constant = 0x01;
-   ACCEL_TOP_simple_rcon1_constant = 0x02;
-   ACCEL_TOP_simple_rcon2_constant = 0x04;
-   ACCEL_TOP_simple_rcon3_constant = 0x08;
-   ACCEL_TOP_simple_rcon4_constant = 0x10;
-   ACCEL_TOP_simple_rcon5_constant = 0x20;
-   ACCEL_TOP_simple_rcon6_constant = 0x40;
+   ACCEL_TOP_aes_rcon0_constant = 0x01;
+   ACCEL_TOP_aes_rcon1_constant = 0x02;
+   ACCEL_TOP_aes_rcon2_constant = 0x04;
+   ACCEL_TOP_aes_rcon3_constant = 0x08;
+   ACCEL_TOP_aes_rcon4_constant = 0x10;
+   ACCEL_TOP_aes_rcon5_constant = 0x20;
+   ACCEL_TOP_aes_rcon6_constant = 0x40;
 }
 
 void VersatAES(uint8_t *result, uint8_t *cypher, uint8_t *key) {
-   int cypher_int[AES_BLK_SIZE] = {0};
-   int key_int[AES_KEY_SIZE] = {0};
-   int result_int[AES_BLK_SIZE] = {0};
+   static int cypher_int[AES_BLK_SIZE] = {0};
+   static int key_int[AES_KEY_SIZE] = {0};
+   static int result_int[AES_BLK_SIZE] = {0};
 
    byte_to_int(cypher, cypher_int, AES_BLK_SIZE);
    byte_to_int(key, key_int, AES_KEY_SIZE);
 
+   ReadWriteAES256Config* con = (ReadWriteAES256Config*) accelConfig;
+
+   ConfigureSimpleVRead(&con->cypher,AES_BLK_SIZE,cypher_int);
+   ConfigureSimpleVRead(&con->key,AES_KEY_SIZE,key_int);
+   ConfigureSimpleVWrite(&con->results,AES_BLK_SIZE,result_int);
+
+#if 0
    int i = 0;
    for(i = 0; i < AES_BLK_SIZE; i++){
       SimpleInputStart[i] = cypher_int[i];
@@ -170,15 +177,69 @@ void VersatAES(uint8_t *result, uint8_t *cypher, uint8_t *key) {
    for(i = 0; i < AES_KEY_SIZE; i++){
       SimpleInputStart[i+AES_BLK_SIZE] = key_int[i];
    }
+#endif
 
-   RunAccelerator(1);
+   RunAccelerator(3);
 
+#if 0
    for(i = 0; i < AES_BLK_SIZE; i++){
       result_int[i] = SimpleOutputStart[i];
    }
+#endif
 
    int_to_byte(result_int, result, AES_BLK_SIZE);
+
+   return;
 }
+
+#if 0
+char* GetHexadecimal(const char* text,char* buffer, int str_size){
+   int i;
+   for(i = 0; i< str_size; i++){
+      int ch = (int) ((unsigned char) text[i]);
+
+      buffer[i*2] = GetHexadecimalChar(ch / 16);
+      buffer[i*2+1] = GetHexadecimalChar(ch % 16);
+   }
+   buffer[(i+1)*2] = '\0';
+
+   return buffer;
+}
+#endif
+
+#if 0
+static char HexToInt(char ch){
+   if('0' <= ch && ch <= '9'){
+      return (ch - '0');
+   } else if('a' <= ch && ch <= 'f'){
+      return ch - 'a' + 10;
+   } else if('A' <= ch && ch <= 'F'){
+      return ch - 'A' + 10;
+   } else {
+      printf("Error, invalid character inside hex string:%c",ch);
+      return 0;
+   }
+}
+
+// TODO: Move this to testbench. It's useful to have
+// Make sure that buffer is capable of storing the whole thing. Returns number of bytes inserted
+int HexStringToHex(char* buffer,const char* str){
+   int inserted = 0;
+   for(int i = 0; ; i += 2){
+      char upper = str[i];
+      char lower = str[i+1];
+
+      if(upper == '\0' || lower == '\0'){
+         if(upper != '\0') printf("Warning: HexString was not divisible by 2\n");
+         break;
+      }   
+
+      buffer[inserted++] = HexToInt(upper) * 16 + HexToInt(lower);
+   }
+
+   return inserted;
+}
+#endif
 
 void SingleTest(Arena* arena){
    uint8_t key[128] = {};

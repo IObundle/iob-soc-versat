@@ -1,3 +1,5 @@
+#if 1
+
 #include "bsp.h"
 #include "iob-timer.h"
 #include "iob-uart.h"
@@ -120,8 +122,6 @@ char* testSecretGood[] = {
 
 #define TESTS 2
 
-int secondTest = 0;
-
 int main(int argc,char* argv[]){
    char pass_string[] = "Test passed!";
    char fail_string[] = "Test failed!";
@@ -135,10 +135,9 @@ int main(int argc,char* argv[]){
 
    uart_puts("\n\n\nGonna run test\n\n\n");
    
-   //int result = RunTest(VERSAT0_BASE);
+   int result = RunTest(VERSAT0_BASE);
 
-#if 1
-   // McEliece
+#if 0   // McEliece
    {
     InitMcEliece(VERSAT0_BASE);
 
@@ -154,10 +153,6 @@ int main(int argc,char* argv[]){
     printf("Init arena\n");
 
     for(int test = 0; test < TESTS; test++){
-      if(test == 1){
-         secondTest = 1;
-      }
-
        HexStringToHex(seed,testSeeds[test]);
 
        nist_kat_init(seed, NULL, 256);
@@ -230,3 +225,142 @@ int main(int argc,char* argv[]){
 
    return 0;
 }
+
+#else 
+
+#include "bsp.h"
+#include "iob-timer.h"
+#include "iob-uart.h"
+#include "iob_soc_versat_conf.h"
+#include "iob_soc_versat_periphs.h"
+#include "iob_soc_versat_system.h"
+#include "printf.h"
+#include <string.h>
+
+#include "arena.h"
+
+// MARKED
+// McEliece
+#include "api.h"
+//#include "nistkatrng.h"
+
+void nist_kat_init(unsigned char *entropy_input, unsigned char *personalization_string, int security_strength);
+
+#ifdef __cplusplus
+extern "C"{
+#endif
+void InitMcEliece(int versatBase); // MARKED
+
+int RunTest(int versatBase);
+#ifdef __cplusplus
+}
+#endif
+
+#if 1
+// MARKED
+static char HexToInt(char ch){
+   if('0' <= ch && ch <= '9'){
+      return (ch - '0');
+   } else if('a' <= ch && ch <= 'f'){
+      return ch - 'a' + 10;
+   } else if('A' <= ch && ch <= 'F'){
+      return ch - 'A' + 10;
+   } else {
+      printf("Error, invalid character inside hex string:%c",ch);
+      return 0;
+   }
+}
+
+// Make sure that buffer is capable of storing the whole thing. Returns number of bytes inserted
+int HexStringToHex(char* buffer,const char* str){
+   int inserted = 0;
+   for(int i = 0; ; i += 2){
+      char upper = str[i];
+      char lower = str[i+1];
+
+      if(upper == '\0' || lower == '\0'){
+         if(upper != '\0') printf("Warning: HexString was not divisible by 2\n");
+         break;
+      }   
+
+      buffer[inserted++] = HexToInt(upper) * 16 + HexToInt(lower);
+   }
+
+   return inserted;
+}
+
+char GetHexadecimalChar(unsigned char value){
+  if(value < 10){
+    return '0' + value;
+  } else{
+    return 'A' + (value - 10);
+  }
+}
+
+char* GetHexadecimal(const char* text,char* buffer,int byte_size){
+  int i = 0;
+  unsigned char* view = (unsigned char*) text;
+  for(; i< byte_size; i++){
+    buffer[i*2] = GetHexadecimalChar(view[i] / 16);
+    buffer[i*2+1] = GetHexadecimalChar(view[i] % 16);
+  }
+
+  buffer[i*2] = '\0';
+
+  return buffer;
+}
+#endif
+
+int main(int argc,char* argv[]){
+   char pass_string[] = "Test passed!";
+   char fail_string[] = "Test failed!";
+
+   // init timer
+   timer_init(TIMER0_BASE);
+
+   // init uart
+   uart_init(UART0_BASE, FREQ / BAUD);
+   printf_init(&uart_putc);
+
+   uart_puts("\n\n\nGonna run test\n\n\n");
+   
+   versat_init(VERSAT0_BASE);
+
+   // McEliece
+   {
+      unsigned char public_key[PQCLEAN_MCELIECE348864_CLEAN_CRYPTO_PUBLICKEYBYTES];
+      unsigned char secret_key[PQCLEAN_MCELIECE348864_CLEAN_CRYPTO_SECRETKEYBYTES];
+
+      unsigned char seed[48];
+
+      HexStringToHex(seed,"061550234D158C5EC95595FE04EF7A25767F2E24CC2BC479D09D86DC9ABCFDE7056A8C266F9EF97ED08541DBD2E1FFA1");
+
+      InitArena(4*1024*1024); // 4 megabytes should suffice
+
+      nist_kat_init(seed, NULL, 256);
+        
+      // McEliece Key Pair
+      PQCLEAN_MCELIECE348864_CLEAN_crypto_kem_keypair(public_key, secret_key);
+
+      unsigned char public_key_buffer[PQCLEAN_MCELIECE348864_CLEAN_CRYPTO_PUBLICKEYBYTES * 2 + 1];
+      unsigned char secret_key_buffer[PQCLEAN_MCELIECE348864_CLEAN_CRYPTO_SECRETKEYBYTES * 2 + 1];
+
+      GetHexadecimal(public_key,public_key_buffer,PQCLEAN_MCELIECE348864_CLEAN_CRYPTO_PUBLICKEYBYTES);
+      GetHexadecimal(secret_key,secret_key_buffer,PQCLEAN_MCELIECE348864_CLEAN_CRYPTO_SECRETKEYBYTES);
+
+      public_key_buffer[100] = '\0';
+      secret_key_buffer[100] = '\0';
+
+      printf("%s\n",public_key_buffer);
+      printf("%s\n","C5ED9AF0EEA0D4ADEA66D1A2A2F614E05500FB4344221FAA9135B50600BB8C5652C79FA603A2BC60EE8481D457C2CD81B21C\n");
+      printf("%s\n",secret_key_buffer);
+      printf("%s\n","5B815C890117893D8BB8E886F63A78CE2D5F58342D703348CB95539E14B9A719FFFFFFFF00000000F7066E0E5103160E7600\n");
+   }
+
+   printf("Gonna call uart finish\n");
+   uart_finish();
+
+   return 0;
+}
+
+#endif

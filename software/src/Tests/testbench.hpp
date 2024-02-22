@@ -396,13 +396,13 @@ extern "C" int RunTest(int versatBase){
   Arena arenaInst = InitArena(Megabyte(1));
 #else
   Arena arenaInst = {};
-  arenaInst.mem = (Byte*) malloc(Kilobyte(8));
-  arenaInst.totalAllocated = Kilobyte(8);
+  arenaInst.totalAllocated = Kilobyte(64);
+  arenaInst.mem = (Byte*) malloc(arenaInst.totalAllocated);
 #endif
 
   Arena* arena = &arenaInst;
-  expectedArena = SubArena(arena,Kilobyte(2));
-  gotArena      = SubArena(arena,Kilobyte(2));
+  expectedArena = SubArena(arena,Kilobyte(16));
+  gotArena      = SubArena(arena,Kilobyte(16));
 
   SingleTest(arena);
 
@@ -454,9 +454,9 @@ extern "C" int RunTest(int versatBase){
   if(expectedArena.used == 0 || gotArena.used == 0){
     printf("(0 samples)\n");
   } else if(differentIndexes && !differentValues){
-    printf("(%d/%d)\n",gotIndex,expectedIndex);
+    printf("(%d Got/%d Expected)\n",gotIndex,expectedIndex);
   } else if(differentValues){
-    printf("(%d/%d)\n",gotIndex,expectedIndex);
+    printf("(%d Got/%d Expected)\n",gotIndex,expectedIndex);
 
     printf("Obtained different values for %d cases!\n",differentValuesCount);
 

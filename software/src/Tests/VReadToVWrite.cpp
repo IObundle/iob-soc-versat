@@ -1,5 +1,7 @@
 #include "testbench.hpp"
 
+#include "unitConfiguration.hpp"
+
 #include <type_traits>
 
 // Given a ptr returns it, given an array returns the pointer type
@@ -18,57 +20,70 @@ struct CollapseArray<T[N]>{
 
 #define ADD_BYTE_TO_PTR(PTR,BYTES) ((CollapseArray<decltype(PTR)>::type) (((char*) PTR) + BYTES))
 
-#define SIZE 8
+#define SIZE 1234
+//#define SIZE 1536
 
 void SingleTest(Arena* arena){
-  int* outputBuffer = (int*) PushBytes(arena,sizeof(int) * SIZE * 2);
   int* inputBuffer = (int*) PushBytes(arena,sizeof(int) * SIZE * 2);
+  int* outputBuffer = (int*) PushBytes(arena,sizeof(int) * SIZE * 2);
+
+  VReadToVWriteConfig* con = (VReadToVWriteConfig*) accelConfig;
 
   for(int i = 0; i < 4; i++){
     printf("Loop: %d\n",i);
-    int* output = &outputBuffer[i];
     int* input = &inputBuffer[i];
+    int* output = &outputBuffer[i];
 
-    printf("%p %p %p\n",arena->mem,output,input);
+    printf("%p %p %p\n",arena->mem,input,output);
 
     for(int i = 0; i < SIZE * 2; i++){
       input[i] = i + 1;
     }
-    
+
+    printf("%d\n",0);
+  
     int numberItems = SIZE;
+    ConfigureSimpleVRead(&con->read,SIZE,input);
+    printf("%d\n",1);
+    ConfigureSimpleVWrite(&con->write,SIZE,output);
+    
+    con->write.enableWrite = 0;
 
-    // Read side
-    ACCEL_TOP_read_incrA = 1;
-    ACCEL_TOP_read_ext_addr = (iptr) input;
-    ACCEL_TOP_read_perA = numberItems;
-    ACCEL_TOP_read_length = numberItems * sizeof(int);
-    ACCEL_TOP_read_pingPong = 1;
-   
-    // Dataflow side
-    ACCEL_TOP_read_iterB = 1;
-    ACCEL_TOP_read_incrB = 1;
-    ACCEL_TOP_read_perB = numberItems;
-    ACCEL_TOP_read_dutyB = ~0;
+    printf("%d\n",1);
+  
+    RunAccelerator(1);
 
-    // Write side
-    ACCEL_TOP_write_incrA = 1;
-    ACCEL_TOP_write_perA = numberItems;
-    ACCEL_TOP_write_length = numberItems * sizeof(int);
-    ACCEL_TOP_write_ext_addr = (iptr) output;
-    ACCEL_TOP_write_pingPong = 1;
-   
-    // Dataflow side
-    ACCEL_TOP_write_iterB = 1;
-    ACCEL_TOP_write_incrB = 1;
-    ACCEL_TOP_write_dutyB = ~0;
-    ACCEL_TOP_write_perB = numberItems;
+    printf("%d\n",2);
+    con->read.enableRead = 0;
 
-    RunAccelerator(3);
+    RunAccelerator(1);
+
+    printf("%d\n",3);
+    con->write.enableWrite = 1;
+
+    RunAccelerator(1);
+
+    printf("%d\n",4);
 
     ClearCache();
-     
+
+    printf("%d\n",5);
+
+    bool equal = true;     
     for(int i = 0; i < numberItems; i++){
-      Assert_Eq(input[i],output[i]);
+      if(input[i] != output[i]){
+        equal = false;
+        printf("Different at %d: %d %d\n",i,input[i],output[i]);
+      }
     }
+
+    printf("%d\n",6);
+ 
+    if(equal){
+      Assert_Eq(1,1);
+    } else {
+      Assert_Eq(-1,i);
+    }
+    printf("%d\n",7);
   }
 }
