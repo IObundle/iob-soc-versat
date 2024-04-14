@@ -106,4 +106,7 @@ test-sim-run:
 test-clean:
 	parallel ./scripts/clean.sh ::: $(TESTS)
 
+clean-all:
+	rm -r ../$(CORE)_V0.70_*/
+
 .PHONY: setup test-setup

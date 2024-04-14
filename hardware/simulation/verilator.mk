@@ -4,7 +4,7 @@ VFLAGS+=--cc --exe -I. -I../src -Isrc --top-module $(VTOP)
 VFLAGS+=-Wno-lint --Wno-UNOPTFLAT
 VFLAGS+=--no-timing
 # Include embedded headers
-VFLAGS+=--threads 4 --trace-coverage --coverage -O3 -CFLAGS "-O1 -march=native -I../../../software/src -I../../../software"
+VFLAGS+=-CFLAGS "-march=native -I../../../software/src -I../../../software"
 
 ifeq ($(VCD),1)
 VFLAGS+=--trace-fst

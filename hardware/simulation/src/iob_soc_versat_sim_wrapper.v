@@ -45,7 +45,7 @@ module iob_soc_versat_sim_wrapper (
 );
 
    localparam AXI_ID_W = 4;
-   localparam AXI_LEN_W = 8;
+   localparam AXI_LEN_W = 8; // Tried to get this to work for AXI_LEN_W = 4 but cpu was giving trap condition.
    localparam AXI_ADDR_W = `DDR_ADDR_W;
    localparam AXI_DATA_W = `DDR_DATA_W;
 
@@ -97,7 +97,7 @@ module iob_soc_versat_sim_wrapper (
    // Wires to connect the interconnect with the memory
    wire [AXI_ID_W-1:0] memory_axi_awid;  //Address write channel ID.
    wire [AXI_ADDR_W-1:0] memory_axi_awaddr;  //Address write channel address.
-   wire [AXI_LEN_W-1:0] memory_axi_awlen;  //Address write channel burst length.
+   reg [AXI_LEN_W-1:0] memory_axi_awlen;  //Address write channel burst length.
    wire [3-1:0] memory_axi_awsize; //Address write channel burst size. This signal indicates the size of each transfer in the burst.
    wire [2-1:0] memory_axi_awburst;  //Address write channel burst type.
    wire [2-1:0] memory_axi_awlock;  //Address write channel lock type.
@@ -117,7 +117,7 @@ module iob_soc_versat_sim_wrapper (
    wire [1-1:0] memory_axi_bready;  //Write response channel ready.
    wire [AXI_ID_W-1:0] memory_axi_arid;  //Address read channel ID.
    wire [AXI_ADDR_W-1:0] memory_axi_araddr;  //Address read channel address.
-   wire [AXI_LEN_W-1:0] memory_axi_arlen;  //Address read channel burst length.
+   reg [AXI_LEN_W-1:0] memory_axi_arlen;  //Address read channel burst length.
    wire [3-1:0] memory_axi_arsize; //Address read channel burst size. This signal indicates the size of each transfer in the burst.
    wire [2-1:0] memory_axi_arburst;  //Address read channel burst type.
    wire [2-1:0] memory_axi_arlock;  //Address read channel lock type.
@@ -155,7 +155,8 @@ module iob_soc_versat_sim_wrapper (
       .AXI_ID_W  (AXI_ID_W),
       .AXI_LEN_W (AXI_LEN_W),
       .AXI_ADDR_W(AXI_ADDR_W),
-      .AXI_DATA_W(AXI_DATA_W)
+      .AXI_DATA_W(AXI_DATA_W),
+      .VERSAT0_AXI_LEN_W(AXI_LEN_W)
    ) iob_soc_versat0 (
       .uart_txd_o(uart_txd_o),
       .uart_rxd_i(uart_rxd_i),
@@ -216,6 +217,29 @@ module iob_soc_versat_sim_wrapper (
 
 
 `ifdef IOB_SOC_VERSAT_USE_EXTMEM
+   reg [2*8-1:0] actual_awlen;
+   reg [2*8-1:0] actual_arlen;
+
+   always @* begin
+      actual_awlen = 0;
+      actual_arlen = 0;
+
+      actual_awlen[0+:AXI_LEN_W] = axi_awlen[0+:AXI_LEN_W];
+      actual_arlen[0+:AXI_LEN_W] = axi_awlen[0+:AXI_LEN_W];
+      actual_awlen[AXI_LEN_W+:AXI_LEN_W] = axi_awlen[AXI_LEN_W+:AXI_LEN_W];
+      actual_arlen[AXI_LEN_W+:AXI_LEN_W] = axi_awlen[AXI_LEN_W+:AXI_LEN_W];
+   end
+
+   wire [8-1:0] full_memory_axi_awlen,full_memory_axi_arlen;
+
+   always @* begin
+      memory_axi_awlen = 0;
+      memory_axi_arlen = 0;
+
+      memory_axi_awlen[AXI_LEN_W-1:0] = full_memory_axi_awlen[AXI_LEN_W-1:0];
+      memory_axi_arlen[AXI_LEN_W-1:0] = full_memory_axi_arlen[AXI_LEN_W-1:0];
+   end
+
    //instantiate axi interconnect
    axi_interconnect #(
       .ID_WIDTH    (AXI_ID_W),
@@ -231,7 +255,7 @@ module iob_soc_versat_sim_wrapper (
       // Need to use manually defined connections because awlock and arlock of interconnect is only on bit for each slave
       .s_axi_awid(axi_awid),  //Address write channel ID.
       .s_axi_awaddr(axi_awaddr),  //Address write channel address.
-      .s_axi_awlen(axi_awlen),  //Address write channel burst length.
+      .s_axi_awlen(actual_awlen),  //Address write channel burst length.
       .s_axi_awsize  (axi_awsize),  //Address write channel burst size. This signal indicates the size of each transfer in the burst.
       .s_axi_awburst(axi_awburst),  //Address write channel burst type.
       .s_axi_awlock({axi_awlock[2], axi_awlock[0]}),  //Address write channel lock type.
@@ -251,7 +275,7 @@ module iob_soc_versat_sim_wrapper (
       .s_axi_bready(axi_bready),  //Write response channel ready.
       .s_axi_arid(axi_arid),  //Address read channel ID.
       .s_axi_araddr(axi_araddr),  //Address read channel address.
-      .s_axi_arlen(axi_arlen),  //Address read channel burst length.
+      .s_axi_arlen(actual_arlen),  //Address read channel burst length.
       .s_axi_arsize  (axi_arsize),  //Address read channel burst size. This signal indicates the size of each transfer in the burst.
       .s_axi_arburst(axi_arburst),  //Address read channel burst type.
       .s_axi_arlock({axi_arlock[2], axi_arlock[0]}),  //Address read channel lock type.
@@ -270,7 +294,7 @@ module iob_soc_versat_sim_wrapper (
       // Used manually defined connections because awlock and arlock of interconnect is only on bit.
       .m_axi_awid(memory_axi_awid[0+:AXI_ID_W]),  //Address write channel ID.
       .m_axi_awaddr(memory_axi_awaddr[0+:AXI_ADDR_W]),  //Address write channel address.
-      .m_axi_awlen(memory_axi_awlen[0+:AXI_LEN_W]),  //Address write channel burst length.
+      .m_axi_awlen(full_memory_axi_awlen),  //Address write channel burst length.
       .m_axi_awsize  (memory_axi_awsize[0+:3]),              //Address write channel burst size. This signal indicates the size of each transfer in the burst.
       .m_axi_awburst(memory_axi_awburst[0+:2]),  //Address write channel burst type.
       .m_axi_awlock(memory_axi_awlock[0+:1]),  //Address write channel lock type.
@@ -290,7 +314,7 @@ module iob_soc_versat_sim_wrapper (
       .m_axi_bready(memory_axi_bready[0+:1]),  //Write response channel ready.
       .m_axi_arid(memory_axi_arid[0+:AXI_ID_W]),  //Address read channel ID.
       .m_axi_araddr(memory_axi_araddr[0+:AXI_ADDR_W]),  //Address read channel address.
-      .m_axi_arlen(memory_axi_arlen[0+:AXI_LEN_W]),  //Address read channel burst length.
+      .m_axi_arlen(full_memory_axi_arlen),  //Address read channel burst length.
       .m_axi_arsize  (memory_axi_arsize[0+:3]),              //Address read channel burst size. This signal indicates the size of each transfer in the burst.
       .m_axi_arburst(memory_axi_arburst[0+:2]),  //Address read channel burst type.
       .m_axi_arlock(memory_axi_arlock[0+:1]),  //Address read channel lock type.
@@ -333,7 +357,8 @@ module iob_soc_versat_sim_wrapper (
 `endif
       .ID_WIDTH  (AXI_ID_W),
       .DATA_WIDTH(AXI_DATA_W),
-      .ADDR_WIDTH(AXI_ADDR_W)
+      .ADDR_WIDTH(AXI_ADDR_W),
+      .LEN_WIDTH(AXI_LEN_W)
    ) ddr_model_mem (
       .axi_awid_i(memory_axi_awid),  //Address write channel ID.
       .axi_awaddr_i(memory_axi_awaddr),  //Address write channel address.

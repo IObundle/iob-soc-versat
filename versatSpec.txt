@@ -1,14 +1,10 @@
-module Nothing(){
-#
-}
-
 module FloatTest(x,y,z){
-   FloatAdd add;
-   FloatSub sub;
-   FloatMul mul;
-   FloatDiv div;
-   FloatMax max;
-   FloatMin min;
+   FloatAdd  add;
+   FloatSub  sub;
+   FloatMul  mul;
+   FloatDiv  div;
+   FloatMax  max;
+   FloatMin  min;
    FloatSqrt sqrt;
    Int2Float int2float;
    Float2Int float2int;
@@ -33,6 +29,10 @@ module FloatTest(x,y,z){
    sqrt      -> out:6;
    int2float -> out:7;
    float2int -> out:8;
+}
+
+module Nothing(){
+#
 }
 
 module TestDiffDelays(x,y,z){
@@ -203,10 +203,10 @@ module SMVMBlock2(){
    row -> change2:1;
 
    mul    -> accum:0;
-   change[-4] -> accum:1;
+   change{-4} -> accum:1;
 
    accum:0 -> output:0;
-   change2[3] -> output:1;
+   change2{3} -> output:1;
 
    row  -> pos:0;
    flag -> pos:1;
@@ -244,10 +244,10 @@ module SMVMBlock3(){
    row -> change2:1;
 
    mul    -> accum:0;
-   change[-4] -> accum:1;
+   change{-4} -> accum:1;
 
    accum:0 -> output:0;
-   change2[3] -> output:1;
+   change2{3} -> output:1;
 }
 
 module SMVMBlockUnit(){
@@ -271,10 +271,10 @@ module SMVMBlockUnit(){
    val    -> mul:0;
    vector -> mul:1;
 
-   gen[1] -> flag;
+   gen{1} -> flag;
 
    mul      -> accum:0;
-   flag[-2] -> accum:1;
+   flag{-2} -> accum:1;
 
    accum:0 -> output:0;
    flag    -> output:1;
@@ -423,11 +423,11 @@ module StringHasher(){
    Mem bytesIn;
    Mem bytesOut;
 #
-   bytesIn[0] -> mul1:0;
-   bytesIn[1] -> mul2:0;
-   bytesIn[2] -> mul3:0;
-   bytesIn[3] -> mul4:0;
-   bytesIn[4] -> mul5:0;
+   bytesIn{0} -> mul1:0;
+   bytesIn{1} -> mul2:0;
+   bytesIn{2} -> mul3:0;
+   bytesIn{3} -> mul4:0;
+   bytesIn{4} -> mul5:0;
 
    weight1 -> mul1:1;
    weight2 -> mul2:1;
@@ -440,7 +440,7 @@ module StringHasher(){
    a3 = a1 + a2;
    a4 = a3 + mul5;
 
-   a4[1] -> bytesOut;
+   a4{1} -> bytesOut;
 }
 
 module MatrixMultiplication(){
@@ -494,7 +494,7 @@ module Convolution(){
    stage1 -> stage2;
    stage2 -> stage3;
    stage3 -> stage4;
-   stage4[9] -> res;
+   stage4{9} -> res;
 }
 
 module StaticMux(x,y){
@@ -604,82 +604,82 @@ module M(w){
    M_Stage mf;
    Merge merge;
 #
-   w[0] -> m0:0;
-   w[14] -> m0:1;
-   w[9] -> m0:2;
-   w[1] -> m0:3;
+   w{0} -> m0:0;
+   w{14} -> m0:1;
+   w{9} -> m0:2;
+   w{1} -> m0:3;
 
-   w[1] -> m1:0;
-   w[15] -> m1:1;
-   w[10] -> m1:2;
-   w[2] -> m1:3;
+   w{1} -> m1:0;
+   w{15} -> m1:1;
+   w{10} -> m1:2;
+   w{2} -> m1:3;
    
-   w[2] -> m2:0;
+   w{2} -> m2:0;
    m0 -> m2:1;
-   w[11] -> m2:2;
-   w[3] -> m2:3;
+   w{11} -> m2:2;
+   w{3} -> m2:3;
    
-   w[3] -> m3:0;
+   w{3} -> m3:0;
    m1 -> m3:1;
-   w[12] -> m3:2;
-   w[4] -> m3:3;
+   w{12} -> m3:2;
+   w{4} -> m3:3;
    
-   w[4] -> m4:0;
+   w{4} -> m4:0;
    m2 -> m4:1;
-   w[13] -> m4:2;
-   w[5] -> m4:3;
+   w{13} -> m4:2;
+   w{5} -> m4:3;
    
-   w[5] -> m5:0;
+   w{5} -> m5:0;
    m3 -> m5:1;
-   w[14] -> m5:2;
-   w[6] -> m5:3;
+   w{14} -> m5:2;
+   w{6} -> m5:3;
    
-   w[6] -> m6:0;
+   w{6} -> m6:0;
    m4 -> m6:1;
-   w[15] -> m6:2;
-   w[7] -> m6:3;
+   w{15} -> m6:2;
+   w{7} -> m6:3;
    
-   w[7] -> m7:0;
+   w{7} -> m7:0;
    m5 -> m7:1;
    m0 -> m7:2;
-   w[8] -> m7:3;
+   w{8} -> m7:3;
    
-   w[8] -> m8:0;
+   w{8} -> m8:0;
    m6 -> m8:1;
    m1 -> m8:2;
-   w[9] -> m8:3;
+   w{9} -> m8:3;
    
-   w[9] -> m9:0;
+   w{9} -> m9:0;
    m7 -> m9:1;
    m2 -> m9:2;
-   w[10] -> m9:3;
+   w{10} -> m9:3;
    
-   w[10] -> ma:0;
+   w{10} -> ma:0;
    m8 -> ma:1;
    m3 -> ma:2;
-   w[11] -> ma:3;
+   w{11} -> ma:3;
    
-   w[11] -> mb:0;
+   w{11} -> mb:0;
    m9 -> mb:1;
    m4 -> mb:2;
-   w[12] -> mb:3;
+   w{12} -> mb:3;
    
-   w[12] -> mc:0;
+   w{12} -> mc:0;
    ma -> mc:1;
    m5 -> mc:2;
-   w[13] -> mc:3;
+   w{13} -> mc:3;
    
-   w[13] -> md:0;
+   w{13} -> md:0;
    mb -> md:1;
    m6 -> md:2;
-   w[14] -> md:3;
+   w{14} -> md:3;
    
-   w[14] -> me:0;
+   w{14} -> me:0;
    mc -> me:1;
    m7 -> me:2;
-   w[15] -> me:3;
+   w{15} -> me:3;
    
-   w[15] -> mf:0;
+   w{15} -> mf:0;
    md -> mf:1;
    m8 -> mf:2;
    m0 -> mf:3;
@@ -851,68 +851,68 @@ module F(a,b,c,d,e,f,g,h,k,w){
    f ->  f0:5;
    g ->  f0:6;
    h ->  f0:7;
-   k[0] -> f0:8;
-   w[0] -> f0:9;
+   k{0} -> f0:8;
+   w{0} -> f0:9;
 
    f0:0..7 -> f1:0..7;
-   k[1] -> f1:8;
-   w[1] -> f1:9;
+   k{1} -> f1:8;
+   w{1} -> f1:9;
 
    f1:0..7 -> f2:0..7;
-   k[2] -> f2:8;
-   w[2] -> f2:9;
+   k{2} -> f2:8;
+   w{2} -> f2:9;
 
    f2:0..7 -> f3:0..7;
-   k[3] -> f3:8;
-   w[3] -> f3:9;
+   k{3} -> f3:8;
+   w{3} -> f3:9;
 
    f3:0..7 -> f4:0..7;
-   k[4] -> f4:8;
-   w[4] -> f4:9;
+   k{4} -> f4:8;
+   w{4} -> f4:9;
 
    f4:0..7 -> f5:0..7;
-   k[5] -> f5:8;
-   w[5] -> f5:9;
+   k{5} -> f5:8;
+   w{5} -> f5:9;
 
    f5:0..7 -> f6:0..7;
-   k[6] -> f6:8;
-   w[6] -> f6:9;
+   k{6} -> f6:8;
+   w{6} -> f6:9;
 
    f6:0..7 -> f7:0..7;
-   k[7] -> f7:8;
-   w[7] -> f7:9;
+   k{7} -> f7:8;
+   w{7} -> f7:9;
 
    f7:0..7 -> f8:0..7;
-   k[8] -> f8:8;
-   w[8] -> f8:9;
+   k{8} -> f8:8;
+   w{8} -> f8:9;
 
    f8:0..7 -> f9:0..7;
-   k[9] -> f9:8;
-   w[9] -> f9:9;
+   k{9} -> f9:8;
+   w{9} -> f9:9;
 
    f9:0..7 -> fa:0..7;
-   k[10] -> fa:8;
-   w[10] -> fa:9;
+   k{10} -> fa:8;
+   w{10} -> fa:9;
 
    fa:0..7 -> fb:0..7;
-   k[11] -> fb:8;
-   w[11] -> fb:9;
+   k{11} -> fb:8;
+   w{11} -> fb:9;
 
    fb:0..7 -> fc:0..7;
-   k[12] -> fc:8;
-   w[12] -> fc:9;
+   k{12} -> fc:8;
+   w{12} -> fc:9;
 
    fc:0..7 -> fd:0..7;
-   k[13] -> fd:8;
-   w[13] -> fd:9;
+   k{13} -> fd:8;
+   w{13} -> fd:9;
 
    fd:0..7 -> fe:0..7;
-   k[14] -> fe:8;
-   w[14] -> fe:9;
+   k{14} -> fe:8;
+   w{14} -> fe:9;
 
    fe:0..7 -> ff:0..7;
-   k[15] -> ff:8;
-   w[15] -> ff:9;
+   k{15} -> ff:8;
+   w{15} -> ff:9;
 
    ff:0..7 -> out:0..7;
 }
@@ -956,7 +956,7 @@ module ShaState(x0,x1,x2,x3,x4,x5,x6,x7){
 }
 
 module Constants(){
-   static Mem mem;
+   static OnlyOutputMem mem;
 #
    mem -> out:0;
 }
@@ -1053,30 +1053,18 @@ module SBox(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
 }
 
 module ShiftRows(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
-   #
+#
    // First row
-   x0 -> out:0;
-   x1 -> out:1;
-   x2 -> out:2;
-   x3 -> out:3;
+   {x0,x1,x2,x3} -> out:0..3;
 
    // Second row
-   x4 -> out:7;
-   x5 -> out:4;
-   x6 -> out:5;
-   x7 -> out:6;
+   {x4,x5,x6,x7} -> {out:7,out:4..6};
 
    // Third row
-   x8 -> out:10;
-   x9 -> out:11;
-   xa -> out:8;
-   xb -> out:9;
+   {x8,x9,xa,xb} -> {out:10..11,out:8..9};
 
    // Fourth row
-   xc -> out:13;
-   xd -> out:14;
-   xe -> out:15;
-   xf -> out:12;
+   {xc,xd,xe,xf} -> {out:13..15,out:12};
 }
 
 module MixProduct(mul2,mul3,x11,x12){
@@ -1105,25 +1093,25 @@ module DoRow(x0,x1,x2,x3){
    x2 -> mul3_1:0;
    x3 -> mul3_1:1;
 
-   mul2_0:0 -> m0:0; // mul2[x0]
-   mul3_0:1 -> m0:1; // mul3[x1]
+   mul2_0:0 -> m0:0; // mul2{x0}
+   mul3_0:1 -> m0:1; // mul3{x1}
    x2 -> m0:2;
    x3 -> m0:3;
 
    x0 -> m1:0;
-   mul2_0:1 -> m1:1; // mul2[x1]
-   mul3_1:0 -> m1:2; // mul3[x2]
+   mul2_0:1 -> m1:1; // mul2{x1}
+   mul3_1:0 -> m1:2; // mul3{x2}
    x3 -> m1:3;
 
    x0 -> m2:0;
    x1 -> m2:1;
-   mul2_1:0 -> m2:2; // mul2[x2]
-   mul3_1:1 -> m2:3; // mul3[x3]
+   mul2_1:0 -> m2:2; // mul2{x2}
+   mul3_1:1 -> m2:3; // mul3{x3}
 
-   mul3_0:0 -> m3:0; // mul3[x0]
+   mul3_0:0 -> m3:0; // mul3{x0}
    x1 -> m3:1;
    x2 -> m3:2;
-   mul2_1:1 -> m3:3; // mul2[x3]
+   mul2_1:1 -> m3:3; // mul2{x3}
 
    m0 -> out:0;
    m1 -> out:1;
@@ -1697,8 +1685,8 @@ module ReadWriteAES(){
    Merge merge;
    AES aes;
 #
-   cypher[0..15] -> aes:0..15;
-   key[0..15] -> aes:16..31;
+   cypher{0..15} -> aes:0..15;
+   key{0..15} -> aes:16..31;
 
    aes:0..15 -> merge:0..15;
 
@@ -1981,10 +1969,12 @@ module AES256WithIterative(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1
    ShiftRows shiftRows;
    AddRoundKey lastKey;
 #
-   x0 -> firstKey:0;
-   x1 -> firstKey:4;
-   x2 -> firstKey:8;
-   x3 -> firstKey:12;
+   {x0,x1,x2,x3} -> {firstKey:0,firstKey:4,firstKey:8,firstKey:12};
+   //x0 -> firstKey:0;
+   //x1 -> firstKey:4;
+   //x2 -> firstKey:8;
+   //x3 -> firstKey:12;
+   
    x4 -> firstKey:1;
    x5 -> firstKey:5;
    x6 -> firstKey:9;
@@ -2135,7 +2125,7 @@ module FixedAverage(){
    Mem mem;
    Store output;
 #
-   sum = mem[0] + mem[1] + mem[2] + mem[3];
+   sum = mem{0} + mem{1} + mem{2} + mem{3};
    average = sum >> 2;
 
    average -> output;
@@ -2160,12 +2150,12 @@ module F2(a,b,c,d,e,f,g,h,k,w){
    f ->  f0:5;
    g ->  f0:6;
    h ->  f0:7;
-   k[0] -> f0:8;
-   w[0] -> f0:9;
+   k{0} -> f0:8;
+   w{0} -> f0:9;
 
    f0:0..7 -> f1:0..7;
-   k[1] -> f1:8;
-   w[1] -> f1:9;
+   k{1} -> f1:8;
+   w{1} -> f1:9;
 
    f1:0..7 -> out:0..7;
 }
@@ -2175,15 +2165,15 @@ module M2(w){
    M_Stage m1;
    Merge merge;
 #
-   w[0] -> m0:0;
-   w[14] -> m0:1;
-   w[9] -> m0:2;
-   w[1] -> m0:3;
+   w{0} -> m0:0;
+   w{14} -> m0:1;
+   w{9} -> m0:2;
+   w{1} -> m0:3;
 
-   w[1] -> m1:0;
-   w[15] -> m1:1;
-   w[10] -> m1:2;
-   w[2] -> m1:3;
+   w{1} -> m1:0;
+   w{15} -> m1:1;
+   w{10} -> m1:2;
+   w{2} -> m1:3;
 
    m0 -> merge:0;
    m1 -> merge:1;
@@ -2221,25 +2211,25 @@ module M4(w){
    M_Stage m3;
    Merge merge;
 #
-   w[0] -> m0:0;
-   w[14] -> m0:1;
-   w[9] -> m0:2;
-   w[1] -> m0:3;
+   w{0} -> m0:0;
+   w{14} -> m0:1;
+   w{9} -> m0:2;
+   w{1} -> m0:3;
 
-   w[1] -> m1:0;
-   w[15] -> m1:1;
-   w[10] -> m1:2;
-   w[2] -> m1:3;
+   w{1} -> m1:0;
+   w{15} -> m1:1;
+   w{10} -> m1:2;
+   w{2} -> m1:3;
    
-   w[2] -> m2:0;
+   w{2} -> m2:0;
    m0 -> m2:1;
-   w[11] -> m2:2;
-   w[3] -> m2:3;
+   w{11} -> m2:2;
+   w{3} -> m2:3;
    
-   w[3] -> m3:0;
+   w{3} -> m3:0;
    m1 -> m3:1;
-   w[12] -> m3:2;
-   w[4] -> m3:3;
+   w{12} -> m3:2;
+   w{4} -> m3:3;
    
    m0 -> merge:0;
    m1 -> merge:1;
@@ -2260,45 +2250,45 @@ module M8(w){
    M_Stage m7;
    Merge merge;
 #
-   w[0] -> m0:0;
-   w[14] -> m0:1;
-   w[9] -> m0:2;
-   w[1] -> m0:3;
+   w{0} -> m0:0;
+   w{14} -> m0:1;
+   w{9} -> m0:2;
+   w{1} -> m0:3;
 
-   w[1] -> m1:0;
-   w[15] -> m1:1;
-   w[10] -> m1:2;
-   w[2] -> m1:3;
+   w{1} -> m1:0;
+   w{15} -> m1:1;
+   w{10} -> m1:2;
+   w{2} -> m1:3;
    
-   w[2] -> m2:0;
+   w{2} -> m2:0;
    m0 -> m2:1;
-   w[11] -> m2:2;
-   w[3] -> m2:3;
+   w{11} -> m2:2;
+   w{3} -> m2:3;
    
-   w[3] -> m3:0;
+   w{3} -> m3:0;
    m1 -> m3:1;
-   w[12] -> m3:2;
-   w[4] -> m3:3;
+   w{12} -> m3:2;
+   w{4} -> m3:3;
    
-   w[4] -> m4:0;
+   w{4} -> m4:0;
    m2 -> m4:1;
-   w[13] -> m4:2;
-   w[5] -> m4:3;
+   w{13} -> m4:2;
+   w{5} -> m4:3;
    
-   w[5] -> m5:0;
+   w{5} -> m5:0;
    m3 -> m5:1;
-   w[14] -> m5:2;
-   w[6] -> m5:3;
+   w{14} -> m5:2;
+   w{6} -> m5:3;
    
-   w[6] -> m6:0;
+   w{6} -> m6:0;
    m4 -> m6:1;
-   w[15] -> m6:2;
-   w[7] -> m6:3;
+   w{15} -> m6:2;
+   w{7} -> m6:3;
    
-   w[7] -> m7:0;
+   w{7} -> m7:0;
    m5 -> m7:1;
    m0 -> m7:2;
-   w[8] -> m7:3;
+   w{8} -> m7:3;
    
    m0 -> merge:0;
    m1 -> merge:1;
@@ -2330,36 +2320,36 @@ module F8(a,b,c,d,e,f,g,h,k,w){
    f ->  f0:5;
    g ->  f0:6;
    h ->  f0:7;
-   k[0] -> f0:8;
-   w[0] -> f0:9;
+   k{0} -> f0:8;
+   w{0} -> f0:9;
 
    f0:0..7 -> f1:0..7;
-   k[1] -> f1:8;
-   w[1] -> f1:9;
+   k{1} -> f1:8;
+   w{1} -> f1:9;
 
    f1:0..7 -> f2:0..7;
-   k[2] -> f2:8;
-   w[2] -> f2:9;
+   k{2} -> f2:8;
+   w{2} -> f2:9;
 
    f2:0..7 -> f3:0..7;
-   k[3] -> f3:8;
-   w[3] -> f3:9;
+   k{3} -> f3:8;
+   w{3} -> f3:9;
 
    f3:0..7 -> f4:0..7;
-   k[4] -> f4:8;
-   w[4] -> f4:9;
+   k{4} -> f4:8;
+   w{4} -> f4:9;
 
    f4:0..7 -> f5:0..7;
-   k[5] -> f5:8;
-   w[5] -> f5:9;
+   k{5} -> f5:8;
+   w{5} -> f5:9;
 
    f5:0..7 -> f6:0..7;
-   k[6] -> f6:8;
-   w[6] -> f6:9;
+   k{6} -> f6:8;
+   w{6} -> f6:9;
 
    f6:0..7 -> f7:0..7;
-   k[7] -> f7:8;
-   w[7] -> f7:9;
+   k{7} -> f7:8;
+   w{7} -> f7:9;
 
    f7:0..7 -> out:0..7;
 }
@@ -2378,20 +2368,20 @@ module F4(a,b,c,d,e,f,g,h,k,w){
    f ->  f0:5;
    g ->  f0:6;
    h ->  f0:7;
-   k[0] -> f0:8;
-   w[0] -> f0:9;
+   k{0} -> f0:8;
+   w{0} -> f0:9;
 
    f0:0..7 -> f1:0..7;
-   k[1] -> f1:8;
-   w[1] -> f1:9;
+   k{1} -> f1:8;
+   w{1} -> f1:9;
 
    f1:0..7 -> f2:0..7;
-   k[2] -> f2:8;
-   w[2] -> f2:9;
+   k{2} -> f2:8;
+   w{2} -> f2:9;
 
    f2:0..7 -> f3:0..7;
-   k[3] -> f3:8;
-   w[3] -> f3:9;
+   k{3} -> f3:8;
+   w{3} -> f3:9;
 
    f3:0..7 -> out:0..7;
 }
@@ -2968,57 +2958,57 @@ module Blake2Round(v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,v15){
    v4   -> g0:1;
    v8   -> g0:2;
    v12  -> g0:3;
-   m[0] -> g0:4;
-   m[1] -> g0:5;
+   m{0} -> g0:4;
+   m{1} -> g0:5;
 
    v1   -> g1:0;
    v5   -> g1:1;
    v9   -> g1:2;
    v13  -> g1:3;
-   m[2] -> g1:4;
-   m[3] -> g1:5;
+   m{2} -> g1:4;
+   m{3} -> g1:5;
 
    v2   -> g2:0;
    v6   -> g2:1;
    v10  -> g2:2;
    v14  -> g2:3;
-   m[4] -> g2:4;
-   m[5] -> g2:5;
+   m{4} -> g2:4;
+   m{5} -> g2:5;
 
    v3   -> g3:0;
    v7   -> g3:1;
    v11  -> g3:2;
    v15  -> g3:3;
-   m[6] -> g3:4;
-   m[7] -> g3:5;
+   m{6} -> g3:4;
+   m{7} -> g3:5;
 
    g0:0 -> g4:0;
    g1:1 -> g4:1;
    g2:2 -> g4:2;
    g3:3 -> g4:3;
-   m[8] -> g4:4;
-   m[9] -> g4:5;
+   m{8} -> g4:4;
+   m{9} -> g4:5;
 
    g1:0  -> g5:0;
    g2:1  -> g5:1;
    g3:2  -> g5:2;
    g0:3  -> g5:3;
-   m[10] -> g5:4;
-   m[11] -> g5:5;
+   m{10} -> g5:4;
+   m{11} -> g5:5;
 
    g2:0  -> g6:0;
    g3:1  -> g6:1;
    g0:2  -> g6:2;
    g1:3  -> g6:3;
-   m[12] -> g6:4;
-   m[13] -> g6:5;
+   m{12} -> g6:4;
+   m{13} -> g6:5;
 
    g3:0  -> g7:0;
    g0:1  -> g7:1;
    g1:2  -> g7:2;
    g2:3  -> g7:3;
-   m[14] -> g7:4;
-   m[15] -> g7:5;
+   m{14} -> g7:4;
+   m{15} -> g7:5;
 
    g4:0 -> out:0;
    g5:0 -> out:1;
@@ -3392,12 +3382,28 @@ module Variety2(x,y,z){
    total -> write;
 }
 
-//merge MergeTest = Merge0:a | Merge1:b {
-//   a.m0 - b.M1;
-//   a.m1 - b.M0;
-//}
+module ReadWriteAES256(){
+   VRead cypher;
+   VRead key;
+   VWrite results;
+   Merge merge;
+   // Simple aes;
+   AES256WithIterative aes;
+#
+   cypher{0..15} -> aes:0..15;
+   key{0..31} -> aes:16..47;
 
-// merge VarietyMerge = Variety1 | Variety2;
+   aes:0..15 -> merge:0..15;
+
+   merge -> results;
+}
+
+module DMATest(){
+   Mem mem;   
+#
+}
+
+merge SHA_AES = SHA | ReadWriteAES256 | VectorLikeOperation;
 
 module Simple(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,k10,k11,k12,k13,k14,k15,k16,k17,k18,k19,k1a,k1b,k1c,k1d,k1e,k1f){
 #
@@ -3421,22 +3427,26 @@ module Simple(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,
    {w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,wa,wb,wc,wd,we,wf} -> out:0..15;
 }
 
-module ReadWriteAES256(){
-   VRead cypher;
-   VRead key;
-   VWrite results;
-   Merge merge;
-   // Simple aes;
-   AES256WithIterative aes;
+/*
+module Simple(x[16],k[32]){
 #
-   
-   cypher[0..15] -> aes:0..15;
-   key[0..31] -> aes:16..47;
+   w0 = x[0]  & k[0] & k[1];
+   w1 = x[1]  & k[2] & k[3];
+   w2 = x[2]  & k[4] & k[5];
+   w3 = x[3]  & k[6] & k[7];
+   w4 = x[4]  & k[8] & k[9];
+   w5 = x[5]  & k[10] & k[11];
+   w6 = x[6]  & k[12] & k[13];
+   w7 = x[7]  & k[14] & k[15];
+   w8 = x[8]  & k[16] & k[17];
+   w9 = x[9]  & k[18] & k[19];
+   wa = x[10] & k[20] & k[21];
+   wb = x[11] & k[22] & k[23];
+   wc = x[12] & k[24] & k[25];
+   wd = x[13] & k[26] & k[27];
+   we = x[14] & k[28] & k[29];
+   wf = x[15] & k[30] & k[31];
 
-   aes:0..15 -> merge:0..15;
-
-   merge -> results;
+   w[0..15] -> out:0..15;
 }
-
-merge SHA_AES = SHA | ReadWriteAES256 | VectorLikeOperation;
-
+*/

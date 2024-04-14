@@ -124,6 +124,11 @@ class iob_soc_versat(iob_soc):
             f"{cls.build_dir}/software/src/",
         )
 
+        shutil.copy(
+            f"{cls.build_dir}/software/src/Tests/simpleTest.hpp",
+            f"{cls.build_dir}/software/src/",
+        )
+
         shutil.copytree(
             f"{cls.setup_dir}/hardware/src/units",
             f"{cls.build_dir}/hardware/src",
@@ -144,6 +149,17 @@ class iob_soc_versat(iob_soc):
                 "min": "1",
                 "max": "32",
                 "descr": "SRAM address width",
+            }
+        ]
+
+        cls.AXI_CONFS = [
+            {
+                "name": "AXI_LEN_W",
+                "type": "M",
+                "val": "4",
+                "min": "?",
+                "max": "?",
+                "descr": "description",
             }
         ]
 
