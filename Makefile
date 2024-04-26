@@ -8,7 +8,18 @@ DISABLE_LINT:=1
 LIB_DIR:=submodules/IOBSOC/submodules/LIB
 include $(LIB_DIR)/setup.mk
 
-TESTS:= M_Stage F_Stage SimpleCGRA AddRoundKey LookupTable MemToMem VReadToVWrite SimpleIterative Variety1
+TESTS:= TestShare
+TESTS+= TestStatic
+TESTS+= TestDelays
+TESTS+= M_Stage 
+TESTS+= F_Stage
+TESTS+= SimpleCGRA 
+TESTS+= AddRoundKey 
+TESTS+= LookupTable 
+TESTS+= MemToMem 
+TESTS+= VReadToVWrite 
+TESTS+= SimpleIterative 
+TESTS+= Variety1
 
 VCD ?= 1
 INIT_MEM ?= 1

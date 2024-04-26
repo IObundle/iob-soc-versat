@@ -30,14 +30,14 @@ static size_t versat_crypto_hashblocks_sha256(const uint8_t *in, size_t inlen) {
       RunAccelerator(1);
 
       if(!initVersat){
-         VersatUnitWrite(TOP_State_s0_reg_addr,0,initialStateValues[0]);
-         VersatUnitWrite(TOP_State_s1_reg_addr,0,initialStateValues[1]);
-         VersatUnitWrite(TOP_State_s2_reg_addr,0,initialStateValues[2]);
-         VersatUnitWrite(TOP_State_s3_reg_addr,0,initialStateValues[3]);
-         VersatUnitWrite(TOP_State_s4_reg_addr,0,initialStateValues[4]);
-         VersatUnitWrite(TOP_State_s5_reg_addr,0,initialStateValues[5]);
-         VersatUnitWrite(TOP_State_s6_reg_addr,0,initialStateValues[6]);
-         VersatUnitWrite(TOP_State_s7_reg_addr,0,initialStateValues[7]);
+         VersatUnitWrite(TOP_State_s_0_reg_addr,0,initialStateValues[0]);
+         VersatUnitWrite(TOP_State_s_1_reg_addr,0,initialStateValues[1]);
+         VersatUnitWrite(TOP_State_s_2_reg_addr,0,initialStateValues[2]);
+         VersatUnitWrite(TOP_State_s_3_reg_addr,0,initialStateValues[3]);
+         VersatUnitWrite(TOP_State_s_4_reg_addr,0,initialStateValues[4]);
+         VersatUnitWrite(TOP_State_s_5_reg_addr,0,initialStateValues[5]);
+         VersatUnitWrite(TOP_State_s_6_reg_addr,0,initialStateValues[6]);
+         VersatUnitWrite(TOP_State_s_7_reg_addr,0,initialStateValues[7]);
          initVersat = true;
       }
 
@@ -92,14 +92,14 @@ void VersatSHA(uint8_t *out, const uint8_t *in, size_t inlen) {
 
    RunAccelerator(1);
 
-   store_bigendian_32(&out[0*4],(uint32_t) VersatUnitRead(TOP_State_s0_reg_addr,0));
-   store_bigendian_32(&out[1*4],(uint32_t) VersatUnitRead(TOP_State_s1_reg_addr,0));
-   store_bigendian_32(&out[2*4],(uint32_t) VersatUnitRead(TOP_State_s2_reg_addr,0));
-   store_bigendian_32(&out[3*4],(uint32_t) VersatUnitRead(TOP_State_s3_reg_addr,0));
-   store_bigendian_32(&out[4*4],(uint32_t) VersatUnitRead(TOP_State_s4_reg_addr,0));
-   store_bigendian_32(&out[5*4],(uint32_t) VersatUnitRead(TOP_State_s5_reg_addr,0));
-   store_bigendian_32(&out[6*4],(uint32_t) VersatUnitRead(TOP_State_s6_reg_addr,0));
-   store_bigendian_32(&out[7*4],(uint32_t) VersatUnitRead(TOP_State_s7_reg_addr,0));
+   store_bigendian_32(&out[0*4],(uint32_t) VersatUnitRead(TOP_State_s_0_reg_addr,0));
+   store_bigendian_32(&out[1*4],(uint32_t) VersatUnitRead(TOP_State_s_1_reg_addr,0));
+   store_bigendian_32(&out[2*4],(uint32_t) VersatUnitRead(TOP_State_s_2_reg_addr,0));
+   store_bigendian_32(&out[3*4],(uint32_t) VersatUnitRead(TOP_State_s_3_reg_addr,0));
+   store_bigendian_32(&out[4*4],(uint32_t) VersatUnitRead(TOP_State_s_4_reg_addr,0));
+   store_bigendian_32(&out[5*4],(uint32_t) VersatUnitRead(TOP_State_s_5_reg_addr,0));
+   store_bigendian_32(&out[6*4],(uint32_t) VersatUnitRead(TOP_State_s_6_reg_addr,0));
+   store_bigendian_32(&out[7*4],(uint32_t) VersatUnitRead(TOP_State_s_7_reg_addr,0));
 
    initVersat = false; // At the end of each run, reset
 }

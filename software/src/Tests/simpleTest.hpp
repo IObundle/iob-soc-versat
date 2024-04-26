@@ -4,12 +4,19 @@
 #include "cassert"
 #include "cstdlib"
 
-static void SimpleTest(int* output){
+static void SimpleTest(int* inputs,int* output){
    assert(isSimpleAccelerator);
-   srand(0);
 
-   for(int i = 0; i < NumberSimpleInputs; i++){
-      SimpleInputStart[i] = rand();
+   if(inputs == nullptr){
+      srand(0);
+
+      for(int i = 0; i < NumberSimpleInputs; i++){
+         SimpleInputStart[i] = rand();
+      }
+   } else {
+      for(int i = 0; i < NumberSimpleInputs; i++){
+         SimpleInputStart[i] = inputs[i];
+      }
    }
 
    RunAccelerator(1);

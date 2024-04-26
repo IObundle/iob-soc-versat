@@ -1,3 +1,82 @@
+module TestStaticChild2(){ // Since TestStaticChild2 is only used as static in the following modules, it should have the same values
+   Const inside0; 
+   static Const inside1;
+#
+   {inside0,inside1} -> out:0..1;
+}
+
+module TestStaticChild1() -> 3{
+   static TestStaticChild2 child;
+   Const inside; // Child1 differs only on the inside value, 3rd output
+#
+   {child:0..1,inside} -> out:0..2;
+}
+
+module TestStatic(){
+   static Const inside[2]; // inside[0] and inside[1] should be different static instances. Changing one should not affect the other.
+   TestStaticChild1 child[2]; // child[0] and child[1] should only differ in the third output.
+   Reg output;
+#
+   a = inside[0] + inside[1] + child[0]:0 + child[0]:1 + child[0]:2 + child[1]:0 + child[1]:1 + child[1]:2;
+
+   a -> output:0;
+}
+
+module TestShareChild() -> 2{
+   share config Const {
+      x[2]; // x[0] and x[1] are equal
+   }
+   share config Const {
+      y[2]; // y[0] and y[1] are equal
+   }
+#
+   // a should equal b for all possible configurations
+   a = x[0] + y[1]; 
+   b = x[1] + y[0];
+
+   {a,b} -> out:0..1;
+}
+
+module TestShare(){
+   share config TestShareChild{
+      childs[2];
+   }
+   Reg outputs[4];
+#
+   // Every single output should be equal
+   childs[0]:0..1 -> outputs[0..1];
+   childs[1]:0..1 -> outputs[2..3];
+}
+
+module TestShareStaticChild() -> 2{
+   static TestShareChild shareChild;
+#
+   shareChild:0..1 -> out:0..1;
+}
+
+module TestShareStatic(){
+   share config TestStaticChild1 {
+      testShare[2]; // Should only share the Const inside
+   }
+   TestShareStaticChild testStatic[2];
+   Reg outputs[10];
+#
+   {testShare[0]:0..2,testShare[1]:0..2,testStatic:0..1,testStatic:0..1} -> outputs[0..9];
+}
+
+module TestDelays(){
+   Counter gen;
+   Reg output;
+#
+   a = gen{1} + gen{2} + gen{3} + gen{4} + gen{5};
+
+   a -> output;
+}
+
+module Nothing(){
+#
+}
+
 module FloatTest(x,y,z){
    FloatAdd  add;
    FloatSub  sub;
@@ -20,19 +99,7 @@ module FloatTest(x,y,z){
    z     -> int2float:0;
    x     -> float2int:0;
 
-   add       -> out:0;
-   sub       -> out:1;
-   mul       -> out:2;
-   div       -> out:3;
-   max       -> out:4;
-   min       -> out:5;
-   sqrt      -> out:6;
-   int2float -> out:7;
-   float2int -> out:8;
-}
-
-module Nothing(){
-#
+   {add,sub,mul,div,max,min,sqrt,int2float,float2int}       -> out:0..8;
 }
 
 module TestDiffDelays(x,y,z){
@@ -786,43 +853,13 @@ module Comb_F_Stage(a,b,c,d,e,f,g,h,k,w){
 
 module F_Stage(a,b,c,d,e,f,g,h,k,w){
    Comb_F_Stage f_stage;
-   PipelineRegister d0;
-   PipelineRegister d1;
-   PipelineRegister d2;
-   PipelineRegister d3;
-   PipelineRegister d4;
-   PipelineRegister d5;
-   PipelineRegister d6;
-   PipelineRegister d7;
+   PipelineRegister d[8];
 #
-   a -> f_stage:0;
-   b -> f_stage:1;
-   c -> f_stage:2;
-   d -> f_stage:3;
-   e -> f_stage:4;
-   f -> f_stage:5;
-   g -> f_stage:6;
-   h -> f_stage:7;
-   k -> f_stage:8;
-   w -> f_stage:9;
+   {a,b,c,d,e,f,g,h,k,w} -> f_stage:0..9;
 
-   f_stage:0 -> d0; // a
-   f_stage:1 -> d1; // b
-   f_stage:2 -> d2; // c
-   f_stage:3 -> d3; // d
-   f_stage:4 -> d4; // e
-   f_stage:5 -> d5; // f
-   f_stage:6 -> d6; // g
-   f_stage:7 -> d7; // h
+   f_stage:0..7 -> d[0..7];
 
-   d0 -> out:0;
-   d1 -> out:1;
-   d2 -> out:2;
-   d3 -> out:3;
-   d4 -> out:4;
-   d5 -> out:5;
-   d6 -> out:6;
-   d7 -> out:7;
+   d[0..7] -> out:0..7;
 }
 
 module F(a,b,c,d,e,f,g,h,k,w){
@@ -926,33 +963,11 @@ module ShaSingleState(in){
 }
 
 // Simple grouping of state so it appears better on the graphs
-module ShaState(x0,x1,x2,x3,x4,x5,x6,x7){
-   ShaSingleState s0;
-   ShaSingleState s1;
-   ShaSingleState s2;
-   ShaSingleState s3;
-   ShaSingleState s4;
-   ShaSingleState s5;
-   ShaSingleState s6;
-   ShaSingleState s7;
+module ShaState(x[8]){
+   ShaSingleState s[8];
 #
-   x0 -> s0;
-   x1 -> s1;
-   x2 -> s2;
-   x3 -> s3;
-   x4 -> s4;
-   x5 -> s5;
-   x6 -> s6;
-   x7 -> s7;
-
-   s0 -> out:0;
-   s1 -> out:1;
-   s2 -> out:2;
-   s3 -> out:3;
-   s4 -> out:4;
-   s5 -> out:5;
-   s6 -> out:6;
-   s7 -> out:7;
+   x[0..7] -> s[0..7];
+   s[0..7] -> out:0..7;
 }
 
 module Constants(){
@@ -960,15 +975,6 @@ module Constants(){
 #
    mem -> out:0;
 }
-
-/*
-module SHA(){
-   VRead MemRead;
-   Reg output;
-#
-   MemRead -> output;
-}
-*/
 
 module SHA(){
    VRead MemRead;
@@ -989,9 +995,9 @@ module SHA(){
    MemRead -> Swap;
    
    {State:0..7,cMem0,Swap} -> F0:0..9;
-   {F0:0..7   ,cMem1,M0} -> F1:0..9;
-   {F1:0..7   ,cMem2,M1} -> F2:0..9;
-   {F2:0..7   ,cMem3,M2} -> F3:0..9;
+   {F0:0..7   ,cMem1,M0}   -> F1:0..9;
+   {F1:0..7   ,cMem2,M1}   -> F2:0..9;
+   {F2:0..7   ,cMem3,M2}   -> F3:0..9;
 
    Swap -> M0;
    M0 -> M1;
@@ -1052,118 +1058,98 @@ module SBox(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
    s7:1 -> out:15;
 }
 
-module ShiftRows(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
+module ShiftRows(x[16]){
 #
    // First row
-   {x0,x1,x2,x3} -> out:0..3;
+   x[0..3] -> out:0..3;
 
    // Second row
-   {x4,x5,x6,x7} -> {out:7,out:4..6};
+   x[4..7] -> {out:7,out:4..6};
 
    // Third row
-   {x8,x9,xa,xb} -> {out:10..11,out:8..9};
+   x[8..11] -> {out:10..11,out:8..9};
 
    // Fourth row
-   {xc,xd,xe,xf} -> {out:13..15,out:12};
+   x[12..15] -> {out:13..15,out:12};
 }
 
-module MixProduct(mul2,mul3,x11,x12){
+module InvShiftRows(x[16]){
 #
-   res = mul2 ^ mul3 ^ x11 ^ x12;
-   res -> out;
+   // First row
+   x[0..3] -> out:0..3;
+
+   // Second row
+   {x[7],x[4..6]} -> out:4..7;
+
+   // Third row
+   {x[10..11],x[8..9]} -> out:8..11;
+
+   // Fourth row
+   {x[15],x[12..14]} -> out:12..15;
 }
 
-module DoRow(x0,x1,x2,x3){
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul2_0;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul2_1;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul3_0;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul3_1;
-   MixProduct m0;
-   MixProduct m1;
-   MixProduct m2;
-   MixProduct m3;
+module InvDoRow(x[4]){
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul9[2];
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul11[2];
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul13[2];
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul14[2];
 #
-   x0 -> mul2_0:0;
-   x1 -> mul2_0:1;
-   x2 -> mul2_1:0;
-   x3 -> mul2_1:1;
+   // "Multiple" (lookup) each by 9,11,13,14
+   x[0..3] -> { mul9[0]:0..1, mul9[1]:0..1};
+   x[0..3] -> {mul11[0]:0..1,mul11[1]:0..1};
+   x[0..3] -> {mul13[0]:0..1,mul13[1]:0..1};
+   x[0..3] -> {mul14[0]:0..1,mul14[1]:0..1};
 
-   x0 -> mul3_0:0;
-   x1 -> mul3_0:1;
-   x2 -> mul3_1:0;
-   x3 -> mul3_1:1;
+   r0 = mul14[0] ^ mul11[0]:1 ^ mul13[1] ^  mul9[1]:1;
+   r1 =  mul9[0] ^ mul14[0]:1 ^ mul11[1] ^ mul13[1]:1;
+   r2 = mul13[0] ^  mul9[0]:1 ^ mul14[1] ^ mul11[1]:1;
+   r3 = mul11[0] ^ mul13[0]:1 ^  mul9[1] ^ mul14[1]:1;
 
-   mul2_0:0 -> m0:0; // mul2{x0}
-   mul3_0:1 -> m0:1; // mul3{x1}
-   x2 -> m0:2;
-   x3 -> m0:3;
-
-   x0 -> m1:0;
-   mul2_0:1 -> m1:1; // mul2{x1}
-   mul3_1:0 -> m1:2; // mul3{x2}
-   x3 -> m1:3;
-
-   x0 -> m2:0;
-   x1 -> m2:1;
-   mul2_1:0 -> m2:2; // mul2{x2}
-   mul3_1:1 -> m2:3; // mul3{x3}
-
-   mul3_0:0 -> m3:0; // mul3{x0}
-   x1 -> m3:1;
-   x2 -> m3:2;
-   mul2_1:1 -> m3:3; // mul2{x3}
-
-   m0 -> out:0;
-   m1 -> out:1;
-   m2 -> out:2;
-   m3 -> out:3;
+   {r0,r1,r2,r3} -> out:0..3;
 }
 
-module MixColumns(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
-   DoRow d0;
-   DoRow d1;
-   DoRow d2;
-   DoRow d3;
+module DoRow(x[4]){
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul2[2];
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) mul3[2];
 #
-   x0 -> d0:0;
-   x4 -> d0:1;
-   x8 -> d0:2;
-   xc -> d0:3;
+   // "Multiple" (lookup) each by 2 and by 3
+   x[0..3] -> {mul2[0]:0..1,mul2[1]:0..1};
+   x[0..3] -> {mul3[0]:0..1,mul3[1]:0..1};
 
-   x1 -> d1:0;
-   x5 -> d1:1;
-   x9 -> d1:2;
-   xd -> d1:3;
+   r0 = x[2] ^ x[3] ^ mul2[0]   ^ mul3[0]:1;
+   r1 = x[0] ^ x[3] ^ mul2[0]:1 ^ mul3[1] ;
+   r2 = x[0] ^ x[1] ^ mul2[1]   ^ mul3[1]:1;
+   r3 = x[1] ^ x[2] ^ mul2[1]:1 ^ mul3[0];
 
-   x2 -> d2:0;
-   x6 -> d2:1;
-   xa -> d2:2;
-   xe -> d2:3;
+   {r0,r1,r2,r3} -> out:0..3;
+}
 
-   x3 -> d3:0;
-   x7 -> d3:1;
-   xb -> d3:2;
-   xf -> d3:3;
+module MixColumns(x[16]){
+   DoRow d[4];
+#
+   {x[0],x[4],x[8],x[12]}  -> d[0]:0..3;
+   {x[1],x[5],x[9],x[13]}  -> d[1]:0..3;
+   {x[2],x[6],x[10],x[14]} -> d[2]:0..3;
+   {x[3],x[7],x[11],x[15]} -> d[3]:0..3;
 
-   d0:0 -> out:0;
-   d0:1 -> out:4;
-   d0:2 -> out:8;
-   d0:3 -> out:12;
-   
-   d1:0 -> out:1;
-   d1:1 -> out:5;
-   d1:2 -> out:9;
-   d1:3 -> out:13;
+   d[0]:0..3 -> {out:0,out:4,out:8,out:12};
+   d[1]:0..3 -> {out:1,out:5,out:9,out:13};
+   d[2]:0..3 -> {out:2,out:6,out:10,out:14};
+   d[3]:0..3 -> {out:3,out:7,out:11,out:15};
+}
 
-   d2:0 -> out:2;
-   d2:1 -> out:6;
-   d2:2 -> out:10;
-   d2:3 -> out:14;
-   
-   d3:0 -> out:3;
-   d3:1 -> out:7;
-   d3:2 -> out:11;
-   d3:3 -> out:15;
+module InvMixColumns(x[16]){
+   InvDoRow d[4];
+#
+   {x[0],x[4],x[8],x[12]}  -> d[0]:0..3;
+   {x[1],x[5],x[9],x[13]}  -> d[1]:0..3;
+   {x[2],x[6],x[10],x[14]} -> d[2]:0..3;
+   {x[3],x[7],x[11],x[15]} -> d[3]:0..3;
+
+   d[0]:0..3 -> {out:0,out:4,out:8,out:12};
+   d[1]:0..3 -> {out:1,out:5,out:9,out:13};
+   d[2]:0..3 -> {out:2,out:6,out:10,out:14};
+   d[3]:0..3 -> {out:3,out:7,out:11,out:15};
 }
 
 module AddRoundKey(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,y0,y1,y2,y3,y4,y5,y6,y7,y8,y9,ya,yb,yc,yd,ye,yf){
@@ -1203,24 +1189,30 @@ module AddRoundKey(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,y0,y1,y2,y3,y
    af -> out:15;
 }
 
-module FirstLineKey(x0,x1,x2,x3,w0,w1,w2,w3,rcon){
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b0;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b1;
+module FirstLineKey(x[4],w[4],rcon){
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b[2];
 #
-   x1 -> b0:0;
-   x2 -> b0:1;
-   x3 -> b1:0;
-   x0 -> b1:1;
+   {x[1],x[2],x[3],x[0]} -> {b[0]:0..1,b[1]:0..1};
 
-   d0 = b0:0 ^ w0 ^ rcon;
-   d1 = b0:1 ^ w1;
-   d2 = b1:0 ^ w2;
-   d3 = b1:1 ^ w3;
+   d[0] = b[0]:0 ^ w[0] ^ rcon;
+   d[1] = b[0]:1 ^ w[1];
+   d[2] = b[1]:0 ^ w[2];
+   d[3] = b[1]:1 ^ w[3];
 
-   d0 -> out:0; 
-   d1 -> out:1; 
-   d2 -> out:2; 
-   d3 -> out:3; 
+   d[0..3] -> out:0..3;
+}
+
+module FourthLineKey(x[4],w[4]){
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b[2];
+#
+   {x[0..1],x[2..3]} -> {b[0]:0..1,b[1]:0..1};
+
+   d[0] = b[0]:0 ^ w[0];
+   d[1] = b[0]:1 ^ w[1];
+   d[2] = b[1]:0 ^ w[2];
+   d[3] = b[1]:1 ^ w[3];
+
+   d[0..3] -> out:0..3; 
 }
 
 module KeySchedule(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,rcon){
@@ -1269,49 +1261,19 @@ module KeySchedule(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,rcon){
    c3 -> out:15;
 }
 
-module MainRound(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
+module MainRound(x[16],k[16]){
    SBox subBytes;
    ShiftRows shiftRows;
    MixColumns mixColumns;
    AddRoundKey addRoundKey;
 #
-   x0 -> subBytes:0;
-   x1 -> subBytes:1;
-   x2 -> subBytes:2;
-   x3 -> subBytes:3;
-   x4 -> subBytes:4;
-   x5 -> subBytes:5;
-   x6 -> subBytes:6;
-   x7 -> subBytes:7;
-   x8 -> subBytes:8;
-   x9 -> subBytes:9;
-   xa -> subBytes:10;
-   xb -> subBytes:11;
-   xc -> subBytes:12;
-   xd -> subBytes:13;
-   xe -> subBytes:14;
-   xf -> subBytes:15;
+   x[0..15] -> subBytes:0..15;
    
    subBytes:0..15 -> shiftRows:0..15;
    shiftRows:0..15 -> mixColumns:0..15;
-   mixColumns:0..15 -> addRoundKey:0..15;
 
-   k0 -> addRoundKey:16;
-   k1 -> addRoundKey:17;
-   k2 -> addRoundKey:18;
-   k3 -> addRoundKey:19;
-   k4 -> addRoundKey:20;
-   k5 -> addRoundKey:21;
-   k6 -> addRoundKey:22;
-   k7 -> addRoundKey:23;
-   k8 -> addRoundKey:24;
-   k9 -> addRoundKey:25;
-   ka -> addRoundKey:26;
-   kb -> addRoundKey:27;
-   kc -> addRoundKey:28;
-   kd -> addRoundKey:29;
-   ke -> addRoundKey:30;
-   kf -> addRoundKey:31;
+   mixColumns:0..15 -> addRoundKey:0..15;
+   k[0..15]         -> addRoundKey:16..31;
 
    addRoundKey:0..15 -> out:0..15;
 }
@@ -1365,48 +1327,33 @@ iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
 }
 */
 
-module MainRoundAndKey(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,rcon){
+module InvMainRound(x[16],k[16]){
+   InvShiftRows invShiftRows;
+   SBox invSubBytes;
+   AddRoundKey invAddRoundKey;
+   InvMixColumns invMixColumns;
+#
+   x[0..15] -> invShiftRows:0..15;
+   invShiftRows:0..15 -> invSubBytes:0..15;
+
+   invSubBytes:0..15 -> invAddRoundKey:0..15;
+   k[0..15]          -> invAddRoundKey:16..31;
+
+   invAddRoundKey:0..15 -> invMixColumns:0..15;
+}
+
+module MainRoundAndKey(x[16],k[16],rcon){
    MainRound round;
    KeySchedule key;
 #
-   x0 -> round:0;
-   x1 -> round:1;
-   x2 -> round:2;
-   x3 -> round:3;
-   x4 -> round:4;
-   x5 -> round:5;
-   x6 -> round:6;
-   x7 -> round:7;
-   x8 -> round:8;
-   x9 -> round:9;
-   xa -> round:10;
-   xb -> round:11;
-   xc -> round:12;
-   xd -> round:13;
-   xe -> round:14;
-   xf -> round:15;
-   k0 -> key:0;
-   k1 -> key:1;
-   k2 -> key:2;
-   k3 -> key:3;
-   k4 -> key:4;
-   k5 -> key:5;
-   k6 -> key:6;
-   k7 -> key:7;
-   k8 -> key:8;
-   k9 -> key:9;
-   ka -> key:10;
-   kb -> key:11;
-   kc -> key:12;
-   kd -> key:13;
-   ke -> key:14;
-   kf -> key:15;
-   rcon -> key:16;
+   k[0..15] -> key:0..15;
+   rcon     -> key:16;
    
+   x[0..15]  -> round:0..15;
    key:0..15 -> round:16..31;
 
    round:0..15 -> out:0..15;
-   key:0..15 -> out:16..31;
+   key:0..15   -> out:16..31;
 }
 
 module AES(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
@@ -1585,17 +1532,8 @@ iterative AESPathExample(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k
    roundAndKey:0..31 -> out:0..31;
 }
 
-module AESWithIterative(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf){
-   Const rcon0;
-   Const rcon1;
-   Const rcon2;
-   Const rcon3;
-   Const rcon4;
-   Const rcon5;
-   Const rcon6;
-   Const rcon7;
-   Const rcon8;
-   Const rcon9;
+module AESWithIterative(x[16],k[16]){
+   Const rcon[10];
    
    AESPathExample mk0;
 
@@ -1606,74 +1544,21 @@ module AESWithIterative(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2
    ShiftRows shiftRows;
    AddRoundKey lastKey;
 #
-   x0 -> firstKey:0;
-   x1 -> firstKey:1;
-   x2 -> firstKey:2;
-   x3 -> firstKey:3;
-   x4 -> firstKey:4;
-   x5 -> firstKey:5;
-   x6 -> firstKey:6;
-   x7 -> firstKey:7;
-   x8 -> firstKey:8;
-   x9 -> firstKey:9;
-   xa -> firstKey:10;
-   xb -> firstKey:11;
-   xc -> firstKey:12;
-   xd -> firstKey:13;
-   xe -> firstKey:14;
-   xf -> firstKey:15;
-   k0 -> firstKey:16;
-   k1 -> firstKey:17;
-   k2 -> firstKey:18;
-   k3 -> firstKey:19;
-   k4 -> firstKey:20;
-   k5 -> firstKey:21;
-   k6 -> firstKey:22;
-   k7 -> firstKey:23;
-   k8 -> firstKey:24;
-   k9 -> firstKey:25;
-   ka -> firstKey:26;
-   kb -> firstKey:27;
-   kc -> firstKey:28;
-   kd -> firstKey:29;
-   ke -> firstKey:30;
-   kf -> firstKey:31;
+   x[0..15] -> firstKey:0..15;
+   k[0..15] -> firstKey:16..31;
 
    firstKey:0..15 -> mk0:0..15;
-   k0 -> mk0:16;
-   k1 -> mk0:17;
-   k2 -> mk0:18;
-   k3 -> mk0:19;
-   k4 -> mk0:20;
-   k5 -> mk0:21;
-   k6 -> mk0:22;
-   k7 -> mk0:23;
-   k8 -> mk0:24;
-   k9 -> mk0:25;
-   ka -> mk0:26;
-   kb -> mk0:27;
-   kc -> mk0:28;
-   kd -> mk0:29;
-   ke -> mk0:30;
-   kf -> mk0:31;
-   rcon0 -> mk0:32;
-   rcon1 -> mk0:33;
-   rcon2 -> mk0:34;
-   rcon3 -> mk0:35;
-   rcon4 -> mk0:36;
-   rcon5 -> mk0:37;
-   rcon6 -> mk0:38;
-   rcon7 -> mk0:39;
-   rcon8 -> mk0:40;
+   k[0..15]       -> mk0:16..31;
+   rcon[0..8]     -> mk0:32..40;
    
-   mk0:0..15 -> subBytes:0..15;
+   mk0:0..15  -> subBytes:0..15;
    mk0:16..31 -> key9:0..15;
 
-   rcon9 -> key9:16;
-   subBytes:0..15 -> shiftRows:0..15;
-   shiftRows:0..15 -> lastKey:0..15;
+   rcon[9]         -> key9:16;
+   subBytes:0..15  -> shiftRows:0..15;
 
-   key9:0..15 -> lastKey:16..31;
+   shiftRows:0..15 -> lastKey:0..15;
+   key9:0..15      -> lastKey:16..31;
 
    lastKey:0..15 -> out:0..15;
 }
@@ -1693,189 +1578,68 @@ module ReadWriteAES(){
    merge -> results;
 }
 
-module FirstLineKey(x0,x1,x2,x3,w0,w1,w2,w3,rcon){
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b0;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b1;
-#
-   x1 -> b0:0;
-   x2 -> b0:1;
-   x3 -> b1:0;
-   x0 -> b1:1;
-
-   d0 = b0:0 ^ w0 ^ rcon;
-   d1 = b0:1 ^ w1;
-   d2 = b1:0 ^ w2;
-   d3 = b1:1 ^ w3;
-
-   d0 -> out:0; 
-   d1 -> out:1; 
-   d2 -> out:2; 
-   d3 -> out:3; 
-}
-
-module FourthLineKey(x0,x1,x2,x3,w0,w1,w2,w3){
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b0;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b1;
-#
-   x0 -> b0:0;
-   x1 -> b0:1;
-
-   x2 -> b1:0;
-   x3 -> b1:1;
-
-   d0 = b0:0 ^ w0;
-   d1 = b0:1 ^ w1;
-   d2 = b1:0 ^ w2;
-   d3 = b1:1 ^ w3;
-
-   d0 -> out:0; 
-   d1 -> out:1; 
-   d2 -> out:2; 
-   d3 -> out:3; 
-}
-
-module KeySchedule256(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,x10,x11,x12,x13,x14,x15,x16,x17,x18,x19,x1a,x1b,x1c,x1d,x1e,x1f,rcon){
+module KeySchedule256(x[32],rcon){
    FirstLineKey s;
    FourthLineKey q;
 #
-   x13 -> s:0;
-   x17 -> s:1;
-   x1b -> s:2;
-   x1f -> s:3;
-   x0 -> s:4;
-   x4 -> s:5;
-   x8 -> s:6;
-   xc -> s:7;
+   {x[19],x[23],x[27],x[31]} -> s:0..3;
+   {x[0],x[4],x[8],x[12]}    -> s:4..7;
    rcon -> s:8;
 
-   a0 = s:0 ^ x1;
-   a1 = s:1 ^ x5;
-   a2 = s:2 ^ x9;
-   a3 = s:3 ^ xd;
+   a[0] = s:0 ^ x[1];
+   a[1] = s:1 ^ x[5];
+   a[2] = s:2 ^ x[9];
+   a[3] = s:3 ^ x[13];
 
-   b0 = a0 ^ x2;
-   b1 = a1 ^ x6;
-   b2 = a2 ^ xa;
-   b3 = a3 ^ xe;
+   b[0] = a[0] ^ x[2];
+   b[1] = a[1] ^ x[6];
+   b[2] = a[2] ^ x[10];
+   b[3] = a[3] ^ x[14];
 
-   c0 = b0 ^ x3;
-   c1 = b1 ^ x7;
-   c2 = b2 ^ xb;
-   c3 = b3 ^ xf;
+   c[0] = b[0] ^ x[3];
+   c[1] = b[1] ^ x[7];
+   c[2] = b[2] ^ x[11];
+   c[3] = b[3] ^ x[15];
 
-   c0 -> q:0;
-   c1 -> q:1;
-   c2 -> q:2;
-   c3 -> q:3;
-   x10 -> q:4;
-   x14 -> q:5;
-   x18 -> q:6;
-   x1c -> q:7;
+   c[0..3] -> q:0..3;
 
-   d0 = q:0 ^ x11;
-   d1 = q:1 ^ x15;
-   d2 = q:2 ^ x19;
-   d3 = q:3 ^ x1d;
+   {x[16],x[20],x[24],x[28]} -> q:4..7;
 
-   e0 = d0 ^ x12;
-   e1 = d1 ^ x16;
-   e2 = d2 ^ x1a;
-   e3 = d3 ^ x1e;
+   d[0] = q:0 ^ x[17];
+   d[1] = q:1 ^ x[21];
+   d[2] = q:2 ^ x[25];
+   d[3] = q:3 ^ x[29];
 
-   f0 = e0 ^ x13;
-   f1 = e1 ^ x17;
-   f2 = e2 ^ x1b;
-   f3 = e3 ^ x1f;
+   e[0] = d[0] ^ x[18];
+   e[1] = d[1] ^ x[22];
+   e[2] = d[2] ^ x[26];
+   e[3] = d[3] ^ x[30];
 
-   s:0 -> out:0;
-   s:1 -> out:4;
-   s:2 -> out:8;
-   s:3 -> out:12;
-   a0 -> out:1;
-   a1 -> out:5;
-   a2 -> out:9;
-   a3 -> out:13;
-   b0 -> out:2;
-   b1 -> out:6;
-   b2 -> out:10;
-   b3 -> out:14;
-   c0 -> out:3;
-   c1 -> out:7;
-   c2 -> out:11;
-   c3 -> out:15;
-   q:0 -> out:16;
-   q:1 -> out:20;
-   q:2 -> out:24;
-   q:3 -> out:28;
-   d0 -> out:17;
-   d1 -> out:21;
-   d2 -> out:25;
-   d3 -> out:29;
-   e0 -> out:18;
-   e1 -> out:22;
-   e2 -> out:26;
-   e3 -> out:30;
-   f0 -> out:19;
-   f1 -> out:23;
-   f2 -> out:27;
-   f3 -> out:31;
+   f[0] = e[0] ^ x[19];
+   f[1] = e[1] ^ x[23];
+   f[2] = e[2] ^ x[27];
+   f[3] = e[3] ^ x[31];
+
+   s:0..3  -> {out:0,out:4,out:8,out:12};
+   a[0..3] -> {out:1,out:5,out:9,out:13};
+   b[0..3] -> {out:2,out:6,out:10,out:14};
+   c[0..3] -> {out:3,out:7,out:11,out:15};
+
+   q:0..3  -> {out:16,out:20,out:24,out:28};
+   d[0..3] -> {out:17,out:21,out:25,out:29};
+   e[0..3] -> {out:18,out:22,out:26,out:30};
+   f[0..3] -> {out:19,out:23,out:27,out:31};
 }
 
-module RoundPairAndKey(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,k10,k11,k12,k13,k14,k15,k16,k17,k18,k19,k1a,k1b,k1c,k1d,k1e,k1f,rcon){
+module RoundPairAndKey(x[16],k[32],rcon){
    MainRound round1;
    MainRound round2;
    KeySchedule256 key;
 #
-   x0 -> round1:0;
-   x1 -> round1:1;
-   x2 -> round1:2;
-   x3 -> round1:3;
-   x4 -> round1:4;
-   x5 -> round1:5;
-   x6 -> round1:6;
-   x7 -> round1:7;
-   x8 -> round1:8;
-   x9 -> round1:9;
-   xa -> round1:10;
-   xb -> round1:11;
-   xc -> round1:12;
-   xd -> round1:13;
-   xe -> round1:14;
-   xf -> round1:15;
+   x[0..15] -> round1:0..15;
 
-   k0 -> key:0;
-   k1 -> key:1;
-   k2 -> key:2;
-   k3 -> key:3;
-   k4 -> key:4;
-   k5 -> key:5;
-   k6 -> key:6;
-   k7 -> key:7;
-   k8 -> key:8;
-   k9 -> key:9;
-   ka -> key:10;
-   kb -> key:11;
-   kc -> key:12;
-   kd -> key:13;
-   ke -> key:14;
-   kf -> key:15;
-   k10 -> key:16;
-   k11 -> key:17;
-   k12 -> key:18;
-   k13 -> key:19;
-   k14 -> key:20;
-   k15 -> key:21;
-   k16 -> key:22;
-   k17 -> key:23;
-   k18 -> key:24;
-   k19 -> key:25;
-   k1a -> key:26;
-   k1b -> key:27;
-   k1c -> key:28;
-   k1d -> key:29;
-   k1e -> key:30;
-   k1f -> key:31;
-   rcon -> key:32;
+   k[0..31] -> key:0..31;
+   rcon     -> key:32;
    
    key:0..15 -> round1:16..31;
 
@@ -1950,16 +1714,10 @@ iterative AES256Path(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3
    roundPairAndKey:0..47 -> out:0..47;
 }
 
-module AES256WithIterative(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,k10,k11,k12,k13,k14,k15,k16,k17,k18,k19,k1a,k1b,k1c,k1d,k1e,k1f){
-   Const rcon0;
-   Const rcon1;
-   Const rcon2;
-   Const rcon3;
-   Const rcon4;
-   Const rcon5;
-   Const rcon6;
+module AES256WithIterative(x[16],k[32]){
+   Const rcon[7];
    
-   AES256Path mk0;
+   AES256Path path;
 
    KeySchedule256 key6;
 
@@ -1969,124 +1727,48 @@ module AES256WithIterative(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1
    ShiftRows shiftRows;
    AddRoundKey lastKey;
 #
-   {x0,x1,x2,x3} -> {firstKey:0,firstKey:4,firstKey:8,firstKey:12};
-   //x0 -> firstKey:0;
-   //x1 -> firstKey:4;
-   //x2 -> firstKey:8;
-   //x3 -> firstKey:12;
+   x[0..3]   -> {firstKey:0,firstKey:4,firstKey:8,firstKey:12};
+   x[4..7]   -> {firstKey:1,firstKey:5,firstKey:9,firstKey:13};
+   x[8..11]  -> {firstKey:2,firstKey:6,firstKey:10,firstKey:14};
+   x[12..15] -> {firstKey:3,firstKey:7,firstKey:11,firstKey:15};
    
-   x4 -> firstKey:1;
-   x5 -> firstKey:5;
-   x6 -> firstKey:9;
-   x7 -> firstKey:13;
-   x8 -> firstKey:2;
-   x9 -> firstKey:6;
-   xa -> firstKey:10;
-   xb -> firstKey:14;
-   xc -> firstKey:3;
-   xd -> firstKey:7;
-   xe -> firstKey:11;
-   xf -> firstKey:15;
-   k0 -> firstKey:16;
-   k1 -> firstKey:20;
-   k2 -> firstKey:24;
-   k3 -> firstKey:28;
-   k4 -> firstKey:17;
-   k5 -> firstKey:21;
-   k6 -> firstKey:25;
-   k7 -> firstKey:29;
-   k8 -> firstKey:18;
-   k9 -> firstKey:22;
-   ka -> firstKey:26;
-   kb -> firstKey:30;
-   kc -> firstKey:19;
-   kd -> firstKey:23;
-   ke -> firstKey:27;
-   kf -> firstKey:31;
+   k[0..3]   -> {firstKey:16,firstKey:20,firstKey:24,firstKey:28};
+   k[4..7]   -> {firstKey:17,firstKey:21,firstKey:25,firstKey:29};
+   k[8..11]  -> {firstKey:18,firstKey:22,firstKey:26,firstKey:30};
+   k[12..15] -> {firstKey:19,firstKey:23,firstKey:27,firstKey:31};
 
    firstKey:0..15 -> round0:0..15;
-   k10 -> round0:16;
-   k11 -> round0:20;
-   k12 -> round0:24;
-   k13 -> round0:28;
-   k14 -> round0:17;
-   k15 -> round0:21;
-   k16 -> round0:25;
-   k17 -> round0:29;
-   k18 -> round0:18;
-   k19 -> round0:22;
-   k1a -> round0:26;
-   k1b -> round0:30;
-   k1c -> round0:19;
-   k1d -> round0:23;
-   k1e -> round0:27;
-   k1f -> round0:31;
+   k[16..19]  -> {round0:16,round0:20,round0:24,round0:28};
+   k[20..23]  -> {round0:17,round0:21,round0:25,round0:29};
+   k[24..27]  -> {round0:18,round0:22,round0:26,round0:30};
+   k[28..31]  -> {round0:19,round0:23,round0:27,round0:31};
 
-   round0:0..15 -> mk0:0..15;
-   k0 -> mk0:16;
-   k1 -> mk0:20;
-   k2 -> mk0:24;
-   k3 -> mk0:28;
-   k4 -> mk0:17;
-   k5 -> mk0:21;
-   k6 -> mk0:25;
-   k7 -> mk0:29;
-   k8 -> mk0:18;
-   k9 -> mk0:22;
-   ka -> mk0:26;
-   kb -> mk0:30;
-   kc -> mk0:19;
-   kd -> mk0:23;
-   ke -> mk0:27;
-   kf -> mk0:31;
-   k10 -> mk0:32;
-   k11 -> mk0:36;
-   k12 -> mk0:40;
-   k13 -> mk0:44;
-   k14 -> mk0:33;
-   k15 -> mk0:37;
-   k16 -> mk0:41;
-   k17 -> mk0:45;
-   k18 -> mk0:34;
-   k19 -> mk0:38;
-   k1a -> mk0:42;
-   k1b -> mk0:46;
-   k1c -> mk0:35;
-   k1d -> mk0:39;
-   k1e -> mk0:43;
-   k1f -> mk0:47;
-   rcon0 -> mk0:48;
-   rcon1 -> mk0:49;
-   rcon2 -> mk0:50;
-   rcon3 -> mk0:51;
-   rcon4 -> mk0:52;
-   rcon5 -> mk0:53;
+   round0:0..15 -> path:0..15;
+
+   k[0..3]   ->  {path:16,path:20,path:24,path:28};
+   k[4..7]   ->  {path:17,path:21,path:25,path:29};
+   k[8..11]  ->  {path:18,path:22,path:26,path:30};
+   k[12..15] ->  {path:19,path:23,path:27,path:31};
+   k[16..19]  -> {path:32,path:36,path:40,path:44};
+   k[20..23]  -> {path:33,path:37,path:41,path:45};
+   k[24..27]  -> {path:34,path:38,path:42,path:46};
+   k[28..31]  -> {path:35,path:39,path:43,path:47};
+
+   rcon[0..5] -> path:48..53;
    
-   mk0:16..47 -> key6:0..31;
-   rcon6 -> key6:32;
+   path:16..47 -> key6:0..31;
+   rcon[6] -> key6:32;
 
-   mk0:0..15 -> subBytes:0..15;
+   path:0..15 -> subBytes:0..15;
    subBytes:0..15 -> shiftRows:0..15;
 
    shiftRows:0..15 -> lastKey:0..15;
-   key6:0..15 -> lastKey:16..31;
+   key6:0..15      -> lastKey:16..31;
 
-   lastKey:0 -> out:0;
-   lastKey:1 -> out:4;
-   lastKey:2 -> out:8;
-   lastKey:3 -> out:12;
-   lastKey:4 -> out:1;
-   lastKey:5 -> out:5;
-   lastKey:6 -> out:9;
-   lastKey:7 -> out:13;
-   lastKey:8 -> out:2;
-   lastKey:9 -> out:6;
-   lastKey:10 -> out:10;
-   lastKey:11 -> out:14;
-   lastKey:12 -> out:3;
-   lastKey:13 -> out:7;
-   lastKey:14 -> out:11;
-   lastKey:15 -> out:15;
+   lastKey:0..3   -> {out:0,out:4,out:8,out:12};
+   lastKey:4..7   -> {out:1,out:5,out:9,out:13};
+   lastKey:8..11  -> {out:2,out:6,out:10,out:14};
+   lastKey:12..15 -> {out:3,out:7,out:11,out:15};
 }
 
 module SimpleExample(){
@@ -3405,6 +3087,7 @@ module DMATest(){
 
 merge SHA_AES = SHA | ReadWriteAES256 | VectorLikeOperation;
 
+/*
 module Simple(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,k10,k11,k12,k13,k14,k15,k16,k17,k18,k19,k1a,k1b,k1c,k1d,k1e,k1f){
 #
    w0 = x0 & k0 & k1;
@@ -3426,27 +3109,254 @@ module Simple(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,
 
    {w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,wa,wb,wc,wd,we,wf} -> out:0..15;
 }
+*/
 
-/*
 module Simple(x[16],k[32]){
 #
-   w0 = x[0]  & k[0] & k[1];
-   w1 = x[1]  & k[2] & k[3];
-   w2 = x[2]  & k[4] & k[5];
-   w3 = x[3]  & k[6] & k[7];
-   w4 = x[4]  & k[8] & k[9];
-   w5 = x[5]  & k[10] & k[11];
-   w6 = x[6]  & k[12] & k[13];
-   w7 = x[7]  & k[14] & k[15];
-   w8 = x[8]  & k[16] & k[17];
-   w9 = x[9]  & k[18] & k[19];
-   wa = x[10] & k[20] & k[21];
-   wb = x[11] & k[22] & k[23];
-   wc = x[12] & k[24] & k[25];
-   wd = x[13] & k[26] & k[27];
-   we = x[14] & k[28] & k[29];
-   wf = x[15] & k[30] & k[31];
+   w[0]  = x[0]  & k[0]  & k[1];
+   w[1]  = x[1]  & k[2]  & k[3];
+   w[2]  = x[2]  & k[4]  & k[5];
+   w[3]  = x[3]  & k[6]  & k[7];
+   w[4]  = x[4]  & k[8]  & k[9];
+   w[5]  = x[5]  & k[10] & k[11];
+   w[6]  = x[6]  & k[12] & k[13];
+   w[7]  = x[7]  & k[14] & k[15];
+   w[8]  = x[8]  & k[16] & k[17];
+   w[9]  = x[9]  & k[18] & k[19];
+   w[10] = x[10] & k[20] & k[21];
+   w[11] = x[11] & k[22] & k[23];
+   w[12] = x[12] & k[24] & k[25];
+   w[13] = x[13] & k[26] & k[27];
+   w[14] = x[14] & k[28] & k[29];
+   w[15] = x[15] & k[30] & k[31];
 
    w[0..15] -> out:0..15;
 }
+
+module FixedKeySchedule256(x[32],rcon){
+   FirstLineKey s;
+   FourthLineKey q;
+#
+   {x[28],x[29],x[30],x[31]} -> s:0..3;
+   {x[0],x[1],x[2],x[3]}    -> s:4..7;
+   rcon -> s:8;
+
+   a[0] = s:0 ^ x[4];
+   a[1] = s:1 ^ x[5];
+   a[2] = s:2 ^ x[6];
+   a[3] = s:3 ^ x[7];
+
+   b[0] = a[0] ^ x[8];
+   b[1] = a[1] ^ x[9];
+   b[2] = a[2] ^ x[10];
+   b[3] = a[3] ^ x[11];
+
+   c[0] = b[0] ^ x[12];
+   c[1] = b[1] ^ x[13];
+   c[2] = b[2] ^ x[14];
+   c[3] = b[3] ^ x[15];
+
+   c[0..3] -> q:0..3;
+
+   {x[16],x[17],x[18],x[19]} -> q:4..7;
+
+   d[0] = q:0 ^ x[20];
+   d[1] = q:1 ^ x[21];
+   d[2] = q:2 ^ x[22];
+   d[3] = q:3 ^ x[23];
+
+   e[0] = d[0] ^ x[24];
+   e[1] = d[1] ^ x[25];
+   e[2] = d[2] ^ x[26];
+   e[3] = d[3] ^ x[27];
+
+   f[0] = e[0] ^ x[28];
+   f[1] = e[1] ^ x[29];
+   f[2] = e[2] ^ x[30];
+   f[3] = e[3] ^ x[31];
+
+   s:0..3  -> out:0..3;
+   a[0..3] -> out:4..7;
+   b[0..3] -> out:8..11;
+   c[0..3] -> out:12..15;
+
+   q:0..3  -> out:16..19;
+   d[0..3] -> out:20..23;
+   e[0..3] -> out:24..27;
+   f[0..3] -> out:28..31;
+}
+
+module GenericLineKey(x[4],w[4],rcon){
+   LookupTable #(.ADDR_W(8),.SIZE_W(8)) b[2];
+   Mux2 mux[4];
+#
+   {x[0],x[1],x[2],x[3]} -> mux[0..3]:0; // Fourth line 
+   {x[1],x[2],x[3],x[0]} -> mux[0..3]:1; // First line
+
+   mux[0..3] -> {b[0]:0..1,b[1]:0..1};
+
+   d[0] = b[0]:0 ^ w[0] ^ rcon;
+   d[1] = b[0]:1 ^ w[1];
+   d[2] = b[1]:0 ^ w[2];
+   d[3] = b[1]:1 ^ w[3];
+
+   d[0..3] -> out:0..3;
+}
+
+module GenericKeySchedule256(x[16],rcon){
+   GenericLineKey s;
+#
+   {x[12],x[13],x[14],x[15]} -> s:0..3;
+   {x[0],x[1],x[2],x[3]}    -> s:4..7;
+   rcon -> s:8;
+
+   a[0] = s:0 ^ x[4];
+   a[1] = s:1 ^ x[5];
+   a[2] = s:2 ^ x[6];
+   a[3] = s:3 ^ x[7];
+
+   b[0] = a[0] ^ x[8];
+   b[1] = a[1] ^ x[9];
+   b[2] = a[2] ^ x[10];
+   b[3] = a[3] ^ x[11];
+
+   c[0] = b[0] ^ x[12];
+   c[1] = b[1] ^ x[13];
+   c[2] = b[2] ^ x[14];
+   c[3] = b[3] ^ x[15];
+
+   s:0..3  -> out:0..3;
+   a[0..3] -> out:4..7;
+   b[0..3] -> out:8..11;
+   c[0..3] -> out:12..15;
+}
+
+module KeyScheduleRound(){
+   share config RegFile { 
+      bank[16];
+   };
+
+   GenericKeySchedule256 key;
+   Const rcon;
+   Merge2 merge;
+#
+   bank[0..15] -> key:0..15;
+   rcon        -> key:16;
+
+   key:0..15   -> bank[0..15];
+}
+
+/*
+module RoundPair(x[16],key[32]){
+   MainRound round1;
+   MainRound round2;
+#
+   x[0..15] -> round1:0..15;
+   
+   key:[0..15]  -> round1:16..31;
+
+   round1:0..15 -> round2:0..15;
+   key:[16..31] -> round2:16..31;
+
+   round2:0..15 -> out:0..15;
+   key:0..31    -> out:16..47;
+}
+
+module AES256WithRound(x[16]){
+   share config RegFile{
+      bank[32];
+   }
+
+   AES256Path path;
+
+   AddRoundKey firstKey;
+   MainRound round0;
+   SBox subBytes;
+   ShiftRows shiftRows;
+   AddRoundKey lastKey;
+#
+   x[0..3]   -> {firstKey:0,firstKey:4,firstKey:8,firstKey:12};
+   x[4..7]   -> {firstKey:1,firstKey:5,firstKey:9,firstKey:13};
+   x[8..11]  -> {firstKey:2,firstKey:6,firstKey:10,firstKey:14};
+   x[12..15] -> {firstKey:3,firstKey:7,firstKey:11,firstKey:15};
+   
+   k[0..3]   -> {firstKey:16,firstKey:20,firstKey:24,firstKey:28};
+   k[4..7]   -> {firstKey:17,firstKey:21,firstKey:25,firstKey:29};
+   k[8..11]  -> {firstKey:18,firstKey:22,firstKey:26,firstKey:30};
+   k[12..15] -> {firstKey:19,firstKey:23,firstKey:27,firstKey:31};
+
+   firstKey:0..15 -> round0:0..15;
+   k[16..19]  -> {round0:16,round0:20,round0:24,round0:28};
+   k[20..23]  -> {round0:17,round0:21,round0:25,round0:29};
+   k[24..27]  -> {round0:18,round0:22,round0:26,round0:30};
+   k[28..31]  -> {round0:19,round0:23,round0:27,round0:31};
+
+   round0:0..15 -> path:0..15;
+
+   k[0..3]   ->  {path:16,path:20,path:24,path:28};
+   k[4..7]   ->  {path:17,path:21,path:25,path:29};
+   k[8..11]  ->  {path:18,path:22,path:26,path:30};
+   k[12..15] ->  {path:19,path:23,path:27,path:31};
+   k[16..19]  -> {path:32,path:36,path:40,path:44};
+   k[20..23]  -> {path:33,path:37,path:41,path:45};
+   k[24..27]  -> {path:34,path:38,path:42,path:46};
+   k[28..31]  -> {path:35,path:39,path:43,path:47};
+
+   rcon[0..5] -> path:48..53;
+   
+   path:16..47 -> key6:0..31;
+   rcon[6] -> key6:32;
+
+   path:0..15 -> subBytes:0..15;
+   subBytes:0..15 -> shiftRows:0..15;
+
+   shiftRows:0..15 -> lastKey:0..15;
+   key6:0..15      -> lastKey:16..31;
+
+   lastKey:0..3   -> {out:0,out:4,out:8,out:12};
+   lastKey:4..7   -> {out:1,out:5,out:9,out:13};
+   lastKey:8..11  -> {out:2,out:6,out:10,out:14};
+   lastKey:12..15 -> {out:3,out:7,out:11,out:15};
+}
 */
+
+/*
+
+transform Transpose4x4{
+   0..3   ->  {0,4,8,12};
+   4..7   ->  {1,5,9,13};
+   8..11  ->  {2,6,10,14};
+   12..15 ->  {3,7,11,15};
+}
+
+module TestTransform(x[16]){
+#
+   x[0..15] -> Transpose4x4 -> out:0..15;
+}
+
+transform Flood4{
+   0 -> 0;
+   0 -> 1;
+   0 -> 2;
+   0 -> 3;
+}
+
+module TestTransform2(x){
+#
+   x -> Flood4 -> out:0..3;
+
+}
+
+transform Transpose2x2(x[4]){
+   x[0..1]   ->  {out:0,out:2};
+   x[2..3]   ->  {out:1,out:3};
+}
+
+{x[0],x[1],x[2],x[3]} -> {x[0],x[2],x[1],x[3]}; 
+
+module TestTransform(x[16]){
+#
+   x[0..3] -> Transpose2x2 -> out:0..3;
+}
+*/
+

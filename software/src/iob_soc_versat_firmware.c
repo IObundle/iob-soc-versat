@@ -127,7 +127,7 @@ int main(int argc,char* argv[]){
    char fail_string[] = "Test failed!";
 
    // init timer
-   timer_init(TIMER0_BASE);
+   //timer_init(TIMER0_BASE);
 
    // init uart
    uart_init(UART0_BASE, FREQ / BAUD);
