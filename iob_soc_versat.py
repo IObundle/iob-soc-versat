@@ -59,8 +59,8 @@ class iob_soc_versat(iob_soc):
     def _create_instances(cls):
         super()._create_instances()
 
-        if iob_vexriscv in cls.submodule_list:
-            cls.cpu = iob_vexriscv("cpu_0")
+        # if iob_vexriscv in cls.submodule_list:
+        #    cls.cpu = iob_vexriscv("cpu_0")
         if cls.versat_type in cls.submodule_list:
             cls.versat = cls.versat_type("VERSAT0", "Versat accelerator")
             cls.peripherals.append(cls.versat)
@@ -149,17 +149,6 @@ class iob_soc_versat(iob_soc):
                 "min": "1",
                 "max": "32",
                 "descr": "SRAM address width",
-            }
-        ]
-
-        cls.AXI_CONFS = [
-            {
-                "name": "AXI_LEN_W",
-                "type": "M",
-                "val": "4",
-                "min": "?",
-                "max": "?",
-                "descr": "description",
             }
         ]
 
