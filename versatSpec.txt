@@ -61,7 +61,7 @@ module TestShareStatic(){
    TestShareStaticChild testStatic[2];
    Reg outputs[10];
 #
-   {testShare[0]:0..2,testShare[1]:0..2,testStatic:0..1,testStatic:0..1} -> outputs[0..9];
+   {testShare[0]:0..2,testShare[1]:0..2,testStatic[0]:0..1,testStatic[1]:0..1} -> outputs[0..9];
 }
 
 module TestDelays(){
@@ -1152,41 +1152,26 @@ module InvMixColumns(x[16]){
    d[3]:0..3 -> {out:3,out:7,out:11,out:15};
 }
 
-module AddRoundKey(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,y0,y1,y2,y3,y4,y5,y6,y7,y8,y9,ya,yb,yc,yd,ye,yf){
+module AddRoundKey(x[16],y[16]){
 #
-   a0 = x0 ^ y0;
-   a1 = x1 ^ y1;
-   a2 = x2 ^ y2;
-   a3 = x3 ^ y3;
-   a4 = x4 ^ y4;
-   a5 = x5 ^ y5;
-   a6 = x6 ^ y6;
-   a7 = x7 ^ y7;
-   a8 = x8 ^ y8;
-   a9 = x9 ^ y9;
-   aa = xa ^ ya;
-   ab = xb ^ yb;
-   ac = xc ^ yc;
-   ad = xd ^ yd;
-   ae = xe ^ ye;
-   af = xf ^ yf;
+   a[0] = x[0] ^ y[0];
+   a[1] = x[1] ^ y[1];
+   a[2] = x[2] ^ y[2];
+   a[3] = x[3] ^ y[3];
+   a[4] = x[4] ^ y[4];
+   a[5] = x[5] ^ y[5];
+   a[6] = x[6] ^ y[6];
+   a[7] = x[7] ^ y[7];
+   a[8] = x[8] ^ y[8];
+   a[9] = x[9] ^ y[9];
+   a[10] = x[10] ^ y[10];
+   a[11] = x[11] ^ y[11];
+   a[12] = x[12] ^ y[12];
+   a[13] = x[13] ^ y[13];
+   a[14] = x[14] ^ y[14];
+   a[15] = x[15] ^ y[15];
 
-   a0 -> out:0;
-   a1 -> out:1;
-   a2 -> out:2;
-   a3 -> out:3;
-   a4 -> out:4;
-   a5 -> out:5;
-   a6 -> out:6;
-   a7 -> out:7;
-   a8 -> out:8;
-   a9 -> out:9;
-   aa -> out:10;
-   ab -> out:11;
-   ac -> out:12;
-   ad -> out:13;
-   ae -> out:14;
-   af -> out:15;
+   a[0..15] -> out:0..15;
 }
 
 module FirstLineKey(x[4],w[4],rcon){
