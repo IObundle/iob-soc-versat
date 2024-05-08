@@ -73,7 +73,57 @@ module TestDelays(){
    a -> output;
 }
 
-module Nothing(){
+module TestMergeChild1(){
+   Const x;
+   Const y;
+   Reg output;
+#
+   a = x + y;
+   a -> output;
+}
+
+module TestMergeChild2(){
+   Const a;
+   Const b;
+   Reg output;
+#
+   x = a - b;
+   x -> output;
+}
+
+merge TestMerge = TestMergeChild1:w | TestMergeChild2:z{
+   w.x - z.a;
+   w.y - z.b;
+   w.output - z.output;
+}
+
+module TestMergeWithBlankChild1(){
+   Mem mem;
+   Const x;
+   Reg output;
+#
+   a = x + mem;
+   a -> output;
+}
+
+merge TestMerge2 = TestMergeWithBlankChild1 | TestMergeChild1;
+
+module TestMergeInputs1(x,y){
+#
+   a = x + y;
+   a -> out;
+}
+
+module TestMergeInputs2(a,b){
+#
+   x = a - b;
+   x -> out;
+}
+
+merge TestMergeInputs = TestMergeInputs1 | TestMergeInputs2;
+
+module TestMergeAsChild(){
+   TestMerge2 m[2];
 #
 }
 
@@ -669,7 +719,7 @@ module M(w){
    M_Stage md;
    M_Stage me;
    M_Stage mf;
-   Merge merge;
+   Merge m;
 #
    w{0} -> m0:0;
    w{14} -> m0:1;
@@ -751,24 +801,24 @@ module M(w){
    m8 -> mf:2;
    m0 -> mf:3;
 
-   m0 -> merge:0;
-   m1 -> merge:1;
-   m2 -> merge:2;
-   m3 -> merge:3;
-   m4 -> merge:4;
-   m5 -> merge:5;
-   m6 -> merge:6;
-   m7 -> merge:7;
-   m8 -> merge:8;
-   m9 -> merge:9;
-   ma -> merge:10;
-   mb -> merge:11;
-   mc -> merge:12;
-   md -> merge:13;
-   me -> merge:14;
-   mf -> merge:15;
+   m0 -> m:0;
+   m1 -> m:1;
+   m2 -> m:2;
+   m3 -> m:3;
+   m4 -> m:4;
+   m5 -> m:5;
+   m6 -> m:6;
+   m7 -> m:7;
+   m8 -> m:8;
+   m9 -> m:9;
+   ma -> m:10;
+   mb -> m:11;
+   mc -> m:12;
+   md -> m:13;
+   me -> m:14;
+   mf -> m:15;
 
-   merge -> out;
+   m -> out;
 }
 
 module T1(e,f,g,h,k,w){
@@ -1552,15 +1602,15 @@ module ReadWriteAES(){
    VRead cypher;
    VRead key;
    VWrite results;
-   Merge merge;
+   Merge m;
    AES aes;
 #
    cypher{0..15} -> aes:0..15;
    key{0..15} -> aes:16..31;
 
-   aes:0..15 -> merge:0..15;
+   aes:0..15 -> m:0..15;
 
-   merge -> results;
+   m -> results;
 }
 
 module KeySchedule256(x[32],rcon){
@@ -1830,7 +1880,7 @@ module F2(a,b,c,d,e,f,g,h,k,w){
 module M2(w){
    M_Stage m0;
    M_Stage m1;
-   Merge merge;
+   Merge m;
 #
    w{0} -> m0:0;
    w{14} -> m0:1;
@@ -1842,10 +1892,10 @@ module M2(w){
    w{10} -> m1:2;
    w{2} -> m1:3;
 
-   m0 -> merge:0;
-   m1 -> merge:1;
+   m0 -> m:0;
+   m1 -> m:1;
 
-   merge -> out;
+   m -> out;
 }
 
 module Karatsuba(x1,x0,y1,y0){
@@ -1876,7 +1926,7 @@ module M4(w){
    M_Stage m1;
    M_Stage m2;
    M_Stage m3;
-   Merge merge;
+   Merge m;
 #
    w{0} -> m0:0;
    w{14} -> m0:1;
@@ -1898,12 +1948,12 @@ module M4(w){
    w{12} -> m3:2;
    w{4} -> m3:3;
    
-   m0 -> merge:0;
-   m1 -> merge:1;
-   m2 -> merge:2;
-   m3 -> merge:3;
+   m0 -> m:0;
+   m1 -> m:1;
+   m2 -> m:2;
+   m3 -> m:3;
 
-   merge -> out;
+   m -> out;
 }
 
 module M8(w){
@@ -1915,7 +1965,7 @@ module M8(w){
    M_Stage m5;
    M_Stage m6;
    M_Stage m7;
-   Merge merge;
+   Merge m;
 #
    w{0} -> m0:0;
    w{14} -> m0:1;
@@ -1957,16 +2007,16 @@ module M8(w){
    m0 -> m7:2;
    w{8} -> m7:3;
    
-   m0 -> merge:0;
-   m1 -> merge:1;
-   m2 -> merge:2;
-   m3 -> merge:3;
-   m4 -> merge:4;
-   m5 -> merge:5;
-   m6 -> merge:6;
-   m7 -> merge:7;
+   m0 -> m:0;
+   m1 -> m:1;
+   m2 -> m:2;
+   m3 -> m:3;
+   m4 -> m:4;
+   m5 -> m:5;
+   m6 -> m:6;
+   m7 -> m:7;
 
-   merge -> out;
+   m -> out;
 }
 
 module F8(a,b,c,d,e,f,g,h,k,w){
@@ -3053,16 +3103,16 @@ module ReadWriteAES256(){
    VRead cypher;
    VRead key;
    VWrite results;
-   Merge merge;
+   Merge m;
    // Simple aes;
    AES256WithIterative aes;
 #
    cypher{0..15} -> aes:0..15;
    key{0..31} -> aes:16..47;
 
-   aes:0..15 -> merge:0..15;
+   aes:0..15 -> m:0..15;
 
-   merge -> results;
+   m -> results;
 }
 
 module DMATest(){
@@ -3070,31 +3120,7 @@ module DMATest(){
 #
 }
 
-merge SHA_AES = SHA | ReadWriteAES256 | VectorLikeOperation;
-
-/*
-module Simple(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,k10,k11,k12,k13,k14,k15,k16,k17,k18,k19,k1a,k1b,k1c,k1d,k1e,k1f){
-#
-   w0 = x0 & k0 & k1;
-   w1 = x1 & k2 & k3;
-   w2 = x2 & k4 & k5;
-   w3 = x3 & k6 & k7;
-   w4 = x4 & k8 & k9;
-   w5 = x5 & ka & kb;
-   w6 = x6 & kc & kd;
-   w7 = x7 & ke & kf;
-   w8 = x8 & k10 & k11;
-   w9 = x9 & k12 & k13;
-   wa = xa & k14 & k15;
-   wb = xb & k16 & k17;
-   wc = xc & k18 & k19;
-   wd = xd & k1a & k1b;
-   we = xe & k1c & k1d;
-   wf = xf & k1e & k1f;
-
-   {w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,wa,wb,wc,wd,we,wf} -> out:0..15;
-}
-*/
+// merge SHA_AES = SHA | ReadWriteAES256 | VectorLikeOperation;
 
 module Simple(x[16],k[32]){
 #
@@ -3188,27 +3214,27 @@ module GenericLineKey(x[4],w[4],rcon){
    d[0..3] -> out:0..3;
 }
 
-module GenericKeySchedule256(x[16],rcon){
+module GenericKeySchedule256(x[16],w[16],rcon){
    GenericLineKey s;
 #
    {x[12],x[13],x[14],x[15]} -> s:0..3;
-   {x[0],x[1],x[2],x[3]}    -> s:4..7;
+   {w[0],w[1],w[2],w[3]}     -> s:4..7;
    rcon -> s:8;
 
-   a[0] = s:0 ^ x[4];
-   a[1] = s:1 ^ x[5];
-   a[2] = s:2 ^ x[6];
-   a[3] = s:3 ^ x[7];
+   a[0] = s:0 ^ w[4];
+   a[1] = s:1 ^ w[5];
+   a[2] = s:2 ^ w[6];
+   a[3] = s:3 ^ w[7];
 
-   b[0] = a[0] ^ x[8];
-   b[1] = a[1] ^ x[9];
-   b[2] = a[2] ^ x[10];
-   b[3] = a[3] ^ x[11];
+   b[0] = a[0] ^ w[8];
+   b[1] = a[1] ^ w[9];
+   b[2] = a[2] ^ w[10];
+   b[3] = a[3] ^ w[11];
 
-   c[0] = b[0] ^ x[12];
-   c[1] = b[1] ^ x[13];
-   c[2] = b[2] ^ x[14];
-   c[3] = b[3] ^ x[15];
+   c[0] = b[0] ^ w[12];
+   c[1] = b[1] ^ w[13];
+   c[2] = b[2] ^ w[14];
+   c[3] = b[3] ^ w[15];
 
    s:0..3  -> out:0..3;
    a[0..3] -> out:4..7;
@@ -3223,30 +3249,72 @@ module KeyScheduleRound(){
 
    GenericKeySchedule256 key;
    Const rcon;
-   Merge2 merge;
 #
-   bank[0..15] -> key:0..15;
-   rcon        -> key:16;
+   bank[0..15]:1 -> key:0..15;
+   bank[0..15]:0 -> key:16..31;
+   rcon          -> key:32;
 
    key:0..15   -> bank[0..15];
 }
 
-/*
-module RoundPair(x[16],key[32]){
-   MainRound round1;
-   MainRound round2;
+module AESFirstAdd(x[16],k[16]){
+   AddRoundKey addKey;
 #
-   x[0..15] -> round1:0..15;
-   
-   key:[0..15]  -> round1:16..31;
+   x[0..15] -> addKey:0..15;
+   k[0..15] -> addKey:16..31;
 
-   round1:0..15 -> round2:0..15;
-   key:[16..31] -> round2:16..31;
-
-   round2:0..15 -> out:0..15;
-   key:0..31    -> out:16..47;
+   addKey:0..15 -> out:0..15;
 }
 
+module AESRound(x[16],k[16]){
+   AddRoundKey addKey;
+   SBox subBytes;
+   ShiftRows shiftRows;
+   MixColumns mixColumns;
+#   
+   x[0..15] -> addKey:0..15;
+   k[0..15] -> addKey:16..31;
+
+   addKey:0..15 -> subBytes:0..15;
+   subBytes:0..15 -> shiftRows:0..15;
+   shiftRows:0..15 -> mixColumns:0..15;
+}
+
+module AESLastRound(x[16],key[16]){
+   SBox subBytes;
+   ShiftRows shiftRows;
+   AddRoundKey addKey;
+#
+   x[0..15] -> subBytes:0..15;
+   subBytes:0..15 -> shiftRows:0..15;
+
+   shiftRows:0..15 -> addKey:0..15;
+   key[0..15]      -> addKey:16..31; 
+
+   addKey:0..15 -> out:0..15;
+}
+
+/*
+merge FullAESRounds = AESFirstAdd | AESRound | AESLastRound;
+
+module AES256(){
+   share config RegFile{
+      bank[16];
+   }
+   share config RegFile{
+      state[16];
+   }
+
+   FullAESRounds round;
+#
+   state[0..15] -> FullAESRounds:0..15;
+   bank[0..15]  -> FullAESRounds:16..31;
+
+   FullAESRounds:0..15 -> state[0..15];
+}
+*/
+
+/*
 module AES256WithRound(x[16]){
    share config RegFile{
       bank[32];

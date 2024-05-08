@@ -11,6 +11,7 @@ include $(LIB_DIR)/setup.mk
 TESTS:= TestShare
 TESTS+= TestStatic
 TESTS+= TestDelays
+TESTS+= TestMerge
 TESTS+= M_Stage 
 TESTS+= F_Stage
 TESTS+= SimpleCGRA 
@@ -20,6 +21,9 @@ TESTS+= MemToMem
 TESTS+= VReadToVWrite 
 TESTS+= SimpleIterative 
 TESTS+= Variety1
+
+#TESTS+= TestMergeInputs
+#TESTS+= TestMergeAsChild
 
 VCD ?= 1
 INIT_MEM ?= 1

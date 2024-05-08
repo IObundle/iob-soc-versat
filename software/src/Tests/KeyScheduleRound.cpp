@@ -30,19 +30,9 @@ void FillLookupTable(LookupTableAddr addr){
    VersatMemoryCopy(addr.addr,(int*) sbox,256 * sizeof(uint8_t));
 }
 
-void FillFirstLineKey(FirstLineKeyAddr addr){
-   FillLookupTable(addr.b_0);
-   FillLookupTable(addr.b_1);
-}
-
-void FillFourthLineKey(FourthLineKeyAddr addr){
-   FillLookupTable(addr.b_0);
-   FillLookupTable(addr.b_1);
-}
-
-void FillKeySchedule(FixedKeySchedule256Addr addr){
-   FillFirstLineKey(addr.s);
-   FillFourthLineKey(addr.q);
+void FillKeySchedule(GenericKeySchedule256Addr addr){
+   FillLookupTable(addr.s.b_0);
+   FillLookupTable(addr.s.b_1);
 }
 
 void byte_to_int(uint8_t *in, int *out, int size) {
@@ -69,8 +59,11 @@ void InitKeySchedule(uint8_t* key) {
    FillKeySchedule(addr.key);
 
    RegFileAddr* view = &addr.bank_0;
-   for(int i = 0; i < 32; i++){
+   for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,key[i]);
+   }
+   for(int i = 0; i < 16; i++){
+      VersatUnitWrite(view[i].addr,1,key[i+16]);
    }
 }
 
@@ -79,15 +72,19 @@ void KeyScheduleRun(){
 
    KeyScheduleRoundConfig* config = (KeyScheduleRoundConfig*) accelConfig;
 
-   for(int i = 0; i < ARRAY_SIZE(rcon); i++){
-      ACCEL_TOP_rcon_constant = rcon[i];
-      config->bank_0.selectedOutput = i;
-      config->bank_0.selectedInput = i + 1;
-#if 1
-      if(i + 1 >= 8){
-         config->bank_0.disabled = 0;
+   for(int i = 0; i < ARRAY_SIZE(rcon) * 2 - 1; i++){
+      if(i % 2 == 1) {
+         ACCEL_TOP_rcon_constant = 0;
+      } else {
+         ACCEL_TOP_rcon_constant = rcon[i / 2];
       }
-#endif
+      config->bank_0.selectedOutput0 = i;
+      config->bank_0.selectedOutput1 = i + 1;
+      config->bank_0.selectedInput = i + 2;
+      config->key.s.mux_0.sel = (i + 1) % 2;
+      config->key.s.mux_1.sel = (i + 1) % 2;
+      config->key.s.mux_2.sel = (i + 1) % 2;
+      config->key.s.mux_3.sel = (i + 1) % 2;
 
       EndAccelerator();
       StartAccelerator();
@@ -98,9 +95,9 @@ void KeyScheduleRun(){
   KeyScheduleRoundAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
   RegFileAddr* bankView = &addr.bank_0;
-  for(int i = 0; i < 8; i++){
-   for(int ii = 0; ii < 32; ii++){
-      printf("%x\n",VersatUnitRead(bankView[ii].addr,i));
+  for(int i = 0; i < 16; i++){
+   for(int ii = 0; ii < 16; ii++){
+      printf("%02x ",VersatUnitRead(bankView[ii].addr,i));
     }
     printf("\n");
   }
@@ -109,7 +106,7 @@ void KeyScheduleRun(){
 void SingleTest(Arena* arena){
    uint8_t key[128] = {};
 
-   int keyIndex = HexStringToHex((char*) key,"cc22da787f375711c76302bef0979d8eddf842829c2b99ef3dd04e23e54cc24b");
+   int keyIndex = HexStringToHex((char*) key,"603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4");
 
    InitKeySchedule(key);
 
