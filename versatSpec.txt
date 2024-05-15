@@ -99,11 +99,11 @@ merge TestMerge = TestMergeChild1:w | TestMergeChild2:z{
 
 module TestMergeWithBlankChild1(){
    Mem mem;
-   Const x;
-   Reg output;
+   Const x2;
+   Reg output2;
 #
-   a = x + mem;
-   a -> output;
+   a = x2 + mem;
+   a -> output2;
 }
 
 merge TestMerge2 = TestMergeWithBlankChild1 | TestMergeChild1;
@@ -122,10 +122,60 @@ module TestMergeInputs2(a,b){
 
 merge TestMergeInputs = TestMergeInputs1 | TestMergeInputs2;
 
-module TestMergeAsChild(){
+module TestMergeHasChild(){
    TestMerge2 m[2];
 #
 }
+
+module TestHasMultipleMerged(){
+   TestMerge child0;          // TestMergeChild1 or TestMergeChild2
+   TestMerge2 child1;         // TestMergeWithBlankChild1 or TestMergeChild1
+   TestMergeHasChild child2;  // TestMergeWithBlankChild1_TestMergeWithBlankChild1 or TestMergeChild1_TestMergeWithBlankChild1 or TestMergeWithBlankChild1_TestMergeChild1 or TestMergeChild1_TestMergeChild1
+#
+}
+
+module TestMergeDelay1(){
+   Mem mem;
+   Reg output;
+#
+   mem{3} -> output;
+}
+
+module TestMergeDelay2(){
+   Mem mem;
+   Reg output;
+#
+   mem{5} -> output;
+}
+
+merge TestMergeDelay = TestMergeDelay1 | TestMergeDelay2;
+
+/*
+merge TestMergeDelay = TestMergeDelay1:a | TestMergeDelay2:b{
+   a.mem - b.mem;
+   a.output - b.output;
+}
+*/
+
+module TestMergeLargeDelay1(){
+   Const x;
+   Reg output;
+#
+   x{10} -> output;
+}
+
+module TestMergeLargeDelay2(){
+   Const x;
+   PipelineRegister r[3];
+   Reg output;
+#
+   x -> r[0];
+   r[0] -> r[1];
+   r[1] -> r[2];
+   r[2] -> output;
+}
+
+merge TestMergeLargeDelay = TestMergeLargeDelay1 | TestMergeLargeDelay2;
 
 module FloatTest(x,y,z){
    FloatAdd  add;
@@ -1322,6 +1372,7 @@ module FloatTest(x,y){
    unit -> out;
 }
 
+/*
 iterative SimpleIterative(x){
    Mul mul; // The first unit is defined as the "core" unit of the iterative 
    Const const0;
@@ -1340,6 +1391,7 @@ iterative SimpleIterative(x){
 
    mul -> out;
 }
+*/
 
 /*
 iterative Iterative_SHA_F(a,b,c,d,e,f,g,h,k,w){
@@ -1516,6 +1568,7 @@ module AES(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,
    lastKey:0..15 -> out:0..15;
 }
 
+/*
 iterative AESPathExample(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,rcon0,rcon1,rcon2,rcon3,rcon4,rcon5,rcon6,rcon7,rcon8){
    MainRoundAndKey roundAndKey;
 # 9
@@ -1597,6 +1650,7 @@ module AESWithIterative(x[16],k[16]){
 
    lastKey:0..15 -> out:0..15;
 }
+*/
 
 module ReadWriteAES(){
    VRead cypher;
@@ -1685,6 +1739,7 @@ module RoundPairAndKey(x[16],k[32],rcon){
    key:0..31 -> out:16..47;
 }
 
+/*
 iterative AES256Path(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,k0,k1,k2,k3,k4,k5,k6,k7,k8,k9,ka,kb,kc,kd,ke,kf,k10,k11,k12,k13,k14,k15,k16,k17,k18,k19,k1a,k1b,k1c,k1d,k1e,k1f,rcon0,rcon1,rcon2,rcon3,rcon4,rcon5){
    RoundPairAndKey roundPairAndKey;
 # 6
@@ -1805,6 +1860,7 @@ module AES256WithIterative(x[16],k[32]){
    lastKey:8..11  -> {out:2,out:6,out:10,out:14};
    lastKey:12..15 -> {out:3,out:7,out:11,out:15};
 }
+*/
 
 module SimpleExample(){
    Const c0;
@@ -3099,6 +3155,7 @@ module Variety2(x,y,z){
    total -> write;
 }
 
+/*
 module ReadWriteAES256(){
    VRead cypher;
    VRead key;
@@ -3114,6 +3171,7 @@ module ReadWriteAES256(){
 
    m -> results;
 }
+*/
 
 module DMATest(){
    Mem mem;   
@@ -3278,6 +3336,7 @@ module AESRound(x[16],k[16]){
    addKey:0..15 -> subBytes:0..15;
    subBytes:0..15 -> shiftRows:0..15;
    shiftRows:0..15 -> mixColumns:0..15;
+   mixColumns:0..15 -> out:0..15;
 }
 
 module AESLastRound(x[16],key[16]){
@@ -3294,9 +3353,18 @@ module AESLastRound(x[16],key[16]){
    addKey:0..15 -> out:0..15;
 }
 
-/*
 merge FullAESRounds = AESFirstAdd | AESRound | AESLastRound;
 
+module TestSomething(){
+   Const a;
+   PipelineRegister r;
+#
+   a -> r;
+   a -> out:0;
+   r -> out:1;
+}
+
+/*
 module AES256(){
    share config RegFile{
       bank[16];
@@ -3307,11 +3375,31 @@ module AES256(){
 
    FullAESRounds round;
 #
-   state[0..15] -> FullAESRounds:0..15;
-   bank[0..15]  -> FullAESRounds:16..31;
+   state[0..15] -> round:0..15;
+   bank[0..15]  -> round:16..31;
 
-   FullAESRounds:0..15 -> state[0..15];
+   round:0..15 -> state[0..15];
 }
+*/
+
+/*
+module McEliece(){
+   ReadWriteMem mat;
+   VRead row;
+   VWrite writer;
+   Const mask;
+#
+   a = row & mask;
+   b = mat ^ a;
+
+   c = mat & mask;
+   d = row ^ c;
+
+   b -> mat;
+   d -> writer;
+}
+
+merge CryptoAlgos = SHA | AES256 | McEliece;
 */
 
 /*

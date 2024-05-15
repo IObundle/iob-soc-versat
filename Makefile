@@ -22,6 +22,8 @@ TESTS+= VReadToVWrite
 TESTS+= SimpleIterative 
 TESTS+= Variety1
 
+VERSAT_SPEC:=versatSpec.txt
+
 #TESTS+= TestMergeInputs
 #TESTS+= TestMergeAsChild
 
@@ -76,8 +78,8 @@ sim-run:
 
 versat-only:
 	mkdir -p ../$(CORE)_V0.70_$(TEST)
-	cd ./submodules/VERSAT ; $(MAKE) -s -j 8 versat
-	cd ./submodules/VERSAT ; $(VERSAT_CALL) /home/z/AA/Versat/iob-soc-versat/versatSpec.txt -s -b=32 -T $(TEST) -O /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src/units -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/submodules/DIV/hardware/src -I /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -H /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/software -o /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -O /home/z/AA/Versat/iob-soc-versat/hardware/src/units -x64
+	cd ./submodules/VERSAT ; $(MAKE) -j 8 versat
+	cd ./submodules/VERSAT ; $(VERSAT_CALL) /home/z/AA/Versat/iob-soc-versat/$(VERSAT_SPEC) -s -b=32 -T $(TEST) -O /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src/units -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/submodules/DIV/hardware/src -I /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -H /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/software -o /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -O /home/z/AA/Versat/iob-soc-versat/hardware/src/units -x64
 
 fast:
 	mkdir -p ../$(CORE)_V0.70_$(TEST)/
