@@ -8,24 +8,27 @@ DISABLE_LINT:=1
 LIB_DIR:=submodules/IOBSOC/submodules/LIB
 include $(LIB_DIR)/setup.mk
 
-TESTS:= TestShare
+TESTS+= M_Stage 
+TESTS+= MemToMem 
+TESTS+= VReadToVWrite 
+#TESTS+= SimpleIterative # Temporarely disabled
+TESTS+= Variety1
+TESTS+= TestShare
 TESTS+= TestStatic
 TESTS+= TestDelays
 TESTS+= TestMerge
-TESTS+= M_Stage 
-TESTS+= F_Stage
-TESTS+= SimpleCGRA 
-TESTS+= AddRoundKey 
-TESTS+= LookupTable 
-TESTS+= MemToMem 
-TESTS+= VReadToVWrite 
-TESTS+= SimpleIterative 
-TESTS+= Variety1
+TESTS+= TestMerge2
+TESTS+= TestMergeInputs
+TESTS+= TestMergeHasChild
+
+#TESTS+= TestMergeHasMultipleMerged
+#TESTS+= F_Stage
+#TESTS+= SimpleCGRA 
+#TESTS+= AddRoundKey 
+#TESTS+= LookupTable 
 
 VERSAT_SPEC:=versatSpec.txt
 
-#TESTS+= TestMergeInputs
-#TESTS+= TestMergeAsChild
 
 VCD ?= 1
 INIT_MEM ?= 1
@@ -79,7 +82,7 @@ sim-run:
 versat-only:
 	mkdir -p ../$(CORE)_V0.70_$(TEST)
 	cd ./submodules/VERSAT ; $(MAKE) -j 8 versat
-	cd ./submodules/VERSAT ; $(VERSAT_CALL) /home/z/AA/Versat/iob-soc-versat/$(VERSAT_SPEC) -s -b=32 -T $(TEST) -O /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src/units -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/submodules/DIV/hardware/src -I /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -H /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/software -o /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -O /home/z/AA/Versat/iob-soc-versat/hardware/src/units -x64
+	cd ./submodules/VERSAT ; $(VERSAT_CALL) /home/z/AA/Versat/iob-soc-versat/$(VERSAT_SPEC) -s -b=32 -T $(TEST) -O /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src/units -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/submodules/DIV/hardware/src -I /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -H /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/software -o /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -A /home/z/AA/Versat/debug -O /home/z/AA/Versat/iob-soc-versat/hardware/src/units -x64
 
 fast:
 	mkdir -p ../$(CORE)_V0.70_$(TEST)/

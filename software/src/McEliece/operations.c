@@ -82,6 +82,7 @@ int crypto_kem_keypair
     unsigned char seed[ 33 ] = {64};
     unsigned char r[ SYS_N / 8 + (1 << GFBITS)*sizeof(uint32_t) + SYS_T * 2 + 32 ];
     unsigned char *rp, *skp;
+    int index = 0;
 
     gf f[ SYS_T ]; // element in GF(2^mt)
     gf irr[ SYS_T ]; // Goppa polynomial
@@ -90,21 +91,17 @@ int crypto_kem_keypair
 
     randombytes(seed + 1, 32);
 
-    printf("Random bytes\n");
-
     while (1) {
         rp = &r[ sizeof(r) - 32 ];
         skp = sk;
 
         // expanding and updating the seed
 
-        printf("Going to shake\n");
         shake(r, sizeof(r), seed, 33);
         memcpy(skp, seed + 1, 32);
         skp += 32 + 8;
         memcpy(seed + 1, &r[ sizeof(r) - 32 ], 32);
 
-        printf("Finish shake\n");
         // generating irreducible polynomial
 
         rp -= sizeof(f);
@@ -113,7 +110,6 @@ int crypto_kem_keypair
             f[i] = load_gf(rp + i * 2);
         }
 
-        printf("Going to genpoly_gen\n");
         if (genpoly_gen(irr, f)) {
             continue;
         }
@@ -132,18 +128,15 @@ int crypto_kem_keypair
             perm[i] = load4(rp + i * 4);
         }
 
-        printf("Going to pk_gen\n");
+        printf("%d\n",index++);
         if (pk_gen(pk, skp - IRR_BYTES, perm, pi)) {
             continue;
         }
 
-        printf("Going to controlbitsfrompermutation\n");
         controlbitsfrompermutation(skp, pi, GFBITS, 1 << GFBITS);
         skp += COND_BYTES;
 
         // storing the random string s
-
-        printf("Finished controlbitsfrompermutation\n");
 
         rp -= SYS_N / 8;
         memcpy(skp, rp, SYS_N / 8);

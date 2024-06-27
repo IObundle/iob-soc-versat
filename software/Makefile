@@ -54,7 +54,7 @@ EMUL_INCLUDES ?=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
 
 EMUL_HDR+=$(wildcard src/*_emul.h)
 
-EMUL_SRC+=$(wildcard src/*_emul.c) #$(wildcard src/McEliece/*.c) $(wildcard src/McEliece/common/*.c)
+EMUL_SRC+=$(wildcard src/*_emul.c) $(wildcard src/McEliece/*.c) $(wildcard src/McEliece/common/*.c)
 
 #########################################
 #            Embedded targets           #

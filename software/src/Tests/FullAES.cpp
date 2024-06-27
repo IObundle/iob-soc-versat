@@ -174,7 +174,21 @@ void FillMixColumns(MixColumnsAddr addr){
    FillRow(addr.d_3);
 }
 
+#if 0
+void FillSBox(SBoxAddr addr){
+   FillLookupTable(addr.s0,sbox,ARRAY_SIZE(sbox));
+   FillLookupTable(addr.s1,sbox,ARRAY_SIZE(sbox));
+   FillLookupTable(addr.s2,sbox,ARRAY_SIZE(sbox));
+   FillLookupTable(addr.s3,sbox,ARRAY_SIZE(sbox));
+   FillLookupTable(addr.s4,sbox,ARRAY_SIZE(sbox));
+   FillLookupTable(addr.s5,sbox,ARRAY_SIZE(sbox));
+   FillLookupTable(addr.s6,sbox,ARRAY_SIZE(sbox));
+   FillLookupTable(addr.s7,sbox,ARRAY_SIZE(sbox));
+}
+#endif
+
 void FillMainRound(FullAESRoundsAddr addr){
+//   FillSBox(addr.subBytes_subBytes_subBytes_subBytes);
    FillMixColumns(addr.mixColumns);
 }
 
@@ -196,65 +210,88 @@ void FillInvMixColumns(InvMixColumnsAddr addr){
    FillInvDoRowAddr(addr.d_3);
 }
 
+#if 0
+void FillInvSBox(SBoxAddr addr){
+   FillLookupTable(addr.s0,rsbox,ARRAY_SIZE(rsbox));
+   FillLookupTable(addr.s1,rsbox,ARRAY_SIZE(rsbox));
+   FillLookupTable(addr.s2,rsbox,ARRAY_SIZE(rsbox));
+   FillLookupTable(addr.s3,rsbox,ARRAY_SIZE(rsbox));
+   FillLookupTable(addr.s4,rsbox,ARRAY_SIZE(rsbox));
+   FillLookupTable(addr.s5,rsbox,ARRAY_SIZE(rsbox));
+   FillLookupTable(addr.s6,rsbox,ARRAY_SIZE(rsbox));
+   FillLookupTable(addr.s7,rsbox,ARRAY_SIZE(rsbox));
+}
+#endif
+
 void FillInvMainRound(FullAESRoundsAddr addr){
+   //FillInvSBox(addr.subBytes_subBytes_subBytes_subBytes);
    FillInvMixColumns(addr.invMixColumns);
 }
 
 void ExpandKey128(uint8_t* key){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
-   RegFileAddr* view = &addr.aes.key_0;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   RegFileAddr* view = &addr.key_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,key[i]);
    }
 
    int rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1b,0x36};
 
-   config->aes.key_0.disabled = 0;
-   config->aes.schedule.s.mux_0.sel = 1;
-   config->aes.schedule.s.mux_1.sel = 1;
-   config->aes.schedule.s.mux_2.sel = 1;
-   config->aes.schedule.s.mux_3.sel = 1;
+   config->key_0.disabled = 0;
+   config->schedule.s.mux_0.sel = 1;
+   config->schedule.s.mux_1.sel = 1;
+   config->schedule.s.mux_2.sel = 1;
+   config->schedule.s.mux_3.sel = 1;
    for(int i = 0; i < ARRAY_SIZE(rcon); i++){
-      config->aes.rcon.constant = rcon[i];
-      config->aes.key_0.selectedOutput0 = i;
-      config->aes.key_0.selectedOutput1 = i;
-      config->aes.key_0.selectedInput = i + 1;
+      config->rcon.constant = rcon[i];
+      config->key_0.selectedOutput0 = i;
+      config->key_0.selectedOutput1 = i;
+      config->key_0.selectedInput = i + 1;
 
       EndAccelerator();
       StartAccelerator();
   }
 
   EndAccelerator();   
-  config->aes.key_0.disabled = 1;
+  config->key_0.disabled = 1;
 }
 
 void Encrypt(uint8_t* data,uint8_t* result){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESFirstAdd);
-   config->aes.key_0.selectedOutput0 = 0;
+   
+   config->key_0.selectedOutput0 = 0;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESRound);
    
    for(int i = 0; i < 9; i++){
-      config->aes.key_0.selectedOutput0 = i + 1;
+      config->key_0.selectedOutput0 = i + 1;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESLastRound);
-   config->aes.key_0.selectedOutput0 = 10; 
+
+{
+   int* view = (int*) accelStatics;
+   for(int i = 0; i < 16; i++){
+      view[i] = 0;
+   }
+}
+
+   config->key_0.selectedOutput0 = 10; 
 
    EndAccelerator();
    StartAccelerator();
@@ -266,30 +303,30 @@ void Encrypt(uint8_t* data,uint8_t* result){
 }
 
 void Decrypt(uint8_t* data,uint8_t* result){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESInvFirstAdd);
-   config->aes.key_0.selectedOutput0 = 10;
+   config->key_0.selectedOutput0 = 10;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESInvRound);
    
    for(int i = 9; i > 0; i--){
-      config->aes.key_0.selectedOutput0 = i;
+      config->key_0.selectedOutput0 = i;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESInvLastRound);
-   config->aes.key_0.selectedOutput0 = 0;
+   config->key_0.selectedOutput0 = 0;
 
    EndAccelerator();
    StartAccelerator();
@@ -301,10 +338,10 @@ void Decrypt(uint8_t* data,uint8_t* result){
 }
 
 void ExpandKey256(uint8_t* key){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
-   RegFileAddr* view = &addr.aes.key_0;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   RegFileAddr* view = &addr.key_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,key[i]);
    }
@@ -314,54 +351,54 @@ void ExpandKey256(uint8_t* key){
 
    int rcon[] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40};
 
-   config->aes.key_0.disabled = 0;
+   config->key_0.disabled = 0;
    for(int i = 0; i < ARRAY_SIZE(rcon) * 2 - 1; i++){
       if(i % 2 == 1) {
-         config->aes.rcon.constant = 0;
+         config->rcon.constant = 0;
       } else {
-         config->aes.rcon.constant = rcon[i / 2];
+         config->rcon.constant = rcon[i / 2];
       }
-      config->aes.key_0.selectedOutput0 = i;
-      config->aes.key_0.selectedOutput1 = i + 1;
-      config->aes.key_0.selectedInput = i + 2;
-      config->aes.schedule.s.mux_0.sel = (i + 1) % 2;
-      config->aes.schedule.s.mux_1.sel = (i + 1) % 2;
-      config->aes.schedule.s.mux_2.sel = (i + 1) % 2;
-      config->aes.schedule.s.mux_3.sel = (i + 1) % 2;
+      config->key_0.selectedOutput0 = i;
+      config->key_0.selectedOutput1 = i + 1;
+      config->key_0.selectedInput = i + 2;
+      config->schedule.s.mux_0.sel = (i + 1) % 2;
+      config->schedule.s.mux_1.sel = (i + 1) % 2;
+      config->schedule.s.mux_2.sel = (i + 1) % 2;
+      config->schedule.s.mux_3.sel = (i + 1) % 2;
 
       EndAccelerator();
       StartAccelerator();
   }
 
   EndAccelerator();   
-  config->aes.key_0.disabled = 1;
+  config->key_0.disabled = 1;
 }
 
 void Encrypt256(uint8_t* data,uint8_t* result){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESFirstAdd);
-   config->aes.key_0.selectedOutput0 = 0;
+   config->key_0.selectedOutput0 = 0;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESRound);
    
    for(int i = 0; i < 13; i++){
-      config->aes.key_0.selectedOutput0 = i + 1;
+      config->key_0.selectedOutput0 = i + 1;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESLastRound);
-   config->aes.key_0.selectedOutput0 = 14; 
+   config->key_0.selectedOutput0 = 14; 
 
    EndAccelerator();
    StartAccelerator();
@@ -373,30 +410,30 @@ void Encrypt256(uint8_t* data,uint8_t* result){
 }
 
 void Decrypt256(uint8_t* data,uint8_t* result){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESInvFirstAdd);
-   config->aes.key_0.selectedOutput0 = 14;
+   config->key_0.selectedOutput0 = 14;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESInvRound);
    
    for(int i = 13; i > 0; i--){
-      config->aes.key_0.selectedOutput0 = i;
+      config->key_0.selectedOutput0 = i;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESInvLastRound);
-   config->aes.key_0.selectedOutput0 = 0; 
+   config->key_0.selectedOutput0 = 0; 
 
    EndAccelerator();
    StartAccelerator();
@@ -408,8 +445,8 @@ void Decrypt256(uint8_t* data,uint8_t* result){
 }
 
 void PrintKey(int size){
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
-   RegFileAddr* view = &addr.aes.key_0;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   RegFileAddr* view = &addr.key_0;
 
    for(int i = 0; i < size; i++){
       printf("Index: %d:",i);
@@ -421,30 +458,30 @@ void PrintKey(int size){
 }
 
 void InitAES(){
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
-   FillMainRound(addr.aes.round);
-   FillKeySchedule(addr.aes.schedule);
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FillMainRound(addr.round);
+   FillKeySchedule(addr.schedule);
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
    {
-      RegAddr* view = &addr.aes.lastResult_0;
+      RegAddr* view = &addr.lastResult_0;
       for(int i = 0; i < 16; i++){
          VersatUnitWrite(view[i].addr,0,0);
       }
    }
    {
-      RegAddr* view = &addr.aes.lastValToAdd_0;
+      RegAddr* view = &addr.lastValToAdd_0;
       for(int i = 0; i < 16; i++){
          VersatUnitWrite(view[i].addr,0,0);
       }
    }
 
-   config->aes.lastResult_0.disabled = 1;
+   config->lastResult_0.disabled = 1;
 }
 
 void InitInvAES(){
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
-   FillInvMainRound(addr.aes.round);
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FillInvMainRound(addr.round);
 }
 
 void PrintResult(uint8_t* buffer){
@@ -538,49 +575,49 @@ void ECB256(const char* key,const char* plaintext,const char* expected){
 //CBC - Result of ciphertext is xor for next block
 
 void LoadIV(uint8_t* iv){
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   RegAddr* view = &addr.aes.lastResult_0;
+   RegAddr* view = &addr.lastResult_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,iv[i]);
    }
 
-   config->aes.lastResult_0.disabled = 1;
+   config->lastResult_0.disabled = 1;
 }
 
 void EncryptWithIV(uint8_t* data,uint8_t* result){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESFirstAdd);
-   config->aes.key_0.selectedOutput0 = 0;
+   config->key_0.selectedOutput0 = 0;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESRound);
-   
+
    for(int i = 0; i < 9; i++){
-      config->aes.key_0.selectedOutput0 = i + 1;
+      config->key_0.selectedOutput0 = i + 1;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESLastRound);
-   config->aes.key_0.selectedOutput0 = 10; 
-   config->aes.lastResult_0.disabled = 0;
+   config->key_0.selectedOutput0 = 10; 
+   config->lastResult_0.disabled = 0;
 
    EndAccelerator();
    StartAccelerator();
    EndAccelerator();
 
-   config->aes.lastResult_0.disabled = 1;
+   config->lastResult_0.disabled = 1;
 
    for(int ii = 0; ii < 16; ii++){
       result[ii] = VersatUnitRead(view[ii].addr,0);
@@ -588,37 +625,37 @@ void EncryptWithIV(uint8_t* data,uint8_t* result){
 }
 
 void DecryptWithIV(uint8_t* data,uint8_t* result){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESInvFirstAdd);
-   config->aes.key_0.selectedOutput0 = 10;
+   config->key_0.selectedOutput0 = 10;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESInvRound);
    
    for(int i = 9; i > 0; i--){
-      config->aes.key_0.selectedOutput0 = i;
+      config->key_0.selectedOutput0 = i;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESInvLastRound);
-   config->aes.key_0.selectedOutput0 = 0;
-   config->aes.lastResult_0.disabled = 0;
+   config->key_0.selectedOutput0 = 0;
+   config->lastResult_0.disabled = 0;
 
    EndAccelerator();
    StartAccelerator();
    EndAccelerator();
 
-   config->aes.lastResult_0.disabled = 1;
+   config->lastResult_0.disabled = 1;
 
    for(int ii = 0; ii < 16; ii++){
       result[ii] = VersatUnitRead(view[ii].addr,0);
@@ -626,37 +663,37 @@ void DecryptWithIV(uint8_t* data,uint8_t* result){
 }
 
 void Encrypt256WithIV(uint8_t* data,uint8_t* result){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESFirstAdd);
-   config->aes.key_0.selectedOutput0 = 0;
+   config->key_0.selectedOutput0 = 0;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESRound);
    
    for(int i = 0; i < 13; i++){
-      config->aes.key_0.selectedOutput0 = i + 1;
+      config->key_0.selectedOutput0 = i + 1;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESLastRound);
-   config->aes.key_0.selectedOutput0 = 14; 
-   config->aes.lastResult_0.disabled = 0;
+   config->key_0.selectedOutput0 = 14; 
+   config->lastResult_0.disabled = 0;
 
    EndAccelerator();
    StartAccelerator();
    EndAccelerator();
 
-   config->aes.lastResult_0.disabled = 1;
+   config->lastResult_0.disabled = 1;
 
    for(int ii = 0; ii < 16; ii++){
       result[ii] = VersatUnitRead(view[ii].addr,0);
@@ -664,37 +701,37 @@ void Encrypt256WithIV(uint8_t* data,uint8_t* result){
 }
 
 void Decrypt256WithIV(uint8_t* data,uint8_t* result){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESInvFirstAdd);
-   config->aes.key_0.selectedOutput0 = 14;
+   config->key_0.selectedOutput0 = 14;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESInvRound);
    
    for(int i = 13; i > 0; i--){
-      config->aes.key_0.selectedOutput0 = i;
+      config->key_0.selectedOutput0 = i;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESInvLastRound);
-   config->aes.key_0.selectedOutput0 = 0; 
-   config->aes.lastResult_0.disabled = 0;
+   config->key_0.selectedOutput0 = 0; 
+   config->lastResult_0.disabled = 0;
 
    EndAccelerator();
    StartAccelerator();
    EndAccelerator();
 
-   config->aes.lastResult_0.disabled = 1;
+   config->lastResult_0.disabled = 1;
 
    for(int ii = 0; ii < 16; ii++){
       result[ii] = VersatUnitRead(view[ii].addr,0);
@@ -796,35 +833,35 @@ void CBC256(const char* key,const char* iv,const char* plaintext,const char* exp
 
 //CTR - Counter, need to xor plaintext at the end.
 void EncryptWithLastAddition(uint8_t* data,uint8_t* result,uint8_t* lastAddition){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESFirstAdd);
-   config->aes.key_0.selectedOutput0 = 0;
+   config->key_0.selectedOutput0 = 0;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESRound);
    
    for(int i = 0; i < 9; i++){
-      config->aes.key_0.selectedOutput0 = i + 1;
+      config->key_0.selectedOutput0 = i + 1;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESLastRound);
-   config->aes.key_0.selectedOutput0 = 10; 
+   config->key_0.selectedOutput0 = 10; 
 
    EndAccelerator();
 
    {
-      RegAddr* view = &addr.aes.lastValToAdd_0;
+      RegAddr* view = &addr.lastValToAdd_0;
       for(int i = 0; i < 16; i++){
          VersatUnitWrite(view[i].addr,0,lastAddition[i]);
       }
@@ -834,7 +871,7 @@ void EncryptWithLastAddition(uint8_t* data,uint8_t* result,uint8_t* lastAddition
    EndAccelerator();
 
    {
-      RegAddr* view = &addr.aes.lastValToAdd_0;
+      RegAddr* view = &addr.lastValToAdd_0;
       for(int i = 0; i < 16; i++){
          VersatUnitWrite(view[i].addr,0,0);
       }
@@ -846,35 +883,35 @@ void EncryptWithLastAddition(uint8_t* data,uint8_t* result,uint8_t* lastAddition
 }
 
 void Encrypt256WithLastAddition(uint8_t* data,uint8_t* result,uint8_t* lastAddition){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
+   FullAESConfig* config = (FullAESConfig*) accelConfig;
 
-   CryptoAlgosAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   FullAESAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
-   RegAddr* view = &addr.aes.state_0;
+   RegAddr* view = &addr.state_0;
    for(int i = 0; i < 16; i++){
       VersatUnitWrite(view[i].addr,0,data[i]);
    }
 
    ActivateMergedAccelerator(MergeType_AESFirstAdd);
-   config->aes.key_0.selectedOutput0 = 0;
+   config->key_0.selectedOutput0 = 0;
 
    StartAccelerator();
 
    ActivateMergedAccelerator(MergeType_AESRound);
    
    for(int i = 0; i < 13; i++){
-      config->aes.key_0.selectedOutput0 = i + 1;
+      config->key_0.selectedOutput0 = i + 1;
       EndAccelerator();
       StartAccelerator();
    }
 
    ActivateMergedAccelerator(MergeType_AESLastRound);
-   config->aes.key_0.selectedOutput0 = 14; 
+   config->key_0.selectedOutput0 = 14; 
 
    EndAccelerator();
 
    {
-      RegAddr* view = &addr.aes.lastValToAdd_0;
+      RegAddr* view = &addr.lastValToAdd_0;
       for(int i = 0; i < 16; i++){
          VersatUnitWrite(view[i].addr,0,lastAddition[i]);
       }
@@ -884,7 +921,7 @@ void Encrypt256WithLastAddition(uint8_t* data,uint8_t* result,uint8_t* lastAddit
    EndAccelerator();
 
    {
-      RegAddr* view = &addr.aes.lastValToAdd_0;
+      RegAddr* view = &addr.lastValToAdd_0;
       for(int i = 0; i < 16; i++){
          VersatUnitWrite(view[i].addr,0,0);
       }
@@ -1014,139 +1051,6 @@ void CTR256(const char* key,const char* counter,const char* plaintext,const char
 }
 
 
-static uint32_t initialStateValues[] = {0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19};
-static uint32_t kConstants0[] = {0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174};
-static uint32_t kConstants1[] = {0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967};
-static uint32_t kConstants2[] = {0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070};
-static uint32_t kConstants3[] = {0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2};
-
-static uint32_t* kConstants[4] = {kConstants0,kConstants1,kConstants2,kConstants3};
-
-// GLOBALS
-static bool initVersat = false;
-
-static void store_bigendian_32(uint8_t *x, uint32_t u) {
-   x[3] = (uint8_t) u;
-   u >>= 8;
-   x[2] = (uint8_t) u;
-   u >>= 8;
-   x[1] = (uint8_t) u;
-   u >>= 8;
-   x[0] = (uint8_t) u;
-}
-
-void InitVersatSHA(){
-   CryptoAlgosConfig* config = (CryptoAlgosConfig*) accelConfig;
-   SHAConfig* sha = &config->sha;
-
-   *sha = (SHAConfig){0};
-//   ActivateMergedAccelerator(SHA);
-   ConfigureSimpleVRead(&sha->MemRead,16,nullptr);
-
-   ACCEL_Constants_mem_iterA = 1;
-   ACCEL_Constants_mem_incrA = 1;
-   ACCEL_Constants_mem_perA = 16;
-   ACCEL_Constants_mem_dutyA = 16;
-   ACCEL_Constants_mem_startA = 0;
-   ACCEL_Constants_mem_shiftA = 0;
-
-   for(int ii = 0; ii < 16; ii++){
-      VersatUnitWrite(TOP_sha_cMem0_mem_addr,ii,kConstants[0][ii]);
-   }
-   for(int ii = 0; ii < 16; ii++){
-      VersatUnitWrite(TOP_sha_cMem1_mem_addr,ii,kConstants[1][ii]);
-   }
-   for(int ii = 0; ii < 16; ii++){
-      VersatUnitWrite(TOP_sha_cMem2_mem_addr,ii,kConstants[2][ii]);
-   }
-   for(int ii = 0; ii < 16; ii++){
-      VersatUnitWrite(TOP_sha_cMem3_mem_addr,ii,kConstants[3][ii]);
-   }
-
-   ACCEL_TOP_sha_Swap_enabled = 1;
-}
-
-static size_t versat_crypto_hashblocks_sha256(const uint8_t *in, size_t inlen) {
-   while (inlen >= 64) {
-      ACCEL_TOP_sha_MemRead_ext_addr = (iptr) in;
-   
-      // Loads data + performs work
-      RunAccelerator(1);
-
-      if(!initVersat){
-         VersatUnitWrite(TOP_sha_State_s_0_reg_addr,0,initialStateValues[0]);
-         VersatUnitWrite(TOP_sha_State_s_1_reg_addr,0,initialStateValues[1]);
-         VersatUnitWrite(TOP_sha_State_s_2_reg_addr,0,initialStateValues[2]);
-         VersatUnitWrite(TOP_sha_State_s_3_reg_addr,0,initialStateValues[3]);
-         VersatUnitWrite(TOP_sha_State_s_4_reg_addr,0,initialStateValues[4]);
-         VersatUnitWrite(TOP_sha_State_s_5_reg_addr,0,initialStateValues[5]);
-         VersatUnitWrite(TOP_sha_State_s_6_reg_addr,0,initialStateValues[6]);
-         VersatUnitWrite(TOP_sha_State_s_7_reg_addr,0,initialStateValues[7]);
-         initVersat = true;
-      }
-
-      in += 64;
-      inlen -= 64;
-   }
-
-   return inlen;
-}
-
-void VersatSHA(uint8_t *out, const uint8_t *in, size_t inlen) {
-   uint8_t padded[128];
-   uint64_t bytes = inlen;
-
-   versat_crypto_hashblocks_sha256(in, inlen);
-   in += inlen;
-   inlen &= 63;
-   in -= inlen;
-
-   for (size_t i = 0; i < inlen; ++i) {
-      padded[i] = in[i];
-   }
-   padded[inlen] = 0x80;
-
-   if (inlen < 56) {
-      for (size_t i = inlen + 1; i < 56; ++i) {
-         padded[i] = 0;
-      
-    }  padded[56] = (uint8_t) (bytes >> 53);
-      padded[57] = (uint8_t) (bytes >> 45);
-      padded[58] = (uint8_t) (bytes >> 37);
-      padded[59] = (uint8_t) (bytes >> 29);
-      padded[60] = (uint8_t) (bytes >> 21);
-      padded[61] = (uint8_t) (bytes >> 13);
-      padded[62] = (uint8_t) (bytes >> 5);
-      padded[63] = (uint8_t) (bytes << 3);
-      versat_crypto_hashblocks_sha256(padded, 64);
-   } else {
-      for (size_t i = inlen + 1; i < 120; ++i) {
-         padded[i] = 0;
-      }
-      padded[120] = (uint8_t) (bytes >> 53);
-      padded[121] = (uint8_t) (bytes >> 45);
-      padded[122] = (uint8_t) (bytes >> 37);
-      padded[123] = (uint8_t) (bytes >> 29);
-      padded[124] = (uint8_t) (bytes >> 21);
-      padded[125] = (uint8_t) (bytes >> 13);
-      padded[126] = (uint8_t) (bytes >> 5);
-      padded[127] = (uint8_t) (bytes << 3);
-      versat_crypto_hashblocks_sha256(padded, 128);
-   }
-
-   RunAccelerator(1);
-
-   store_bigendian_32(&out[0*4],(uint32_t) VersatUnitRead(TOP_sha_State_s_0_reg_addr,0));
-   store_bigendian_32(&out[1*4],(uint32_t) VersatUnitRead(TOP_sha_State_s_1_reg_addr,0));
-   store_bigendian_32(&out[2*4],(uint32_t) VersatUnitRead(TOP_sha_State_s_2_reg_addr,0));
-   store_bigendian_32(&out[3*4],(uint32_t) VersatUnitRead(TOP_sha_State_s_3_reg_addr,0));
-   store_bigendian_32(&out[4*4],(uint32_t) VersatUnitRead(TOP_sha_State_s_4_reg_addr,0));
-   store_bigendian_32(&out[5*4],(uint32_t) VersatUnitRead(TOP_sha_State_s_5_reg_addr,0));
-   store_bigendian_32(&out[6*4],(uint32_t) VersatUnitRead(TOP_sha_State_s_6_reg_addr,0));
-   store_bigendian_32(&out[7*4],(uint32_t) VersatUnitRead(TOP_sha_State_s_7_reg_addr,0));
-
-   initVersat = false; // At the end of each run, reset
-}
 
 void SingleTest(Arena* arena){
    const char* key128 = "2b7e151628aed2a6abf7158809cf4f3c";
@@ -1156,7 +1060,10 @@ void SingleTest(Arena* arena){
    const char* key256 = "603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4";
    //                       vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
    //                                                       vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+   
+   //const char* plaintext = "3243f6a8885a308d313198a2e03707343243f6a8885a308d313198a2e0370734";
    const char* plaintext = "6bc1bee22e409f96e93d7e117393172aae2d8a571e03ac9c9eb76fac45af8e51";
+   //const char* plaintext = "6bc1bee22e409f96e93d7e117393172a6bc1bee22e409f96e93d7e117393172a";
    const char* iv = "000102030405060708090a0b0c0d0e0f";
    const char* counter = "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff";
 
@@ -1168,26 +1075,4 @@ void SingleTest(Arena* arena){
 
    CTR128(key128,counter,plaintext,"874d6191b620e3261bef6864990db6ce 9806f66b7970fdff8617187bb9fffdff");
    CTR256(key256,counter,plaintext,"601ec313775789a5b7a7f504bbf3d228 f443e3ca4d62b59aca84e990cacaf5c5");
-
-   {
-   //unsigned char msg_64[] = { 0x5a, 0x86, 0xb7, 0x37, 0xea, 0xea, 0x8e, 0xe9, 0x76, 0xa0, 0xa2, 0x4d, 0xa6, 0x3e, 0x7e, 0xd7, 0xee, 0xfa, 0xd1, 0x8a, 0x10, 0x1c, 0x12, 0x11, 0xe2, 0xb3, 0x65, 0x0c, 0x51, 0x87, 0xc2, 0xa8, 0xa6, 0x50, 0x54, 0x72, 0x08, 0x25, 0x1f, 0x6d, 0x42, 0x37, 0xe6, 0x61, 0xc7, 0xbf, 0x4c, 0x77, 0xf3, 0x35, 0x39, 0x03, 0x94, 0xc3, 0x7f, 0xa1, 0xa9, 0xf9, 0xbe, 0x83, 0x6a, 0xc2, 0x85, 0x09 };
-   
-   unsigned char msg[] = {0x54,0x65,0x73,0x74,0x20,0x73,0x74,0x72,0x69,0x6e,0x67,0x2c,0x20,0x63,0x6f,0x6e,0x74,0x61,0x69,0x6e,0x73,0x20,0x6d,0x75,0x6c,0x74,0x69,0x70,0x6c,0x65,0x20,0x63,0x68,0x61,0x72,0x61,0x63,0x74,0x65,0x72,0x73,0x20,0x69,0x6e,0x20,0x6f,0x72,0x64,0x65,0x72,0x20,0x74,0x6f,0x20,0x74,0x65,0x73,0x74,0x20,0x74,0x68,0x65,0x20,0x62,0x6c,0x6f,0x63,0x6b,0x20,0x73,0x74,0x72,0x65,0x61,0x6d,0x20,0x70,0x72,0x6f,0x70,0x65,0x72,0x6c,0x79};
-
-   static const int HASH_SIZE = (256/8);
-   
-   InitVersatSHA();
-
-   unsigned char digest[256];
-   for(int i = 0; i < 256; i++){
-      digest[i] = 0;
-   }
-
-   VersatSHA(digest,msg,ARRAY_SIZE(msg));
-
-   char buffer[2048];
-   GetHexadecimal((char*) digest,buffer, HASH_SIZE);
-   //Assert_Eq("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa",buffer);
-   Assert_Eq("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa",buffer); 
-   }
 }

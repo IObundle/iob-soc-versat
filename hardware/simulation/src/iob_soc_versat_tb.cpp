@@ -97,7 +97,8 @@ int main(int argc, char **argv, char **env) {
 #ifdef VCD
   tfp = new VerilatedFstC;
 
-  dut->trace(tfp, 1);
+  printf("\nOpening uut.fst\n");
+  dut->trace(tfp, 99);
   tfp->open("uut.fst");
 #endif
 
@@ -120,8 +121,7 @@ int main(int argc, char **argv, char **env) {
   char rxread_reg = 0, txread_reg = 0;
   int able2write = 0, able2read = 0;
 
-  while ((cnsl2soc_fd = fopen("./cnsl2soc", "rb")) == NULL)
-    ;
+  while ((cnsl2soc_fd = fopen("./cnsl2soc", "rb")) == NULL);
   fclose(cnsl2soc_fd);
   soc2cnsl_fd = fopen("./soc2cnsl", "wb");
 
