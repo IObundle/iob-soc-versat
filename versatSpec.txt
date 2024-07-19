@@ -1,9 +1,21 @@
+module TestStuff(){
+   Mem m0;
+   Const c;
+   Buffer b;
+#
+   m0 -> b;
+   a = c + b;
+   a -> out;
+}
+
 module TestStaticChild2(){ // Since TestStaticChild2 is only used as static in the following modules, it should have the same values
    Const inside0; 
    static Const inside1;
 #
    {inside0,inside1} -> out:0..1;
 }
+
+// stop;
 
 module TestStaticChild1() -> 3{
    static TestStaticChild2 child;
@@ -152,13 +164,6 @@ module TestMergeDelay2(){
 
 merge TestMergeDelay = TestMergeDelay1 | TestMergeDelay2;
 
-/*
-merge TestMergeDelay = TestMergeDelay1:a | TestMergeDelay2:b{
-   a.mem - b.mem;
-   a.output - b.output;
-}
-*/
-
 module TestMergeLargeDelay1(){
    Const x;
    Reg output;
@@ -179,7 +184,56 @@ module TestMergeLargeDelay2(){
 
 merge TestMergeLargeDelay = TestMergeLargeDelay1 | TestMergeLargeDelay2;
 
-merge TestDoubleMerge = TestMergeDelay | TestMergeLargeDelay;
+module TestDoubleMerge00(){
+   Const x00;
+   Const y00;
+#
+   a = x00 + y00;
+   a -> out;
+}
+
+module TestDoubleMerge01(){
+   Mem x01;
+   Mem y01;
+#
+   a = x01 + y01;
+   a -> out;
+}
+
+module TestDoubleMerge10(){
+   Mem x10;
+   Const y10;
+#
+   a = y10 - x10;
+   a -> out;
+}
+
+module TestDoubleMerge11(){
+   Const x11;
+   Mem y11;
+#
+   a = y11 - x11;
+   a -> out;
+}
+
+merge TestDoubleMerge0 = TestDoubleMerge00 | TestDoubleMerge01;
+merge TestDoubleMerge1 = TestDoubleMerge10 | TestDoubleMerge11;
+
+merge TestDoubleMerge = TestDoubleMerge0 | TestDoubleMerge1;
+
+/*
+module TestMergeStruct(){
+   TestDoubleMerge0 d0;
+   Const c;
+#
+   a = d0 + c;
+   a -> out;
+}
+
+merge TestMergeAfterStruct = TestMergeStruct | TestDoubleMerge1;
+*/
+
+//stop;
 
 module FloatTest(x,y,z){
    FloatAdd  add;
@@ -1079,7 +1133,7 @@ module Constants(){
 #
    mem -> out:0;
 }
-
+z
 module SHA(){
    VRead MemRead;
    SwapEndian Swap;
@@ -1109,60 +1163,6 @@ module SHA(){
    
    F3:0..7 -> State:0..7;
 }
-
-/*
-module SBoxGroup(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf){
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) s0;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) s1;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) s2;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) s3;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) s4;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) s5;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) s6;
-   LookupTable #(.ADDR_W(8),.SIZE_W(8)) s7;
-#
-   x0 -> s0:0;
-   x1 -> s0:1;
-
-   x2 -> s1:0;
-   x3 -> s1:1;
-
-   x4 -> s2:0;
-   x5 -> s2:1;
-
-   x6 -> s3:0;
-   x7 -> s3:1;
-
-   x8 -> s4:0;
-   x9 -> s4:1;
-
-   xa -> s5:0;
-   xb -> s5:1;
-
-   xc -> s6:0;
-   xd -> s6:1;
-
-   xe -> s7:0;
-   xf -> s7:1;
-
-   s0:0 -> out:0;
-   s0:1 -> out:1;
-   s1:0 -> out:2;
-   s1:1 -> out:3;
-   s2:0 -> out:4;
-   s2:1 -> out:5;
-   s3:0 -> out:6;
-   s3:1 -> out:7;
-   s4:0 -> out:8;
-   s4:1 -> out:9;
-   s5:0 -> out:10;
-   s5:1 -> out:11;
-   s6:0 -> out:12;
-   s6:1 -> out:13;
-   s7:0 -> out:14;
-   s7:1 -> out:15;
-}
-*/
 
 module SBoxGroup(x[16]){
    SBox box[16];
@@ -2916,6 +2916,19 @@ module McEliece(){
    d -> writer;
 }
 
+// When we flatten FullAES, we can save the mappings.
+// If round.x gets mapped to state.0 then we can save that mapping.
+// Meaning that can potentially have a mapping of the sub units to the upper flattened units.
+// Basically map the special inputs and outputs of a submerged graph to the upper units.
+
+// How do we handle repeated units?
+// If a module contains units of the same type A and B.
+//   We are gonna have repeated mappings of the specials from A and the specials from B.
+//   We need to save the name of the upper unit.
+//     Techically only need to known the name, since we can then use the same function that we currently have to map nodes.
+
+// We need to be able to map round.x0 to state:0, round.x1 to state:1 and so on.
+
 module FullAES(){
    share config RegFile{
       key[16];
@@ -2939,7 +2952,7 @@ module FullAES(){
    key[0..15]:0 -> schedule:16..31;
    rcon         -> schedule:32;
 
-   schedule:0..15   -> key[0..15];
+   schedule:0..15 -> key[0..15];
 
    state[0..15] -> round:0..15;
    key[0..15]   -> round:16..31;
@@ -2952,12 +2965,16 @@ module FullAES(){
    lastAdd:0..15 -> lastResult[0..15];
 }
 
+//stop;
+
 module CryptoAlgos(){
    FullAES aes;
    SHA sha;
    McEliece eliece;
 #
 }
+
+//merge GoodCryptoAlgos = SHA | McEliece | FullAES;
 
 module TestDebugReadMem(){
    DebugReadMem read;
