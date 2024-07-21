@@ -39,7 +39,7 @@ TOOLCHAIN_PREFIX ?=riscv64-unknown-elf-
 CFLAGS ?=-Os -O2 -nostdlib -march=$(MFLAGS) -mabi=ilp32 --specs=nano.specs -Wcast-align=strict $(USER_CFLAGS)
 LFLAGS ?= -Wl,-Bstatic,-T,$(TEMPLATE_LDS),--strip-debug
 LLIBS ?=-lgcc -lc -lnosys
-INCLUDES ?=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
+INCLUDES ?=-I. -Isrc
 
 #########################################
 #         PC emulation settings         #
@@ -50,11 +50,11 @@ EMUL_CFLAGS ?=-g -std=gnu99 -march=native
 
 CONSOLE_CMD ?=rm -f soc2cnsl cnsl2soc; ../scripts/console.py -L
 
-EMUL_INCLUDES ?=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
+EMUL_INCLUDES ?=-I. -Isrc
 
 EMUL_HDR+=$(wildcard src/*_emul.h)
 
-EMUL_SRC+=$(wildcard src/*_emul.c) $(wildcard src/McEliece/*.c) $(wildcard src/McEliece/common/*.c)
+EMUL_SRC+=$(wildcard src/*_emul.c)
 
 #########################################
 #            Embedded targets           #

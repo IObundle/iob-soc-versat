@@ -32,7 +32,7 @@ UTARGETS+=build_iob_soc_versat_software
 
 TEMPLATE_LDS=src/$@.lds
 
-IOB_SOC_VERSAT_INCLUDES=-I. -Isrc -Isrc/McEliece -Isrc/McEliece/common
+IOB_SOC_VERSAT_INCLUDES=-I. -Isrc
 
 IOB_SOC_VERSAT_LFLAGS=-Wl,-Bstatic,-T,$(TEMPLATE_LDS),--strip-debug
 
@@ -41,8 +41,8 @@ IOB_SOC_VERSAT_FW_SRC=src/iob_soc_versat_firmware.S
 IOB_SOC_VERSAT_FW_SRC+=src/iob_soc_versat_firmware.c
 IOB_SOC_VERSAT_FW_SRC+=src/printf.c
 
-IOB_SOC_VERSAT_FW_SRC+=$(wildcard src/McEliece/*.c)
-IOB_SOC_VERSAT_FW_SRC+=$(wildcard src/McEliece/common/*.c)
+#IOB_SOC_VERSAT_FW_SRC+=$(wildcard src/McEliece/*.c)
+#IOB_SOC_VERSAT_FW_SRC+=$(wildcard src/McEliece/common/*.c)
 
 # PERIPHERAL SOURCES
 IOB_SOC_VERSAT_FW_SRC+=$(wildcard src/iob-*.c)

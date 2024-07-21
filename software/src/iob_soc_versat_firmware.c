@@ -9,14 +9,14 @@
 #include "printf.h"
 #include <string.h>
 
-#include "arena.h"
+//#include "arena.h"
 
 // MARKED
 // McEliece
-#include "api.h"
+//#include "api.h"
 //#include "nistkatrng.h"
 
-void nist_kat_init(unsigned char *entropy_input, unsigned char *personalization_string, int security_strength);
+//void nist_kat_init(unsigned char *entropy_input, unsigned char *personalization_string, int security_strength);
 
 #ifdef __cplusplus
 extern "C"{

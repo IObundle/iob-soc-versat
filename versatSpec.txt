@@ -1133,7 +1133,7 @@ module Constants(){
 #
    mem -> out:0;
 }
-z
+
 module SHA(){
    VRead MemRead;
    SwapEndian Swap;
