@@ -5,7 +5,19 @@
 
 include ../config_build.mk
 
-include VerilatorMake.mk
+-include VerilatorMake.mk
+
+#########################################
+#            General settings           #
+#########################################
+
+PYTHON_DIR = ../scripts
+
+# include local build segment
+# all previously defined variables can be overwritten in this file
+ifneq ($(wildcard sw_build.mk),)
+include sw_build.mk
+endif
 
 #########################################
 #           Embedded settings           #
@@ -24,7 +36,7 @@ endif
 
 #default compiler settings
 TOOLCHAIN_PREFIX ?=riscv64-unknown-elf-
-CFLAGS ?=-Os -nostdlib -march=$(MFLAGS) -mabi=ilp32 --specs=nano.specs -Wcast-align=strict
+CFLAGS ?=-Os -O2 -nostdlib -march=$(MFLAGS) -mabi=ilp32 --specs=nano.specs -Wcast-align=strict $(USER_CFLAGS)
 LFLAGS ?= -Wl,-Bstatic,-T,$(TEMPLATE_LDS),--strip-debug
 LLIBS ?=-lgcc -lc -lnosys
 INCLUDES ?=-I. -Isrc
@@ -34,41 +46,31 @@ INCLUDES ?=-I. -Isrc
 #########################################
 
 # compiler flags
-EMUL_CFLAGS=-g -DPC #-Os -std=gnu99 -Wl,--strip-debug
+EMUL_CFLAGS ?=-g -std=gnu99 -march=native
 
-CONSOLE_CMD=rm -f soc2cnsl cnsl2soc; ../scripts/console.py -L
+CONSOLE_CMD ?=rm -f soc2cnsl cnsl2soc; ../scripts/console.py -L
 
-EMUL_INCLUDES=-I. -Isrc
+EMUL_INCLUDES ?=-I. -Isrc
 
 EMUL_HDR+=$(wildcard src/*_emul.h)
 
 EMUL_SRC+=$(wildcard src/*_emul.c)
 
 #########################################
-#            General settings           #
-#########################################
-
-# include local build segment
-# all previously defined variables can be overwritten in this file
-ifneq ($(wildcard sw_build.mk),)
-include sw_build.mk
-endif
-
-#########################################
 #            Embedded targets           #
 #########################################
 
 test_emb.o: src/test.cpp 
-	$(TOOLCHAIN_PREFIX)g++ -c -o $@ -Os -nostdlib -march=$(MFLAGS) -mabi=ilp32 $(INCLUDES) $< $(LLIBS)
+	$(TOOLCHAIN_PREFIX)g++ -c -o $@ $(CFLAGS) $(LFLAGS) $(INCLUDES) $< $(LLIBS)
 
 build: $(UTARGETS)
-	
-iob_soc_versat_firmware.elf: $(TEMPLATE_LDS) $(HDR) $(SRC) test_emb.o
+
+iob_soc_versat_firmware.elf: $(TEMPLATE_LDS) $(HDR) test_emb.o  $(SRC) 
 	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(INCLUDES) $(SRC) test_emb.o $(LLIBS)
 	$(TOOLCHAIN_PREFIX)objdump -d $@ > assembly.asm
 	$(TOOLCHAIN_PREFIX)objcopy -O binary $@ iob_soc_versat_firmware.bin
 
-iob_soc_versat_boot.elf: $(TEMPLATE_LDS) $(HDR) $(SRC)
+iob_soc_versat_boot.elf: $(TEMPLATE_LDS) $(HDR) $(SRC) 
 	$(TOOLCHAIN_PREFIX)gcc -o $@ $(CFLAGS) $(LFLAGS) $(INCLUDES) $(SRC) $(LLIBS)
 	$(TOOLCHAIN_PREFIX)objcopy -O binary $@ iob_soc_versat_boot.bin
 
@@ -89,24 +91,30 @@ debug:
 #########################################
 
 test.o: src/test.cpp 
-	g++ -c -o $@ $< $(EMUL_CFLAGS) $(EMUL_INCLUDES)
+	g++ -c -o $@ $< -O2 -march=native $(EMUL_INCLUDES)
 
 fw_emul: $(EMUL_HDR) $(EMUL_SRC) test.o libaccel.a
-	gcc -o $@ $(EMUL_CFLAGS) $(EMUL_INCLUDES) test.o $(filter-out src/iob-versat.c,$(EMUL_SRC)) -lgcc -lc -lm -ldl libaccel.a -lstdc++
+	gcc -o $@ -O2 $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(abspath $(EMUL_SRC)) test.o -lm libaccel.a -lstdc++ #-lgcc -lc -lm -ldl 
 
 build_emul: fw_emul
 	@echo "build"
 
 #board client command
-BOARD_GRAB_CMD=../scripts/board_client.py grab 300
+BOARD_GRAB_CMD ?=../scripts/board_client.py grab 10000
 
-run_emul: build_emul
+test.log: build_emul
 	$(BOARD_GRAB_CMD) -s './fw_emul' -c '$(CONSOLE_CMD)'
 
-test_emul: run_emul
+run_emul: test.log
 	test "$$(cat test.log)" = "Test passed!"
 
-.PHONY: build_emul run_emul test_emul
+DIR := $(abspath $(CURDIR)/../)
+
+test_emul: test.log
+	@-test "$$(cat test.log)" = "Test passed!" || echo "$(DIR): Failed"  1>&2
+	@-test "$$(cat test.log)" = "Test passed!" && echo "$(DIR): Success" 1>&2
+
+.PHONY: build_emul run_emul
 
 #########################################
 #            General targets            #

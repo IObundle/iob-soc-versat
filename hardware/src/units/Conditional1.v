@@ -1,8 +1,6 @@
 `timescale 1ns / 1ps
 
-module Conditional1 #(
-         parameter DELAY_W = 32
-              )
+module Conditional1 
      (
    input                   clk,
    input                   rst,

@@ -5,7 +5,7 @@ void SingleTest(Arena* arena){
    iptr addrB = 4;
 
    VersatUnitWrite(TOP_simple_addr,addrA,0xf0);
-   VersatUnitWrite(TOP_simple_addr,addrB,0xf4);
+   VersatUnitWrite(TOP_simple_addr,addrB / sizeof(int),0xf4);
 
    SimpleInputStart[0] = addrA;
    SimpleInputStart[1] = addrB;

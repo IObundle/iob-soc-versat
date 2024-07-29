@@ -1,157 +1,120 @@
-# iob-soc-sha
-SoC to run the SHA256 program on a RISC-V processor, with or without
-acceleration using the VERSAT2.0 Coarse Grained Reconfigurable Array as a
-hardware accelerator.
+# iob-soc-versat
 
-# Setup
-Clone the repository and the submodules with:
-```
-git clone --recursive git@github.com:IObundle/iob-soc-sha.git
-```
-or using the url:
-```
-git clone --recursive https://github.com/IObundle/iob-soc-sha.git
-```
-* * *
-# PC Emulation
-The iob-soc-sha system can build and run an environment for PC with:
-```
-make pc-emul-run
-```
-This target performs the Short Message Test for Byte-Oriented `sha256()` 
-implementations from the 
-[NIST Cryptograpphic Algorithm Validation
-Program](https://csrc.nist.gov/projects/cryptographic-algorithm-validation-program/secure-hashing).
+IOb-SoC-Versat is a System-on-Chip (SoC) system designed to test [Versat](https://github.com/IObundle/iob-versat) generated accelerators.
 
-The test vectors are a set of 65 messages from 0 to 64 byte length. The 
-implementation program only receives the messages and outputs the corresponding
-message digests (MD). An external script compares the implementation output with
-the expected MD from the test vectors.
+## Running tests
 
-The implementation output can be checked manually from terminal and
-`software/pc-emul/ethernet.log`
+After cloning the repository and having all the dependencies installed (if not using Nix environment) any single 
+testcase can be tested by simply running:
 
-### Clean environment
-To clean the workspace after PC emulation:
-```
-make pc-emul-clean
-```
-### Requirements
-PC emulation program requires:
-- Git
-- Make
-- gcc
-- Python 3.6+
-
-* * *
-# RISCV Emulation
-The iob-soc-sha system can be emulated using a verilog simulator like icarus 
-with:
-```Make
-# Test with all supported simulators
-make test-sim
-# Test with a specific simulator
-make sim-test SIMULATOR=icarus
-make sim-test SIMULATOR=verilator
+```bash
+make clean pc-emul-run TEST="TestName"
+make clean sim-run TEST="TestName"
+make clean fpga-run TEST="TestName"
 ```
 
-### Clean environment
-To clean the workspace after the RISCV emulation:
-```
-make test-sim-clean
-```
+TestName is the name of the test. The Tests firmware is contained inside the software/src/Tests folder and the units that they test are described inside versatSpec.txt.
 
-### Requirements/Setup
-RISCV emulation requires:
-- PC Emulation requirements
-- RISCV toolchain
-    - Add the RISCV toolchain to you `PATH` variable in `$HOME/.bashrc`:
-    ```
-    export RISCV=/path/to/riscv/bin
-    export PATH=$RISCV:$PATH
-    ```
-- Verilog simulator, for example: 
-    - [icarus verilog](https://github.com/steveicarus/iverilog)  
-    - [verilator](https://github.com/verilator/verilator)
+It is also possible to test multiple tests at the same time by running:
 
-# FPGA Execution
-The system can be tested on FPGA with:
-```
-make test-fpga
+```bash
+make test-clean test-pc-emul-run
+make test-clean test-sim-run
 ```
 
-The results can be manually checked in the terminal and in
-`hardware/fpga/<tool>/<board>/ethernet.log`, where `<tool>` is the tool used
-for synthesis and `<board>` is the board directory name.
+The tests that are tested are described inside the Makefile. Tests are run in parallel. Fpga run must be made individually because parallel testing is not supported for fpgas.
 
-The system has been tested with the `AES-KU040-DB-G` board from Xilinx. In that
-case the results can be found in: `hardware/fpga/vivado/AES-KU040-DB-G`. 
+## Clone the repository
 
-### Clean environment
-To clean the workspace after the FPGA execution:
+The first step is to clone this repository. IOb-SoC-Versat uses git sub-module trees, and
+GitHub will ask for your password for each downloaded module if you clone it by *https*. To avoid this,
+setup GitHub access with *ssh* and type:
+
+```Bash
+git clone --recursive git@github.com:IObundle/iob-soc-versat.git
+cd iob-soc-versat
 ```
-make test-fpga-clean
+
+Alternatively, you can still clone this repository using *https* if you cache
+your credentials before cloning the repository, using: ``git config --global
+credential.helper 'cache --timeout=<time_in_seconds>'``
+
+## Nix environment
+
+You can use
+[nix-shell](https://nixos.org/download.html#nix-install-linux) to run
+IOb-SoC-Versat in a [Nix](https://nixos.org/) environment with all dependencies
+available except for Vivado and Quartus for FPGA compilation and running.
+
+After installing `nix-shell,` it can be initialized by calling any Makefile target in the IOb-SoC-Versat root directory, for example
+```Bash
+make setup
 ```
 
-### Requirements/Setup
-FPGA execution requires:
-- Supported FPGA board
-- Setup environment for FPGA execution
-    - Add the executable paths and license servers in `$HOME/.bashrc`:
-    ```
-    export VIVADOPATH=/path/to/vivado
-    ...
-    export LM_LICENSE_FILE=port@licenseserver.myorg.com;lic_or_dat_file
-    ```
-    - Follow [IOb-soc's README](https://github.com/IObundle/iob-soc#readme) for
-    more installation details.
+The first time it runs, `nix-shell` will automatically install all the required dependencies. This can take a couple of hours, but after that, you can enjoy IOb-SoC-Versat and not worry about installing software tools.
 
-# Profiling
-The system can be profiled using a 
-[Timer core](https://www.github.com/IObundle/iob-timer.git), a software 
-controlled counter.
+## Dependencies
 
-The `pc-emul` version simulates the counter behaviour by calling the C standard
-`<timer.h>` library.
+If you prefer, you may install all the dependencies manually and run IOb-SoC-Versat without nix-shell. The following tools should be installed:
+- GNU Bash >=5.1.16
+- GNU Make >=4.3
+- RISC-V GNU Compiler Toolchain =2022.06.10  (Instructions at the end of this README)
+- Python3 >=3.10.6
+- Python3-Parse >=1.19.0
 
-The profiling is available for `pc-emul` using the following command:
+Optional tools, depending on the desired run strategy:
+- Icarus Verilog >=10.3
+- Verilator >=5.002
+- gtkwave >=3.3.113
+- Vivado >=2020.2
+- Quartus >=20.1
+
+Older versions of the dependencies above may work but still need to be tested. It is recommended to use a Nix environment, if possible
+
+## Set environment variables for local or remote building and running
+
+The various simulators, FPGA compilers, and FPGA boards may run locally or
+remotely. For running a tool remotely, you need to set two environmental
+variables: the server logical name and the server user name. Consider placing
+these settings in your `.bashrc` file so that they apply to every session.
+
+
+### Set up the remote simulator server
+
+Using the open-source simulator Icarus Verilog (`iverilog`) as an example, note that in
+`submodules/hardware/simulation/icarus.mk,` the variable for the server logical name,
+`SIM_SERVER,` is set to `IVSIM_SERVER,` and the variable for the user name,
+`SIM_USER` is set to `IVSIM_USER`.
+
+To run the simulator on the server *mysimserver.myorg.com* as user *ivsimuser*, set the following environmental
+variables beforehand, or place them in your `.bashrc` file:
+
+```Bash
+export IVSIM_SERVER=ivsimserver.myorg.com
+export IVSIM_USER=ivsimuser
 ```
-make pc-emul-profile
-```
-The `pc-emul-profile` target outputs an `emul_profile.log` file with the
-profiling information.
 
-For `fpga` profiling run the following command:
-```
-make fpga-run-profile
-```
-The `fpga-run-profile` target outputs a `fpga_profile.log` file with the 
-profiling information.
+When you start the simulation, IOb-SoC-Versat simulation Makefile will log you on to the server using `ssh,` then `rsync` the files to a remote build directory and run the simulation there.  If you do not set these variables, the simulator will run locally if installed.
 
-# Ethernet
-The system supports ethernet communication using the 
-[IOb-Eth core](https://github.com/IObundle/iob-eth).
+### Set up the remote FPGA toolchain and board servers
 
-Check [IO-Eth's README](https://github.com/IObundle/iob-eth#readme) for setup 
-instructions and further details.
+Using the CYCLONEV-GT-DK board as an example, note that in
+`hardware/fpga/quartus/CYCLONEV-GT-DK/Makefile,` the variable for the FPGA tool
+server logical name, `FPGA_SERVER,` is set to `QUARTUS_SERVER,` and the
+variable for the user name, `FPGA_USER`, is set to `QUARTUS_USER`; the
+variable for the board server, `BOARD_SERVER,` is set to `CYC5_SERVER`, and
+the variable for the board user, `BOARD_USER,` is set to `CYC5_USER`. As in the
+previous example, set these variables as follows:
 
-# Versat
-### Versat Custom Functional Units
-The acceleration of SHA application requires the design of custom functional
-units (FUs). These FUs can be validated with unit tests by running the command:
+```Bash
+export QUARTUS_SERVER=quartusserver.myorg.com
+export QUARTUS_USER=quartususer
+export CYC5_SERVER=cyc5server.myorg.com
+export CYC5_USER=cyc5username
 ```
-make test-versat-fus
-```
-The custom FUs are in `hardware/src/units/`.
 
-### Spinal HDL Version
-Alternatively, the same FUs can be generated from SpinalHDL using the command:
-```
-make test-versat-fus SPINAL=1
-```
-The SpinalHDL sources are in `hardware/src/spinalHDL`.
+In each remote server, the environment variable for the license server used must be defined as in the following example:
 
-#### SpinalHDL Setup
-Check `hardware/src/spinalHDL/README.md` for more details to setup the
-requirements to use SpinalHDL.
-
+```Bash
+export LM_LICENSE_FILE=port@licenseserver.myorg.com;lic_or_dat_file
+```

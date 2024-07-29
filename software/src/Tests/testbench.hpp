@@ -1,3 +1,5 @@
+#pragma GCC diagnostic ignored "-Wcast-align"
+
 #ifndef INCLUDED_TESTBENCH
 #define INCLUDED_TESTBENCH
 
@@ -11,6 +13,8 @@
 #include "iob-uart.h"
 #include "printf.h"
 
+#include "unitConfiguration.hpp"
+
 #define TEST_PASSED 0
 #define TEST_FAILED 1
 
@@ -21,19 +25,56 @@
 #define Megabyte(val) (Kilobyte(val) * 1024)
 #define Gigabyte(val) (Megabyte(val) * 1024)
 
+#define ALIGN_4(val) ((val + 3) & (~0x3))
+
 typedef unsigned char Byte;
 
 static bool error = false; // Global keep track if a error occurred. Do not want to print error messages more than once
-
-static const int TEST_BUFFER_AMOUNT = 1000; // 100K should be around 400Kbs per buffer (expected and got)
-
-typedef enum {TEST_INTEGER,TEST_UNSIGNED,TEST_FLOAT} TestValueType;
 
 typedef struct{
   Byte* mem;
   size_t used;
   size_t totalAllocated;
 } Arena;
+
+Arena InitArena(int amount){
+  Arena arena = {};
+  arena.mem = (Byte*) malloc(amount);
+  arena.totalAllocated = amount;
+  return arena;
+}
+
+Byte* PushBytes(Arena* arena, size_t size){
+   Byte* ptr = &arena->mem[arena->used];
+
+   if(arena->used + size > arena->totalAllocated){
+    printf("[%s] Used: %zd, Size: %zd, Total: %zd\n",__PRETTY_FUNCTION__,arena->used,size,arena->totalAllocated);
+    return nullptr;
+   }
+
+   //memset(ptr,0,size);
+   arena->used += size;
+
+   return ptr;
+}
+
+Arena SubArena(Arena* arena,size_t size){
+   Byte* mem = PushBytes(arena,size);
+
+   Arena res = {};
+   res.mem = mem;
+   res.totalAllocated = size;
+
+   return res;
+}
+
+Byte* MarkArena(Arena* arena){
+   return &arena->mem[arena->used];
+}
+
+void PopMark(Arena* arena,Byte* mark){
+   arena->used = mark - arena->mem;
+}
 
 template<typename T>
 class ArrayIterator{
@@ -55,15 +96,38 @@ struct Array{
   ArrayIterator<T> end(){return ArrayIterator<T>{data + size};};
 };
 
-typedef struct {
-  union {
+// Even though we only use an assert based approach for now,
+// we still keep expected and got separated in the case that we eventually need to implement 
+// separated pushExpected pushGot functions.
+// Some tests are easier to write if we can separate expected from got generation
+
+enum TestValueType {TestValueType_INTEGER,
+                    TestValueType_UNSIGNED,
+                    TestValueType_FLOAT,
+                    TestValueType_STRING};
+
+struct TestValue{
+  int size;
+  TestValueType type;
+  const char* marker;
+};
+
+struct TestValueSimples : public TestValue{
+  union{
     int i;
     unsigned int u;
     float f;
   };
-  const char* marker;
-  TestValueType type;
-} TestValue;
+};
+
+struct TestValueString : public TestValue{
+  char string[];
+};
+
+static const int TEST_BUFFER_AMOUNT = Kilobyte(64);
+
+static Arena expectedArena = {};
+static Arena gotArena = {};
 
 static unsigned int randomSeed = 1;
 void SeedRandomNumber(unsigned int val){
@@ -82,62 +146,11 @@ unsigned int GetRandomNumber(){
   return randomSeed;
 }
 
-#if 0
-int NumberDigitsRepresentation(int number){
-  int nDigits = 0;
-
-  if(number == 0){
-    return 1;
-  }
-
-  int64 num = number;
-  if(num < 0){
-    nDigits += 1; // minus sign
-    num *= -1;
-  }
-
-  while(num > 0){
-    num /= 10;
-    nDigits += 1;
-  }
-
-  return nDigits;
-}
-
-static char* GetNumberRepr(uint64 number,char* buffer){
-  if(number == 0){
-    buffer[0] = '0';
-    buffer[1] = '\0';
-    return buffer;
-  }
-
-  uint64 val = number;
-  buffer[31] = '\0';
-  int index = 30;
-  while(val){
-    buffer[index] = '0' + (val % 10);
-    val /= 10;
-    index -= 1;
-  }
-
-  return &buffer[index+1];
-}
-
-int GetMaxDigitSize(Array<int> array){
-  int maxReprSize = 0;
-  for(int val : array){
-    maxReprSize = std::max(maxReprSize,NumberDigitsRepresentation(val));
-  }
-
-  return maxReprSize;
-}
-#endif
-
 int GetMaxDigitSize(Array<float> array){
   return 2; // Floating points is hard to figure out how many digits. 2 should be enough
 }
 
-char GetHexadecimalChar(int value){
+char GetHexadecimalChar(unsigned char value){
   if(value < 10){
     return '0' + value;
   } else{
@@ -145,20 +158,48 @@ char GetHexadecimalChar(int value){
   }
 }
 
-char* GetHexadecimal(const char* text, int str_size,char* buffer){
-  int i;
-
-  //Assert(str_size * 2 < 64);
-  for(i = 0; i < str_size; i++){
-    int ch = (int) ((unsigned char) text[i]);
-
-    buffer[64 - 3 - i*2] = GetHexadecimalChar(ch / 16);
-    buffer[64 - 3 - i*2+1] = GetHexadecimalChar(ch % 16);
+char* GetHexadecimal(const char* text,char* buffer,int str_size){
+  int i = 0;
+  unsigned char* view = (unsigned char*) text;
+  for(; i< str_size; i++){
+    buffer[i*2] = GetHexadecimalChar(view[i] / 16);
+    buffer[i*2+1] = GetHexadecimalChar(view[i] % 16);
   }
 
-  buffer[64 - 1] = '\0';
+  buffer[i*2] = '\0';
 
-  return &buffer[64 - str_size * 2 - 1];
+  return buffer;
+}
+
+static char HexToInt(char ch){
+   if('0' <= ch && ch <= '9'){
+      return (ch - '0');
+   } else if('a' <= ch && ch <= 'f'){
+      return ch - 'a' + 10;
+   } else if('A' <= ch && ch <= 'F'){
+      return ch - 'A' + 10;
+   } else {
+      printf("Error, invalid character inside hex string:%c",ch);
+      return 0;
+   }
+}
+
+// Make sure that buffer is capable of storing the whole thing. Returns number of bytes inserted
+int HexStringToHex(char* buffer,const char* str){
+   int inserted = 0;
+   for(int i = 0; ; i += 2){
+      char upper = str[i];
+      char lower = str[i+1];
+
+      if(upper == '\0' || lower == '\0'){
+         if(upper != '\0') printf("Warning: HexString was not divisible by 2\n");
+         break;
+      }   
+
+      buffer[inserted++] = HexToInt(upper) * 16 + HexToInt(lower);
+   }
+
+   return inserted;
 }
 
 typedef union {
@@ -177,11 +218,6 @@ static float PackFloat(int i){
   c.i = i;
   return c.f;
 }
-
-static TestValue* expectedBuffer = nullptr;
-static int expectedIndex;
-static TestValue* gotBuffer = nullptr;
-static int gotIndex;
 
 static float Abs(float in){
   if(in < 0.0f){
@@ -210,197 +246,139 @@ static bool MyFloatEqual(float f0,float f1,float epsilon = 0.00001f){
   return equal;
 }
 
-static void ResetTestBuffers(){
-  expectedIndex = 0;
-  gotIndex = 0;
-}
-
-static void PushExpected(TestValue val){
-  if(expectedIndex < TEST_BUFFER_AMOUNT){
-    expectedBuffer[expectedIndex++] = val;
-  } else {
-    static bool done = false;
-    if(!done){
-      done = true;
-      printf("Reached end of buffer for test samples!!!\n");
-    }
-  }
-}
-
-static void PushGot(TestValue val){
-  if(gotIndex < TEST_BUFFER_AMOUNT){
-    gotBuffer[gotIndex++] = val;
-  } else {
-    static bool done = false;
-    if(!done){
-      done = true;
-      printf("Reached end of buffer for test samples!!!\n");
-    }
-  }}
-
-static TestValue MakeTestValueInt(int i,const char* marker = ""){
-  TestValue val = {};
-  val.i = i;
-  val.type = TEST_INTEGER;
-  val.marker = marker;
-  return val;
-}
-
-static TestValue MakeTestValueUnsigned(unsigned int i,const char* marker = ""){
-  TestValue val = {};
-  val.i = i;
-  val.type = TEST_UNSIGNED;
-  val.marker = marker;
-  return val;
-}
-
-static TestValue MakeTestValueFloat(float f,const char* marker = ""){
-  TestValue val = {};
-  val.f = f;
-  val.type = TEST_FLOAT;
-  val.marker = marker;
-  return val;
-}
-
-static bool TestValueEqual(TestValue v1,TestValue v2){
-  if(v1.type != v2.type){
+static bool TestValueEqual(TestValue* v1,TestValue* v2){
+  if(v1->type != v2->type){
     return false;
   }
 
-  if(strcmp(v1.marker,v2.marker) != 0){
+  if(strcmp(v1->marker,v2->marker) != 0){
     return false;
   }
+
+  TestValueSimples* s1 = (TestValueSimples*) v1;
+  TestValueSimples* s2 = (TestValueSimples*) v2;
 
   bool res = false;
-  switch(v1.type){
-  case TEST_INTEGER:{
-    res = (v1.i == v2.i);
+  switch(v1->type){
+  case TestValueType_INTEGER:{
+    res = (s1->i == s2->i);
   }break;
-  case TEST_UNSIGNED:{
-    res = (v1.u == v2.u);
+  case TestValueType_UNSIGNED:{
+    res = (s1->u == s2->u);
   }break;
-  case TEST_FLOAT:{
-    res = MyFloatEqual(v1.f,v2.f);
+  case TestValueType_FLOAT:{
+    res = MyFloatEqual(s1->f,s2->f);
   }break;
+  case TestValueType_STRING:{
+    TestValueString* S1 = (TestValueString*) v1;
+    TestValueString* S2 = (TestValueString*) v2;
+
+    if(S1->size != S2->size){
+      return false;
+    }
+
+    int stringSize = S1->size - sizeof(TestValue);
+
+    for(int i = 0; i < stringSize; i++){
+      if(S1->string[i] != S2->string[i]){
+        return false;
+      }
+      if(S1->string[i] == '\0'){
+        break;
+      }
+    }
+
+    return true;
+  } break;
   }
 
   return res;
 }
 
-static void PrintTestValue(TestValue val){
-  switch(val.type){
-  case TEST_INTEGER:{
-    printf("%d ",val.i);
+static void PrintTestValue(TestValue* value){
+  TestValueSimples* val = (TestValueSimples*) value;
+
+  switch(value->type){
+  case TestValueType_INTEGER:{
+    printf("%d ",val->i);
   }break;
-  case TEST_UNSIGNED:{
-    printf("%u ",val.u);
+  case TestValueType_UNSIGNED:{
+    printf("%u ",val->u);
   }break;
-  case TEST_FLOAT:{
-    printf("%f ",val.f);
+  case TestValueType_FLOAT:{
+    printf("%f ",val->f);
+  }break;
+  case TestValueType_STRING:{
+    TestValueString* str = (TestValueString*) value;
+    printf("%s",str->string);
   }break;
   }
-  printf("%s",val.marker);
+  printf("%s",val->marker);
 }
 
-static void PushExpectedI(int val,const char* marker = ""){
-  PushExpected(MakeTestValueInt(val,marker));
+TestValue* PushTestValue(Arena* arena,int val,const char* marker){
+  TestValueSimples* s = (TestValueSimples*) PushBytes(arena,sizeof(TestValueSimples));
+  s->size = sizeof(TestValueSimples); s->i = val; s->marker = marker; s->type = TestValueType_INTEGER;
+  return s;
 }
 
-static void PushGotI(int val,const char* marker = ""){
-  PushGot(MakeTestValueInt(val,marker));
+TestValue* PushTestValue(Arena* arena,unsigned int val,const char* marker){
+  TestValueSimples* s = (TestValueSimples*) PushBytes(arena,sizeof(TestValueSimples));
+  s->size = sizeof(TestValueSimples); s->u = val; s->marker = marker; s->type = TestValueType_UNSIGNED;
+  return s;
 }
 
-static void PushExpectedU(unsigned int val,const char* marker = ""){
-  PushExpected(MakeTestValueUnsigned(val,marker));
+TestValue* PushTestValue(Arena* arena,float val,const char* marker){
+  TestValueSimples* s = (TestValueSimples*) PushBytes(arena,sizeof(TestValueSimples));
+  s->size = sizeof(TestValueSimples); s->f = val; s->marker = marker; s->type = TestValueType_FLOAT;
+  return s;
 }
 
-static void PushGotU(unsigned int val,const char* marker = ""){
-  PushGot(MakeTestValueUnsigned(val,marker));
-}
+TestValue* PushTestValue(Arena* arena,const char* val,const char* marker){
+  int stringSize = strlen(val);
+  int totalSize = ALIGN_4(stringSize + sizeof(TestValue) + 1); // + 1 for '\0'
 
-static void PushExpectedF(float val,const char* marker = ""){
-  PushExpected(MakeTestValueFloat(val,marker));
-}
-
-static void PushGotF(float val,const char* marker = ""){
-  PushGot(MakeTestValueFloat(val,marker));
-}
-
-static void PushExpected(Array<int> arr){
-  for(int f : arr){
-    PushExpectedI(f);
-  }
-}
-
-static void PushExpected(Array<float> arr){
-  for(float f : arr){
-    PushExpectedF(f);
-  }
-}
-
-static void PushGot(Array<int> arr){
-  for(int f : arr){
-    PushGotI(f);
-  }
-}
-
-static void PushGot(Array<float> arr){
-  for(float f : arr){
-    PushGotF(f);
-  }
+  TestValueString* s = (TestValueString*) PushBytes(arena,totalSize);
+  s->size = totalSize; s->marker = marker; s->type = TestValueType_STRING;
+  strncpy(s->string,val,stringSize);
+  s->string[stringSize] = '\0';
+  return s;
 }
 
 static void Assert_Eq(int val1,int val2,const char* marker = ""){
-  PushExpectedI(val1,marker);
-  PushGotI(val2,marker);
+  PushTestValue(&expectedArena,val1,marker);
+  PushTestValue(&gotArena     ,val2,marker);
 }
 
 static void Assert_Eq(unsigned int val1,unsigned int val2,const char* marker = ""){
-  PushExpectedU(val1,marker);
-  PushGotU(val2,marker);
+  PushTestValue(&expectedArena,val1,marker);
+  PushTestValue(&gotArena     ,val2,marker);
 }
 
 static void Assert_Eq(float val1,float val2,const char* marker = ""){
-  PushExpectedF(val1,marker);
-  PushGotF(val2,marker);
+  PushTestValue(&expectedArena,val1,marker);
+  PushTestValue(&gotArena     ,val2,marker);
 }
 
-Arena InitArena(int amount){
-  Arena arena = {};
-  arena.mem = (Byte*) malloc(amount);
-  arena.totalAllocated = amount;
-  return arena;
+static void Assert_Eq(const char* str1,const char* str2,const char* marker = ""){
+  PushTestValue(&expectedArena,str1,marker);
+  PushTestValue(&gotArena     ,str2,marker);
 }
 
-Byte* PushBytes(Arena* arena, size_t size){
-   Byte* ptr = &arena->mem[arena->used];
+// ClearCache is very important otherwise sim-run might read past values
+static void ClearCache(){
+#ifndef PC
+  int size = 1024 * 32;
+  char* m = (char*) malloc(size); // Should not use malloc but some random fixed ptr in embedded. No use calling malloc since we can always read at any point in memory without worrying about memory protection.
 
-   if(arena->used + size > arena->totalAllocated){
-      printf("[%s] Used: %zd, Size: %zd, Total: %zd\n",__PRETTY_FUNCTION__,arena->used,size,arena->totalAllocated);
-   }
-
-   //memset(ptr,0,size);
-   arena->used += size;
-
-   return ptr;
-}
-
-Arena SubArena(Arena* arena,size_t size){
-   Byte* mem = PushBytes(arena,size);
-
-   Arena res = {};
-   res.mem = mem;
-   res.totalAllocated = size;
-
-   return res;
-}
-
-Byte* MarkArena(Arena* arena){
-   return &arena->mem[arena->used];
-}
-
-void PopMark(Arena* arena,Byte* mark){
-   arena->used = mark - arena->mem;
+  // volatile and asm are used to make sure that gcc does not optimize away this loop that appears to do nothing
+  volatile int val = 0;
+  for(int i = 0; i < size; i += 32){
+    val += m[i];
+    __asm__ volatile("" : "+g" (val) : :);
+  }
+  free(m);
+#endif
 }
 
 void SingleTest(Arena* arena);
@@ -415,84 +393,103 @@ extern "C" int RunTest(int versatBase){
   versat_init(versatBase);
 
 #ifdef PC
-  Arena arenaInst = InitArena(Megabyte(16));
+  Arena arenaInst = InitArena(Megabyte(1));
 #else
   Arena arenaInst = {};
-  arenaInst.mem = (Byte*) ddr;
-  arenaInst.totalAllocated = Megabyte(16);
+  arenaInst.totalAllocated = Kilobyte(64);
+  arenaInst.mem = (Byte*) malloc(arenaInst.totalAllocated);
 #endif
 
   Arena* arena = &arenaInst;
-
-  // Init testing buffers
-  expectedBuffer = (TestValue*) PushBytes(arena,TEST_BUFFER_AMOUNT * sizeof(TestValue));
-  gotBuffer      = (TestValue*) PushBytes(arena,TEST_BUFFER_AMOUNT * sizeof(TestValue));
-  expectedIndex  = 0;
-  gotIndex       = 0;
+  expectedArena = SubArena(arena,Kilobyte(16));
+  gotArena      = SubArena(arena,Kilobyte(16));
 
   SingleTest(arena);
 
-  bool differentIndexes = (expectedIndex != gotIndex);
+  bool differentSizes = (expectedArena.used != gotArena.used);
 
+  char* expectedPtr = (char*) expectedArena.mem;
+  char* gotPtr      = (char*) gotArena.mem;
+  char* expectedEnd = (char*) PushBytes(&expectedArena,0);
+  char* gotEnd      = (char*) PushBytes(&gotArena,0);
+
+  int expectedIndex = 0;
+  int gotIndex = 0;
   int differentValuesCount = 0;
-  for(int i = 0; i < expectedIndex; i++){
-    if(!TestValueEqual(expectedBuffer[i],gotBuffer[i])){
-      differentValuesCount += 1;
+  while(expectedPtr < expectedEnd || gotPtr < gotEnd){
+    TestValue* testExpected = (TestValue*) expectedPtr;
+    TestValue* testGot = (TestValue*) gotPtr;
+
+    if(expectedPtr < expectedEnd && gotPtr < gotEnd){
+      if(!TestValueEqual(testExpected,testGot)){
+        differentValuesCount += 1;
+      }
+
+      expectedIndex += 1;
+      expectedPtr += testExpected->size;
+      
+      gotIndex += 1;
+      gotPtr += testGot->size;
+    } else if(expectedPtr < expectedEnd){
+      expectedIndex += 1;
+      expectedPtr += testExpected->size;
+    } else if(gotPtr < gotEnd){
+      gotIndex += 1;
+      gotPtr += testGot->size;
+    } else {
+      printf("Shouldn't reach this testbench.hpp:%d\n",__LINE__);
     }
   }
-  bool differentValues = (differentValuesCount != 0);
-  bool noSamples = (expectedIndex == 0 || gotIndex == 0);
 
-  bool error = differentIndexes || differentValues || noSamples;
+  bool differentIndexes = (expectedIndex != gotIndex);
+  bool differentValues = (differentValuesCount != 0);
+  bool error = differentIndexes || differentSizes || differentValues;
 
   if(!error){
     printf("OK (%d samples)\n",gotIndex);
     return TEST_PASSED;
   }
 
-  printf("Error\n");
-  if(noSamples){
-    printf("Got 0 samples\n");
+  printf("Error ");
+  if(expectedArena.used == 0 || gotArena.used == 0){
+    printf("(0 samples)\n");
   } else if(differentIndexes && !differentValues){
-    printf("Number of testing samples differ!\n");
-    printf("Expected amount: %d\n",expectedIndex);
-    printf("Got amount:      %d\n",gotIndex);
+    printf("(%d Got/%d Expected)\n",gotIndex,expectedIndex);
   } else if(differentValues){
+    printf("(%d Got/%d Expected)\n",gotIndex,expectedIndex);
+
     printf("Obtained different values for %d cases!\n",differentValuesCount);
 
-    if(differentIndexes){
-      printf("The amount of samples also differ\n");
-      printf("Its possible that the majority of missmatches occured\n");
-      printf("Because samples are not properly matched\n");
-      printf("Expected amount: %d\n",expectedIndex);
-      printf("Got amount:      %d\n",gotIndex);
-    }
-
-    int valuesToShow = std::max(differentValuesCount,10);
+    int valuesToShow = std::min(differentValuesCount,10);
     printf("Showcasing the first %d missmatches values\n",valuesToShow);
 
-    for(int i = 0; i < expectedIndex; i++){
-      if(!TestValueEqual(expectedBuffer[i],gotBuffer[i])){
+    char* expectedPtr = (char*) expectedArena.mem;
+    char* gotPtr      = (char*) gotArena.mem;
+    int i = 0;
+    while(expectedPtr < expectedEnd && gotPtr < gotEnd && valuesToShow >= 0){
+      TestValue* testExpected = (TestValue*) expectedPtr;
+      TestValue* testGot = (TestValue*) gotPtr;
+
+      if(!TestValueEqual(testExpected,testGot)){
         printf("===== Index: %d\n",i);
         printf("Expected: ");
-        PrintTestValue(expectedBuffer[i]);
+        PrintTestValue(testExpected);
         printf("\n");
         printf("Got:      ");
-        PrintTestValue(gotBuffer[i]);
+        PrintTestValue(testGot);
         printf("\n");
-
         valuesToShow -= 1;
       }
+      expectedPtr += testExpected->size;
+      gotPtr += testGot->size;
 
-      if(valuesToShow == 0){
-        break;
-      }
+      i += 1;
     }
   } else {
     printf("NOT_POSSIBLE");
   }
   
-  return TEST_FAILED; // Should not reach this return
+  return TEST_FAILED;
 }
 
 #endif // INCLUDED_TESTBENCH
