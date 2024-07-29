@@ -94,7 +94,7 @@ test.o: src/test.cpp
 	g++ -c -o $@ $< -O2 -march=native $(EMUL_INCLUDES)
 
 fw_emul: $(EMUL_HDR) $(EMUL_SRC) test.o libaccel.a
-	gcc -o $@ -O2 $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(abspath $(filter-out src/iob-versat.c,$(EMUL_SRC))) test.o -lgcc -lc -lm -ldl libaccel.a -lstdc++
+	gcc -o $@ -O2 $(EMUL_CFLAGS) $(EMUL_INCLUDES) $(abspath $(EMUL_SRC)) test.o -lm libaccel.a -lstdc++ #-lgcc -lc -lm -ldl 
 
 build_emul: fw_emul
 	@echo "build"

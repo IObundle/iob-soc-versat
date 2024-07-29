@@ -41,9 +41,6 @@ IOB_SOC_VERSAT_FW_SRC=src/iob_soc_versat_firmware.S
 IOB_SOC_VERSAT_FW_SRC+=src/iob_soc_versat_firmware.c
 IOB_SOC_VERSAT_FW_SRC+=src/printf.c
 
-#IOB_SOC_VERSAT_FW_SRC+=$(wildcard src/McEliece/*.c)
-#IOB_SOC_VERSAT_FW_SRC+=$(wildcard src/McEliece/common/*.c)
-
 # PERIPHERAL SOURCES
 IOB_SOC_VERSAT_FW_SRC+=$(wildcard src/iob-*.c)
 IOB_SOC_VERSAT_FW_SRC+=$(filter-out %_emul.c, $(wildcard src/*swreg*.c))
@@ -75,8 +72,7 @@ EMUL_SRC+=src/iob_soc_versat_firmware.c
 EMUL_SRC+=src/printf.c
 
 # PERIPHERAL SOURCES
-EMUL_SRC+=$(wildcard src/iob-*.c)
-
+EMUL_SRC+=$(filter-out src/iob-versat.c, $(wildcard src/iob-*.c))
 
 #Auto-generated target to create init_ddr_contents.hex
 HEX+=init_ddr_contents.hex

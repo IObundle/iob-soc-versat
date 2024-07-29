@@ -1,3 +1,5 @@
+CUR_DIR=$(shell pwd)
+
 CORE := iob_soc_versat
 
 SIMULATOR ?= verilator
@@ -11,7 +13,6 @@ include $(LIB_DIR)/setup.mk
 TESTS+= M_Stage 
 TESTS+= MemToMem 
 TESTS+= VReadToVWrite 
-#TESTS+= SimpleIterative # Temporarely disabled
 TESTS+= Variety1
 TESTS+= TestShare
 TESTS+= TestStatic
@@ -20,15 +21,11 @@ TESTS+= TestMerge
 TESTS+= TestMerge2
 TESTS+= TestMergeInputs
 TESTS+= TestMergeHasChild
-
-#TESTS+= TestMergeHasMultipleMerged
-#TESTS+= F_Stage
-#TESTS+= SimpleCGRA 
-#TESTS+= AddRoundKey 
-#TESTS+= LookupTable 
+TESTS+= F_Stage
+TESTS+= SimpleCGRA 
+TESTS+= AddRoundKey 
 
 VERSAT_SPEC:=versatSpec.txt
-
 
 VCD ?= 1
 INIT_MEM ?= 1
@@ -67,22 +64,39 @@ fpga-run:
 	nix-shell --run 'make clean setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) && make -C ../$(CORE)_V0.70_$(TEST)/ fpga-fw-build BOARD=$(BOARD)'
 	make -C ../$(CORE)_V0.70_$(TEST)/ fpga-run BOARD=$(BOARD)
 
-fpga-run-only:
-	cp ./software/src/Tests/$(TEST).cpp ../$(CORE)_V0.70_$(TEST)/software/src/test.cpp
-	cp ./software/src/Tests/testbench.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
-	cp ./software/src/Tests/unitConfiguration.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
-	+nix-shell --run "make -C ../$(CORE)_V0.70_$(TEST)/ fpga-fw-build fpga-run BOARD=$(BOARD)"
-
 sim-build:
 	+nix-shell --run 'make setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-build SIMULATOR=$(SIMULATOR) VCD=$(VCD)'
 
 sim-run:
 	+nix-shell --run 'make setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-run SIMULATOR=$(SIMULATOR) VCD=$(VCD)'
 
+fpga-run-only:
+	cp ./software/src/Tests/$(TEST).cpp ../$(CORE)_V0.70_$(TEST)/software/src/test.cpp
+	cp ./software/src/Tests/testbench.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
+	cp ./software/src/Tests/unitConfiguration.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
+	+nix-shell --run "make -C ../$(CORE)_V0.70_$(TEST)/ fpga-fw-build fpga-run BOARD=$(BOARD)"
+
 versat-only:
 	mkdir -p ../$(CORE)_V0.70_$(TEST)
 	cd ./submodules/VERSAT ; $(MAKE) -j 8 versat
-	cd ./submodules/VERSAT ; $(VERSAT_CALL) /home/z/AA/Versat/iob-soc-versat/$(VERSAT_SPEC) -s -b=32 -T $(TEST) -O /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src/units -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/submodules/DIV/hardware/src -I /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -H /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/software -o /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -A /home/z/AA/Versat/debug -O /home/z/AA/Versat/iob-soc-versat/hardware/src/units -x64
+	cd ./submodules/VERSAT ; $(VERSAT_CALL) $(CUR_DIR)/$(VERSAT_SPEC) -s -b=32 -T $(TEST) -O $(CUR_DIR)/submodules/VERSAT/hardware/src/units -I $(CUR_DIR)/submodules/VERSAT/hardware/include -I $(CUR_DIR)/submodules/VERSAT/hardware/src  -I $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -H $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/software -o $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -A $(CUR_DIR)/../debug -O $(CUR_DIR)/hardware/src/units -x64
+
+# Multi test rules
+
+test-setup:
+	+nix-shell --run 'parallel ./scripts/setup.sh ::: $(TESTS)'
+
+test-pc-emul-run:
+	+nix-shell --run 'parallel ./scripts/pc-emul.sh ::: $(TESTS)'
+
+test-sim-build:
+	+nix-shell --run 'parallel ./scripts/sim-build.sh ::: $(TESTS)'
+
+test-sim-run:
+	+nix-shell --run 'parallel ./scripts/sim-run.sh ::: $(TESTS)'
+
+test-clean:
+	parallel ./scripts/clean.sh ::: $(TESTS)
 
 fast:
 	mkdir -p ../$(CORE)_V0.70_$(TEST)/
@@ -94,7 +108,7 @@ fast:
 	mkdir -p ../$(CORE)_V0.70_$(TEST) ; \
 	cd ./submodules/VERSAT ; \
 	$(MAKE) -s -j 8 versat ; \
-	$(VERSAT_CALL) /home/z/AA/Versat/iob-soc-versat/versatSpec.txt -s -b=32 -T $(TEST) -O /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src/units -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/src -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/hardware/include -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/submodules/FPU/submodules/DIV/hardware/src -I /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -H /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/software -o /home/z/AA/Versat/iob_soc_versat_V0.70_$(TEST)/hardware/src -O /home/z/AA/Versat/iob-soc-versat/hardware/src/units -x64
+	$(VERSAT_CALL) $(CUR_DIR)/$(VERSAT_SPEC) -s -b=32 -T $(TEST) -O $(CUR_DIR)/submodules/VERSAT/hardware/src/units -I $(CUR_DIR)/submodules/VERSAT/hardware/include -I $(CUR_DIR)/submodules/VERSAT/hardware/src  -I $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -H $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/software -o $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -A $(CUR_DIR)/../debug -O $(CUR_DIR)/hardware/src/units -x64
 
 fast-pc-emul:
 	nix-shell --run "make fast TEST=$(TEST); make -C ../$(CORE)_V0.70_$(TEST) pc-emul-test"
@@ -106,25 +120,8 @@ fast-software-emul:
 	cp ./software/src/Tests/unitConfiguration.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
 	make -C ../$(CORE)_V0.70_$(TEST) pc-emul-test
 
-# Multi test rules
-
 fast-test-pc-emul:
 	+nix-shell --run 'parallel ./scripts/fast-pc-emul.sh ::: $(TESTS)'
-
-test-setup:
-	+nix-shell --run 'parallel ./scripts/setup.sh ::: $(TESTS)'
-
-test-pc-emul:
-	+nix-shell --run 'parallel ./scripts/pc-emul.sh ::: $(TESTS)'
-
-test-sim-build:
-	+nix-shell --run 'parallel ./scripts/sim-build.sh ::: $(TESTS)'
-
-test-sim-run:
-	+nix-shell --run 'parallel ./scripts/sim-run.sh ::: $(TESTS)'
-
-test-clean:
-	parallel ./scripts/clean.sh ::: $(TESTS)
 
 clean-all:
 	rm -r ../$(CORE)_V0.70_*/

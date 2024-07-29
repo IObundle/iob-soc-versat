@@ -1,3 +1,29 @@
+module SimpleExample(){
+  Const a;
+  Const b;
+  Reg result;
+
+#    
+  addition = a + b;
+
+  addition -> result;
+}
+
+module StaticExample(){
+    static Const constant;
+#
+    constant -> out:0;   
+}
+
+module ShareExample(){
+    share config Const {
+        unit[2];
+    }
+    StaticExample static[2];
+#
+    {unit[0..1],static[0..1]} -> out:0..3;
+}
+
 module TestStuff(){
    Mem m0;
    Const c;
@@ -14,8 +40,6 @@ module TestStaticChild2(){ // Since TestStaticChild2 is only used as static in t
 #
    {inside0,inside1} -> out:0..1;
 }
-
-// stop;
 
 module TestStaticChild1() -> 3{
    static TestStaticChild2 child;
@@ -232,8 +256,6 @@ module TestMergeStruct(){
 
 merge TestMergeAfterStruct = TestMergeStruct | TestDoubleMerge1;
 */
-
-//stop;
 
 module FloatTest(x,y,z){
    FloatAdd  add;
@@ -1426,15 +1448,6 @@ module KeySchedule256(x[32],rcon){
    d[0..3] -> {out:17,out:21,out:25,out:29};
    e[0..3] -> {out:18,out:22,out:26,out:30};
    f[0..3] -> {out:19,out:23,out:27,out:31};
-}
-
-module SimpleExample(){
-   Const c0;
-   Const c1;
-   Store output;
-#
-   add = c0 + c1;
-   add -> output;
 }
 
 module HierExample(x,y){
@@ -2964,8 +2977,6 @@ module FullAES(){
    lastAdd:0..15 -> state[0..15];
    lastAdd:0..15 -> lastResult[0..15];
 }
-
-//stop;
 
 module CryptoAlgos(){
    FullAES aes;
