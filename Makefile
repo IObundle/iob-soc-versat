@@ -50,6 +50,12 @@ ifeq ($(DEBUG),1)
 VERSAT_CALL := gdb -ex run --args ./versat
 endif
 
+VERSAT_ARGUMENTS:=$(CUR_DIR)/$(VERSAT_SPEC) -s -b32 -t $(TEST) -u $(CUR_DIR)/submodules/VERSAT/hardware/src/units 
+VERSAT_ARGUMENTS+=-I $(CUR_DIR)/submodules/VERSAT/hardware/include -I $(CUR_DIR)/submodules/VERSAT/hardware/src  
+VERSAT_ARGUMENTS+=-I $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -O $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/software 
+VERSAT_ARGUMENTS+=-o $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -g $(CUR_DIR)/../debug -u $(CUR_DIR)/hardware/src/units -x64
+
+
 # Single test rules
 setup:
 	+nix-shell --run 'make build-setup SETUP_ARGS="$(SETUP_ARGS) TEST=$(TEST)"'
@@ -79,7 +85,7 @@ fpga-run-only:
 versat-only:
 	mkdir -p ../$(CORE)_V0.70_$(TEST)
 	cd ./submodules/VERSAT ; $(MAKE) -j 8 versat
-	cd ./submodules/VERSAT ; $(VERSAT_CALL) $(CUR_DIR)/$(VERSAT_SPEC) -s -b=32 -T $(TEST) -O $(CUR_DIR)/submodules/VERSAT/hardware/src/units -I $(CUR_DIR)/submodules/VERSAT/hardware/include -I $(CUR_DIR)/submodules/VERSAT/hardware/src  -I $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -H $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/software -o $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -A $(CUR_DIR)/../debug -O $(CUR_DIR)/hardware/src/units -x64
+	cd ./submodules/VERSAT ; $(VERSAT_CALL) $(VERSAT_ARGUMENTS)
 
 # Multi test rules
 
@@ -108,7 +114,7 @@ fast:
 	mkdir -p ../$(CORE)_V0.70_$(TEST) ; \
 	cd ./submodules/VERSAT ; \
 	$(MAKE) -s -j 8 versat ; \
-	$(VERSAT_CALL) $(CUR_DIR)/$(VERSAT_SPEC) -s -b=32 -T $(TEST) -O $(CUR_DIR)/submodules/VERSAT/hardware/src/units -I $(CUR_DIR)/submodules/VERSAT/hardware/include -I $(CUR_DIR)/submodules/VERSAT/hardware/src  -I $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -H $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/software -o $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -A $(CUR_DIR)/../debug -O $(CUR_DIR)/hardware/src/units -x64
+	$(VERSAT_CALL) $(VERSAT_ARGUMENTS)
 
 fast-pc-emul:
 	nix-shell --run "make fast TEST=$(TEST); make -C ../$(CORE)_V0.70_$(TEST) pc-emul-test"
