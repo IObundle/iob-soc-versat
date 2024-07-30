@@ -27,8 +27,8 @@ TESTS+= AddRoundKey
 
 VERSAT_SPEC:=versatSpec.txt
 
-VCD ?= 1
-INIT_MEM ?= 1
+VCD ?= 0
+INIT_MEM ?= 0
 USE_EXTMEM ?= 1
 
 ifeq ($(INIT_MEM),1)
