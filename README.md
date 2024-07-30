@@ -50,3 +50,9 @@ with financial support from the European Commission's Next Generation Internet
 programme, under the aegis of DG Communications Networks, Content and Technology
 under grant agreement No 957073.
 
+<table>
+    <tr>
+        <td align="center" width="50%"><img src="https://nlnet.nl/logo/banner.svg" alt="NLnet foundation logo" style="width:90%"></td>
+        <td align="center"><img src="https://nlnet.nl/image/logos/NGIAssure_tag.svg" alt="NGI Assure logo" style="width:90%"></td>
+    </tr>
+</table>
