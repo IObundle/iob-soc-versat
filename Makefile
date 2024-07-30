@@ -55,7 +55,6 @@ VERSAT_ARGUMENTS+=-I $(CUR_DIR)/submodules/VERSAT/hardware/include -I $(CUR_DIR)
 VERSAT_ARGUMENTS+=-I $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -O $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/software 
 VERSAT_ARGUMENTS+=-o $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -g $(CUR_DIR)/../debug -u $(CUR_DIR)/hardware/src/units -x64
 
-
 # Single test rules
 setup:
 	+nix-shell --run 'make build-setup SETUP_ARGS="$(SETUP_ARGS) TEST=$(TEST)"'
