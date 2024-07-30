@@ -27,8 +27,8 @@ TESTS+= AddRoundKey
 
 VERSAT_SPEC:=versatSpec.txt
 
-VCD ?= 1
-INIT_MEM ?= 1
+VCD ?= 0
+INIT_MEM ?= 0
 USE_EXTMEM ?= 1
 
 ifeq ($(INIT_MEM),1)
@@ -65,10 +65,10 @@ fpga-run:
 	make -C ../$(CORE)_V0.70_$(TEST)/ fpga-run BOARD=$(BOARD)
 
 sim-build:
-	+nix-shell --run 'make setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-build SIMULATOR=$(SIMULATOR) VCD=$(VCD)'
+	+nix-shell --run 'make setup INIT_MEM=1 USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-build SIMULATOR=$(SIMULATOR) VCD=$(VCD)'
 
 sim-run:
-	+nix-shell --run 'make setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-run SIMULATOR=$(SIMULATOR) VCD=$(VCD)'
+	+nix-shell --run 'make setup INIT_MEM=1 USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-run SIMULATOR=$(SIMULATOR) VCD=$(VCD)'
 
 fpga-run-only:
 	cp ./software/src/Tests/$(TEST).cpp ../$(CORE)_V0.70_$(TEST)/software/src/test.cpp

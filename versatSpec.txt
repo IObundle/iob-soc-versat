@@ -186,6 +186,10 @@ module TestMergeDelay2(){
    mem{5} -> output;
 }
 
+/*
+// Currently disabled since the generated accelerator uses the same name for different ports
+// and the fpga tools complain even when these are not used as top modules
+
 merge TestMergeDelay = TestMergeDelay1 | TestMergeDelay2;
 
 module TestMergeLargeDelay1(){
@@ -207,6 +211,7 @@ module TestMergeLargeDelay2(){
 }
 
 merge TestMergeLargeDelay = TestMergeLargeDelay1 | TestMergeLargeDelay2;
+*/
 
 module TestDoubleMerge00(){
    Const x00;
