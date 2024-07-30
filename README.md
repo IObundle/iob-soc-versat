@@ -2,7 +2,15 @@
 
 IOb-SoC-Versat is a System-on-Chip (SoC) system designed to test [Versat](https://github.com/IObundle/iob-versat) generated accelerators.
 
-## Clone the repository
+## Table of Contents
+- [Cloning the repository](#cloning-the-repository)
+- [Running tests](#running-tests)
+- [Requirements](#requirements)
+- [License](#license)
+- [Acknowledgements](#acknowledgements)
+
+
+# Cloning the repository
 
 The first step is to clone this repository. IOb-SoC-Versat uses git sub-module trees and GitHub will ask for your password for each downloaded module if you clone it by *https*. To avoid this,
 setup GitHub access with *ssh* and type:
@@ -18,7 +26,7 @@ your credentials before cloning the repository using:
 git config --global credential.helper 'cache --timeout <time_in_seconds>'
 ```
 
-## Running tests
+# Running tests
 
 After cloning the repository and assuming you have all the dependencies installed,  a  test case can be tested by running the following commands:
 
@@ -39,10 +47,15 @@ make test-clean test-sim-run
 
 The PC emulation tests are compiled and run parallel to exploit a multi-core system. The FPGA tests are compiled and run individually because our system does not support parallel FPGA flows.
 
-### Requirements
+# Requirements
 
 IOb-SoC-Versat is a system on chip based on IOb-SoC, which uses IOb-Versat as a peripheral for testing the latter. Refer to the [IOb-SoC](https://github.com/IObundle/iob-soc) and [IOb-Versat](https://github.com/IObundle/iob-versat) to install all the required
 dependencies.
+
+# License
+
+IOb-SoC-Versat is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
 # Acknowledgement
 This project is funded through the NGI Assure Fund, a fund established by NLnet
