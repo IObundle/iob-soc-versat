@@ -38,15 +38,6 @@ make clean fpga-run TEST="TestName"
 
 TestName is the test's name. The firmware of the tests is contained inside the software/src/Tests folder, and the dataflow graphs they use are described in the file ./versatSpec.txt.
 
-To run all tests listed in the TESTS Makefile variable, run the following command:
-
-```bash
-make test-clean test-pc-emul-run
-make test-clean test-sim-run
-```
-
-The PC emulation tests are compiled and run parallel to exploit a multi-core system. The FPGA tests are compiled and run individually because our system does not support parallel FPGA flows.
-
 # Requirements
 
 IOb-SoC-Versat is a system on chip based on IOb-SoC, which uses IOb-Versat as a peripheral for testing the latter. Refer to the [IOb-SoC](https://github.com/IObundle/iob-soc) and [IOb-Versat](https://github.com/IObundle/iob-versat) to install all the required
