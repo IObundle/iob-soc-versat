@@ -15,15 +15,6 @@ make clean fpga-run TEST="TestName"
 
 TestName is the name of the test. The Tests firmware is contained inside the software/src/Tests folder and the units that they test are described inside versatSpec.txt.
 
-It is also possible to test multiple tests at the same time by running:
-
-```bash
-make test-clean test-pc-emul-run
-make test-clean test-sim-run
-```
-
-The tests that are tested are described inside the Makefile. Tests are run in parallel. Fpga run must be made individually because parallel testing is not supported for fpgas.
-
 ## Clone the repository
 
 The first step is to clone this repository. IOb-SoC-Versat uses git sub-module trees, and

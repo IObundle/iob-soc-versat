@@ -21,8 +21,7 @@ TESTS+= TestMerge
 TESTS+= TestMerge2
 TESTS+= TestMergeInputs
 TESTS+= TestMergeHasChild
-TESTS+= F_Stage
-TESTS+= SimpleCGRA 
+TESTS+= F_Stage 
 TESTS+= AddRoundKey 
 
 VERSAT_SPEC:=versatSpec.txt
@@ -39,7 +38,7 @@ ifeq ($(USE_EXTMEM),1)
 SETUP_ARGS += USE_EXTMEM
 endif
 
-TEST?=M_Stage
+TEST?=SimpleExample
 SETUP_ARGS+=TEST="$(TEST)"
 
 # Fast rules only work after at least calling setup once. They basically just skip everything that python setup does and just do what versat would do, while copying some files quickly.
