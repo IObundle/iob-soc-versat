@@ -165,5 +165,15 @@ class iob_soc_versat(iob_soc):
                     "descr": "Versat AXI implies External memory",
                 }
             )
+            confs.append(
+                {
+                    "name": "AXI_DATA_W",
+                    "type": "P",
+                    "val": "64",
+                    "min": "0",
+                    "max": "64",
+                    "descr": "Versat AXI datapath size",
+                }
+            )
 
         super()._setup_confs(confs)

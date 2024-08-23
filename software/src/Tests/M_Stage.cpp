@@ -1,15 +1,10 @@
 #include "testbench.hpp"
 
 void SingleTest(Arena* arena){
-#if 0
-   unsigned int input[] = {0x5a86b737,0xa9f9be83,0x08251f6d,0xeaea8ee9};
-   VersatMemoryCopy(SimpleInputStart,(iptr*) input,4 * sizeof(int));
-#else
    ACCEL_TOP_input_0_constant = 0x5a86b737;
    ACCEL_TOP_input_1_constant = 0xa9f9be83;
    ACCEL_TOP_input_2_constant = 0x08251f6d;
    ACCEL_TOP_input_3_constant = 0xeaea8ee9;
-#endif
 
    ACCEL_Comb_M_Stage_sigma_sigma0_const1_constant = 7;
    ACCEL_Comb_M_Stage_sigma_sigma0_const2_constant = 18;

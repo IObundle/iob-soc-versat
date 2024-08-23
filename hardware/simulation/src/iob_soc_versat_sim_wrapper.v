@@ -47,7 +47,7 @@ module iob_soc_versat_sim_wrapper (
    localparam AXI_ID_W = 4;
    localparam AXI_LEN_W = 8;
    localparam AXI_ADDR_W = `DDR_ADDR_W;
-   localparam AXI_DATA_W = `DDR_DATA_W;
+   localparam AXI_DATA_W = 64;
 
    wire uart_txd_o;
    wire uart_rxd_i;
@@ -154,8 +154,10 @@ module iob_soc_versat_sim_wrapper (
    iob_soc_versat #(
       .AXI_ID_W  (AXI_ID_W),
       .AXI_LEN_W (AXI_LEN_W),
-      .AXI_ADDR_W(AXI_ADDR_W),
-      .AXI_DATA_W(AXI_DATA_W)
+      .AXI_ADDR_W(AXI_ADDR_W)
+
+
+      //.AXI_DATA_W(AXI_DATA_W)
    ) iob_soc_versat0 (
       .uart_txd_o(uart_txd_o),
       .uart_rxd_i(uart_rxd_i),

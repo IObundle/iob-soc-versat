@@ -10,8 +10,10 @@
 #include <cassert>
 #include <cstring>
 
+extern "C" {
 #include "iob-uart.h"
 #include "printf.h"
+};
 
 #include "unitConfiguration.hpp"
 
@@ -32,9 +34,16 @@ typedef unsigned char Byte;
 static bool error = false; // Global keep track if a error occurred. Do not want to print error messages more than once
 
 typedef struct{
+  char* str;
+  int size;
+} String;
+
+#define STRING(str) (String){str,strlen(str)}
+
+typedef struct{
   Byte* mem;
-  size_t used;
-  size_t totalAllocated;
+  int used;
+  int totalAllocated;
 } Arena;
 
 Arena InitArena(int amount){
@@ -44,7 +53,7 @@ Arena InitArena(int amount){
   return arena;
 }
 
-Byte* PushBytes(Arena* arena, size_t size){
+Byte* PushBytes(Arena* arena, int size){
    Byte* ptr = &arena->mem[arena->used];
 
    if(arena->used + size > arena->totalAllocated){
@@ -52,13 +61,12 @@ Byte* PushBytes(Arena* arena, size_t size){
     return nullptr;
    }
 
-   //memset(ptr,0,size);
    arena->used += size;
 
    return ptr;
 }
 
-Arena SubArena(Arena* arena,size_t size){
+Arena SubArena(Arena* arena,int size){
    Byte* mem = PushBytes(arena,size);
 
    Arena res = {};
@@ -77,6 +85,11 @@ void PopMark(Arena* arena,Byte* mark){
 }
 
 template<typename T>
+T* PushType(Arena* arena){
+  return (T*) PushBytes(arena,sizeof(T));
+}
+
+template<typename T>
 class ArrayIterator{
 public:
    T* ptr;
@@ -91,10 +104,18 @@ struct Array{
   T* data;
   int size;
 
-  inline T& operator[](int index) const {assert(index < size); return data[index];}
+  inline T& operator[](int index) const {if(index >= size){printf("Bad Array access: %d out of %d\n",index,size); exit(0);}; return data[index];}
   ArrayIterator<T> begin(){return ArrayIterator<T>{data};};
   ArrayIterator<T> end(){return ArrayIterator<T>{data + size};};
 };
+
+template<typename T>
+Array<T> PushArray(Arena* arena,int elements){
+  Array<T> res = {};
+  res.data = (T*) PushBytes(arena,sizeof(T) * elements);
+  res.size = elements;
+  return res;
+}
 
 // Even though we only use an assert based approach for now,
 // we still keep expected and got separated in the case that we eventually need to implement 
@@ -381,6 +402,44 @@ static void ClearCache(){
 #endif
 }
 
+String PushFile(Arena* arena,const char* filepath){
+  char* start = (char*) PushBytes(arena,0);
+  uint32_t file_size = uart_recvfile((char*) filepath,start);
+  Array<char> testFile = PushArray<char>(arena,file_size + 1);
+  testFile[file_size] = '\0';
+
+  return (String){.str = testFile.data,.size = (int) file_size};
+}
+
+#if 0
+String PushFileFromEthernet(Arena* arena,const char* file_name){
+  uart_puts(UART_PROGNAME);
+  uart_puts(": requesting to receive file by ethernet\n");
+
+  // send file receive by ethernet request
+  uart_putc(0x13);
+
+  // send file name (including end of string)
+  uart_puts(file_name);
+  uart_putc(0);
+
+  // receive file size
+  uint32_t file_size = uart_getc();
+  file_size |= ((uint32_t)uart_getc()) << 8;
+  file_size |= ((uint32_t)uart_getc()) << 16;
+  file_size |= ((uint32_t)uart_getc()) << 24;
+
+  // send ACK before receiving file
+  uart_putc(ACK);
+
+  char* testFile = PushArray<char>(arena,file_size + 1);
+  eth_rcv_file(testFile,file_size);
+  testFile[file_size] = '\0';
+
+  return (String){.str=testFile,.size=file_size};
+}
+#endif
+
 void SingleTest(Arena* arena);
 
 #include "iob_soc_versat_conf.h"
@@ -392,11 +451,13 @@ static int* ddr = (int*) (EXTRA_BASE + (1<<(IOB_SOC_VERSAT_SRAM_ADDR_W + 2)));
 extern "C" int RunTest(int versatBase){   
   versat_init(versatBase);
 
+  int memoryReserved = Megabyte(128);
+
 #ifdef PC
-  Arena arenaInst = InitArena(Megabyte(1));
+  Arena arenaInst = InitArena(memoryReserved);
 #else
   Arena arenaInst = {};
-  arenaInst.totalAllocated = Kilobyte(64);
+  arenaInst.totalAllocated = memoryReserved;
   arenaInst.mem = (Byte*) malloc(arenaInst.totalAllocated);
 #endif
 

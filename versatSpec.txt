@@ -1,3 +1,11 @@
+module Yolo_Tiny_V3(){
+   Const c;
+#
+   c -> out;
+}
+
+stop;
+
 module SimpleExample(){
   Const a;
   Const b;
@@ -837,6 +845,8 @@ module M_Stage(w0,w14,w9,w1){
    r -> out;
 }
 
+stop;
+
 module M(w){
    M_Stage m0;
    M_Stage m1;
@@ -1009,7 +1019,7 @@ module T_Stage(a,b,c,e,f,g,h,k,w){
    t2 -> out:1;
 }
 
-module Comb_F_Stage(a,b,c,d,e,f,g,h,k,w){
+module Comb_F_Stage (a,b,c,d,e,f,g,h,k,w){
    static T_Stage t;
 #
    a -> t:0;
