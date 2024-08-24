@@ -3,10 +3,11 @@ from PIL import Image
 import struct
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Need operation")
+    if len(sys.argv) < 3:
+        print("Need operation and filepath")
 
     operation = sys.argv[1]
+    imageFilepath = sys.argv[2]
 
     # Simple way of checking if the image was processed right.
     # Altought still not sure on the order of things.
@@ -14,7 +15,7 @@ if __name__ == "__main__":
     if operation == "unpack":
         img = Image.new("RGB", (416, 416), (255, 255, 255))
         access = img.load()
-        with open("output.rgb", "rb") as file:
+        with open(imageFilepath, "rb") as file:
             for i in range(3):
                 for y in range(416):
                     for x in range(416):
@@ -46,7 +47,6 @@ if __name__ == "__main__":
         if len(sys.argv) < 3:
             print("Need name of image")
 
-        imageFilepath = sys.argv[2]
         img = Image.open(imageFilepath)
         img = img.resize((416, 416))
 

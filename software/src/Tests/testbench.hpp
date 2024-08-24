@@ -117,6 +117,14 @@ Array<T> PushArray(Arena* arena,int elements){
   return res;
 }
 
+template<typename T>
+Array<T> PushArray(Arena* arena,Byte* mark){
+  Array<T> res = {};
+  res.data = (T*) mark;
+  res.size = (&arena->mem[arena->used] - mark) / sizeof(T);
+  return res;
+}
+
 // Even though we only use an assert based approach for now,
 // we still keep expected and got separated in the case that we eventually need to implement 
 // separated pushExpected pushGot functions.

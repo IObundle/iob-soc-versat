@@ -97,7 +97,14 @@ inline int LayerUsesBias(LayerInfo& info){return (info.type == LayerType_CONV);}
 
 extern "C" FILE* fopen(const char* filename,const char* mode);
 extern "C" size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream);
+extern "C" size_t fwrite(void *ptr, size_t size, size_t nmemb, FILE *stream);
 extern "C" size_t fclose(FILE *stream);
+
+struct Layer{
+   LayerInfo* layerInfoThatGeneratedThis;
+
+   Array<Array<float>> channels; // The channels should be packed together. This happens naturally right now, but should be enforced
+};
 
 String ReadFilePC(Arena* arena,const char* filepath){
    FILE* f = fopen(filepath,"r"); 
@@ -112,10 +119,14 @@ String ReadFilePC(Arena* arena,const char* filepath){
    return (String){.str = file.data,.size = read};
 }
 
-struct Layer{
-   LayerInfo* layerInfoThatGeneratedThis; // 
-   Array<Array<float>> channels;
-};
+void WriteImagePC(const char* filepath,Layer layer){
+   float* start = &layer.channels[0][0]; // Assuming that everything is straing inside the layer.
+   FILE* f = fopen(filepath,"w"); 
+
+   fwrite(start,sizeof(float),416 * 416 * 3,f);
+
+   fclose(f);
+}  
 
 float GetValue(Array<float> channel,int channelW,int x,int y){
    if(x < 0 || x >= channelW){
@@ -360,6 +371,9 @@ Layer PerformYOLO(Arena* out,Layer input,LayerInfo& info){
          }
 
          // Need to perform sigmoid linear.
+         output[xy] = 1.0f / (1.0f + exp(-in[xy]));
+
+         #if 0
          if(in[xy] <= -5.0f){
             output[xy] = 0.0f;
          } else if(in[xy] <= -2.375) {
@@ -375,6 +389,7 @@ Layer PerformYOLO(Arena* out,Layer input,LayerInfo& info){
          } else {
             output[xy] = 1.0f;
          } 
+         #endif
          //printf("%f -> %f\n",in[xy],output[xy]);
       }
    }
@@ -407,56 +422,160 @@ Layer PerformConcatenation(Arena* out,Layer first,Layer second,LayerInfo& info){
    return result;
 }
 
+struct ClassBox{
+   // Normalized in image space
+   float x;
+   float y;
+   float width;
+   float height;
+};
+
+
 struct BoundingBox{
+// All this values are collected straight from the result of YOLO stages without any processing.
    float x;
    float y;
    float sizeX;
    float sizeY;
    float objectnessScore;
    float classScores[80];
+// Extra data associated to the box
+   int gridX;
+   int gridY;
+   int gridSize;
+   int channel;
+   int yoloGridLayer;
 };
 
-void GetBoundingBoxes(Arena* out,Layer result,int gridSize){
+ClassBox TransformBoundingBoxToClass(BoundingBox box){
+   float gridSize = (float) box.gridSize;
+   float gridTop  = (float) (box.gridY * box.gridSize);
+   float gridLeft = (float) (box.gridX * box.gridSize);
+
+   ClassBox res = {};
+
+   float yolo_bias[12] = {10.0f, 14.0f, 23.0f, 27.0f, 37.0f, 58.0f, 81.0f, 82.0f, 135.0f, 169.0f, 344.0f, 319.0f};
+
+   int n = box.channel + box.yoloGridLayer * 3; // Para x:y = 9:2
+
+   float lw = 26.0f;
+   if(box.yoloGridLayer == 1){
+      lw = 13.0f;
+   }
+
+   res.x = (box.gridX + box.x) / lw;
+   res.y = (box.gridY + box.y) / lw;
+   res.width  = (exp(box.sizeX) * yolo_bias[2 * n]) / 416.0f;
+   res.height = (exp(box.sizeY) * yolo_bias[2 * n + 1]) / 416.0f;
+
+   printf("%d %d %d %d %f %f %f %f\n",box.channel,box.yoloGridLayer,box.gridX,box.gridY,res.x,res.y,res.width,res.height);
+
+   return res;
+}
+
+void DrawBox(Layer input,ClassBox box){
+   int imageW = 416;
+
+   int centerX = (int) (box.x * imageW);
+   int centerY = (int) (box.y * imageW);
+   int halfWidth = (int) (box.width * imageW / 2.0f);
+   int halfHeight = (int) (box.height * imageW / 2.0f);
+
+   int left  = centerX - halfWidth;
+   int right = centerX + halfWidth;
+
+   int top = centerY - halfHeight;
+   int bottom = centerY + halfHeight;
+
+   if(left < 0) left = 0;
+   if(right >= 416) right = 415;
+
+   if(top < 0) top = 0;
+   if(bottom >= 416) bottom = 415;
+
+   for(int x = left; x <= right; x++){
+      input.channels[0][top * imageW + x] = 1.0f;
+      input.channels[0][bottom * imageW + x] = 1.0f;
+   }
+
+   for(int y = top; y <= bottom; y++){
+      input.channels[0][y * imageW + left] = 1.0f;
+      input.channels[0][y * imageW + right] = 1.0f;
+   }
+}
+
+Array<BoundingBox> GetBoundingBoxes(Arena* out,Layer result,int gridSize,int yoloGridLayer){
    int boxW = 85;
-   assert(sizeof(BoundingBox) == sizeof(float) * boxW);
+   assert(sizeof(BoundingBox) >= sizeof(float) * boxW);
 
-   for(int i = 0; i < 3; i++){
-      for(int xy = 0; xy < gridSize * gridSize; xy++){
-         BoundingBox box = {};
-         float* view = (float*) &box;
+   Byte* mark = MarkArena(out);
 
-         // Loads box;
-         for(int j = 0; j < boxW; j++){
-            view[j] = result.channels[i * boxW + j][xy];
+   for(int y = 0; y < gridSize; y++){
+      for(int x = 0; x < gridSize; x++){
+         int xy = y * gridSize + x;
+         for(int i = 0; i < 3; i++){
+            BoundingBox box = {};
+            float* view = (float*) &box;
+
+            // Loads box;
+            for(int j = 0; j < boxW; j++){
+               view[j] = result.channels[i * boxW + j][xy];
+            }
+
+            if(box.objectnessScore < 0.25){
+               continue;
+            }
+
+            box.gridX = x;
+            box.gridY = y;
+            box.gridSize = gridSize;
+            box.channel = i;
+            box.yoloGridLayer = yoloGridLayer;
+            *PushType<BoundingBox>(out) = box;
          }
-
-         if(box.objectnessScore < 0.01){
-            continue;
-         }
-
-         printf("%f\n",box.objectnessScore);
-         if(box.objectnessScore < 0.5){
-            continue;
-         }
-
-         printf("%f %f %f %f\n",box.x,box.y,box.sizeX,box.sizeY);
       }
    }
+
+   Array<BoundingBox> res = PushArray<BoundingBox>(out,mark);
+   return res;
 }
 
 void PrintSomeValues(Layer res,LayerInfo& info){
    int w = info.outputW;
    printf("Channel 0\n");
-   printf("%f %f %f %f\n",res.channels[0][0 * w + 0],res.channels[0][0 * w + 1],res.channels[0][0 * w + 2],res.channels[0][0 * w + 3]);
-   printf("%f %f %f %f\n",res.channels[0][1 * w + 0],res.channels[0][1 * w + 1],res.channels[0][1 * w + 2],res.channels[0][1 * w + 3]);
-   printf("%f %f %f %f\n",res.channels[0][2 * w + 0],res.channels[0][2 * w + 1],res.channels[0][2 * w + 2],res.channels[0][2 * w + 3]);
-   printf("%f %f %f %f\n",res.channels[0][3 * w + 0],res.channels[0][3 * w + 1],res.channels[0][3 * w + 2],res.channels[0][3 * w + 3]);
+   int c = 0;
+   printf("%f %f %f %f\n",res.channels[c][0 * w + 0],res.channels[c][0 * w + 1],res.channels[c][0 * w + 2],res.channels[c][0 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][1 * w + 0],res.channels[c][1 * w + 1],res.channels[c][1 * w + 2],res.channels[c][1 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][2 * w + 0],res.channels[c][2 * w + 1],res.channels[c][2 * w + 2],res.channels[c][2 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][3 * w + 0],res.channels[c][3 * w + 1],res.channels[c][3 * w + 2],res.channels[c][3 * w + 3]);
 
    printf("Channel 1\n");
-   printf("%f %f %f %f\n",res.channels[1][0 * w + 0],res.channels[1][0 * w + 1],res.channels[1][0 * w + 2],res.channels[1][0 * w + 3]);
-   printf("%f %f %f %f\n",res.channels[1][1 * w + 0],res.channels[1][1 * w + 1],res.channels[1][1 * w + 2],res.channels[1][1 * w + 3]);
-   printf("%f %f %f %f\n",res.channels[1][2 * w + 0],res.channels[1][2 * w + 1],res.channels[1][2 * w + 2],res.channels[1][2 * w + 3]);
-   printf("%f %f %f %f\n",res.channels[1][3 * w + 0],res.channels[1][3 * w + 1],res.channels[1][3 * w + 2],res.channels[1][3 * w + 3]);
+   c = 1;
+   printf("%f %f %f %f\n",res.channels[c][0 * w + 0],res.channels[c][0 * w + 1],res.channels[c][0 * w + 2],res.channels[c][0 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][1 * w + 0],res.channels[c][1 * w + 1],res.channels[c][1 * w + 2],res.channels[c][1 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][2 * w + 0],res.channels[c][2 * w + 1],res.channels[c][2 * w + 2],res.channels[c][2 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][3 * w + 0],res.channels[c][3 * w + 1],res.channels[c][3 * w + 2],res.channels[c][3 * w + 3]);
+
+   printf("Channel 2\n");
+   c = 2;
+   printf("%f %f %f %f\n",res.channels[c][0 * w + 0],res.channels[c][0 * w + 1],res.channels[c][0 * w + 2],res.channels[c][0 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][1 * w + 0],res.channels[c][1 * w + 1],res.channels[c][1 * w + 2],res.channels[c][1 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][2 * w + 0],res.channels[c][2 * w + 1],res.channels[c][2 * w + 2],res.channels[c][2 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][3 * w + 0],res.channels[c][3 * w + 1],res.channels[c][3 * w + 2],res.channels[c][3 * w + 3]);
+
+   printf("Channel 3\n");
+   c = 3;
+   printf("%f %f %f %f\n",res.channels[c][0 * w + 0],res.channels[c][0 * w + 1],res.channels[c][0 * w + 2],res.channels[c][0 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][1 * w + 0],res.channels[c][1 * w + 1],res.channels[c][1 * w + 2],res.channels[c][1 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][2 * w + 0],res.channels[c][2 * w + 1],res.channels[c][2 * w + 2],res.channels[c][2 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][3 * w + 0],res.channels[c][3 * w + 1],res.channels[c][3 * w + 2],res.channels[c][3 * w + 3]);
+
+   printf("Channel 4\n");
+   c = 4;
+   printf("%f %f %f %f\n",res.channels[c][0 * w + 0],res.channels[c][0 * w + 1],res.channels[c][0 * w + 2],res.channels[c][0 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][1 * w + 0],res.channels[c][1 * w + 1],res.channels[c][1 * w + 2],res.channels[c][1 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][2 * w + 0],res.channels[c][2 * w + 1],res.channels[c][2 * w + 2],res.channels[c][2 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[c][3 * w + 0],res.channels[c][3 * w + 1],res.channels[c][3 * w + 2],res.channels[c][3 * w + 3]);
 }
 
 void SingleTest(Arena* arena){
@@ -570,6 +689,8 @@ void SingleTest(Arena* arena){
    PrintSomeValues(result16,layerInfo[15]);
 
    Layer result17 = PerformYOLO(arena,result16,layerInfo[16]);
+   printf("\n%d\n",16);
+   PrintSomeValues(result17,layerInfo[16]);
 
    Layer result18 = result14;
 
@@ -593,9 +714,25 @@ void SingleTest(Arena* arena){
    printf("\n%d\n",22);
    PrintSomeValues(result23,layerInfo[22]);
 
+   // TODO: Probably gonna need to output data from YOLO and compare with ours.
+   //       It does not appear to match up.
+ 
    Layer result24 = PerformYOLO(arena,result23,layerInfo[23]);
+   printf("\n%d\n",23);
+   PrintSomeValues(result24,layerInfo[23]);
 
    printf("\n\n");
-   GetBoundingBoxes(arena,result17,13);
-   GetBoundingBoxes(arena,result24,26);
+
+   Byte* mark = MarkArena(arena);
+   GetBoundingBoxes(arena,result17,13,1);
+   GetBoundingBoxes(arena,result24,26,0);
+   Array<BoundingBox> boxes = PushArray<BoundingBox>(arena,mark);
+
+   for(BoundingBox b : boxes){
+      auto c = TransformBoundingBoxToClass(b);
+      DrawBox(beginning,c); // We should copy and not change beginning
+      //printf("%f %f %f %f\n",c.x,c.y,c.width,c.height);
+   }
+
+   WriteImagePC("test.rgb",beginning);
 }
