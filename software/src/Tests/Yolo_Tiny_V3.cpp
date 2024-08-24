@@ -444,18 +444,19 @@ void GetBoundingBoxes(Arena* out,Layer result,int gridSize){
    }
 }
 
-void PrintSomeValues(Layer res){
+void PrintSomeValues(Layer res,LayerInfo& info){
+   int w = info.outputW;
    printf("Channel 0\n");
-   printf("%f %f %f %f\n",res.channels[0][0 * 416 + 0],res.channels[0][0 * 416 + 1],res.channels[0][0 * 416 + 2],res.channels[0][0 * 416 + 3]);
-   printf("%f %f %f %f\n",res.channels[0][1 * 416 + 0],res.channels[0][1 * 416 + 1],res.channels[0][1 * 416 + 2],res.channels[0][1 * 416 + 3]);
-   printf("%f %f %f %f\n",res.channels[0][2 * 416 + 0],res.channels[0][2 * 416 + 1],res.channels[0][2 * 416 + 2],res.channels[0][2 * 416 + 3]);
-   printf("%f %f %f %f\n",res.channels[0][3 * 416 + 0],res.channels[0][3 * 416 + 1],res.channels[0][3 * 416 + 2],res.channels[0][3 * 416 + 3]);
+   printf("%f %f %f %f\n",res.channels[0][0 * w + 0],res.channels[0][0 * w + 1],res.channels[0][0 * w + 2],res.channels[0][0 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[0][1 * w + 0],res.channels[0][1 * w + 1],res.channels[0][1 * w + 2],res.channels[0][1 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[0][2 * w + 0],res.channels[0][2 * w + 1],res.channels[0][2 * w + 2],res.channels[0][2 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[0][3 * w + 0],res.channels[0][3 * w + 1],res.channels[0][3 * w + 2],res.channels[0][3 * w + 3]);
 
    printf("Channel 1\n");
-   printf("%f %f %f %f\n",res.channels[1][0 * 416 + 0],res.channels[1][0 * 416 + 1],res.channels[1][0 * 416 + 2],res.channels[1][0 * 416 + 3]);
-   printf("%f %f %f %f\n",res.channels[1][1 * 416 + 0],res.channels[1][1 * 416 + 1],res.channels[1][1 * 416 + 2],res.channels[1][1 * 416 + 3]);
-   printf("%f %f %f %f\n",res.channels[1][2 * 416 + 0],res.channels[1][2 * 416 + 1],res.channels[1][2 * 416 + 2],res.channels[1][2 * 416 + 3]);
-   printf("%f %f %f %f\n",res.channels[1][3 * 416 + 0],res.channels[1][3 * 416 + 1],res.channels[1][3 * 416 + 2],res.channels[1][3 * 416 + 3]);
+   printf("%f %f %f %f\n",res.channels[1][0 * w + 0],res.channels[1][0 * w + 1],res.channels[1][0 * w + 2],res.channels[1][0 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[1][1 * w + 0],res.channels[1][1 * w + 1],res.channels[1][1 * w + 2],res.channels[1][1 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[1][2 * w + 0],res.channels[1][2 * w + 1],res.channels[1][2 * w + 2],res.channels[1][2 * w + 3]);
+   printf("%f %f %f %f\n",res.channels[1][3 * w + 0],res.channels[1][3 * w + 1],res.channels[1][3 * w + 2],res.channels[1][3 * w + 3]);
 }
 
 void SingleTest(Arena* arena){
@@ -532,24 +533,23 @@ void SingleTest(Arena* arena){
    // 
    Layer result1 = PerformConvolution(arena,beginning,layerInfo[0]);
 
-   printf("\n%d\n",1);
-   PrintSomeValues(result1);
+   printf("\n%d\n",0);
+   PrintSomeValues(result1,layerInfo[0]);
 
    Layer result2  = PerformMaxPool(arena,result1,layerInfo[1]);
-   printf("\n%d\n",2);
-   PrintSomeValues(result2);
+   printf("\n%d\n",1);
+   PrintSomeValues(result2,layerInfo[1]);
 
    Layer result3  = PerformConvolution(arena,result2,layerInfo[2]);
 
-   printf("\n%d\n",3);
-   PrintSomeValues(result3);
+   printf("\n%d\n",2);
+   PrintSomeValues(result3,layerInfo[2]);
 
    Layer result4  = PerformMaxPool(arena,result3,layerInfo[3]);
 
    Layer result5  = PerformConvolution(arena,result4,layerInfo[4]);
-
-   printf("\n%d\n",5);
-   PrintSomeValues(result5);
+   printf("\n%d\n",4);
+   PrintSomeValues(result5,layerInfo[4]);
 
    Layer result6  = PerformMaxPool(arena,result5,layerInfo[5]);
 
@@ -566,20 +566,36 @@ void SingleTest(Arena* arena){
    Layer result14 = PerformConvolution(arena,result13,layerInfo[13]);
    Layer result15 = PerformConvolution(arena,result14,layerInfo[14]);
    Layer result16 = PerformConvolution(arena,result15,layerInfo[15]);
+   printf("\n%d\n",15);
+   PrintSomeValues(result16,layerInfo[15]);
 
    Layer result17 = PerformYOLO(arena,result16,layerInfo[16]);
 
    Layer result18 = result14;
 
    Layer result19 = PerformConvolution(arena,result18,layerInfo[18]);
+   printf("\n%d\n",18);
+   PrintSomeValues(result19,layerInfo[18]);
+
    Layer result20 = PerformUpsample(arena,result19,layerInfo[19]);
-   Layer result21 = PerformConcatenation(arena,result9,result20,layerInfo[20]);
+   printf("\n%d\n",19);
+   PrintSomeValues(result20,layerInfo[19]);
+
+   Layer result21 = PerformConcatenation(arena,result20,result9,layerInfo[20]);
+   printf("\n%d\n",20);
+   PrintSomeValues(result21,layerInfo[20]);
 
    Layer result22 = PerformConvolution(arena,result21,layerInfo[21]);
+   printf("\n%d\n",21);
+   PrintSomeValues(result22,layerInfo[21]);
+
    Layer result23 = PerformConvolution(arena,result22,layerInfo[22]);
+   printf("\n%d\n",22);
+   PrintSomeValues(result23,layerInfo[22]);
 
    Layer result24 = PerformYOLO(arena,result23,layerInfo[23]);
 
+   printf("\n\n");
    GetBoundingBoxes(arena,result17,13);
    GetBoundingBoxes(arena,result24,26);
 }
