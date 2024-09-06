@@ -169,9 +169,9 @@ class iob_soc_versat(iob_soc):
                 {
                     "name": "AXI_DATA_W",
                     "type": "P",
-                    "val": "64",
+                    "val": "32",
                     "min": "0",
-                    "max": "64",
+                    "max": "32",
                     "descr": "Versat AXI datapath size",
                 }
             )

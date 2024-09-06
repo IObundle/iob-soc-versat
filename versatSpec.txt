@@ -1,11 +1,3 @@
-module Yolo_Tiny_V3(){
-   Const c;
-#
-   c -> out;
-}
-
-stop;
-
 module SimpleExample(){
   Const a;
   Const b;
@@ -270,43 +262,6 @@ module TestMergeStruct(){
 merge TestMergeAfterStruct = TestMergeStruct | TestDoubleMerge1;
 */
 
-module FloatTest(x,y,z){
-   FloatAdd  add;
-   FloatSub  sub;
-   FloatMul  mul;
-   FloatDiv  div;
-   FloatMax  max;
-   FloatMin  min;
-   FloatSqrt sqrt;
-   Int2Float int2float;
-   Float2Int float2int;
-#
-   {x,y} -> add:0..1;
-   {x,y} -> sub:0..1;
-   {x,y} -> mul:0..1;
-   {x,y} -> div:0..1;
-
-   {x,y} -> max:0..1;
-   {x,y} -> min:0..1;
-   x     -> sqrt:0;
-   z     -> int2float:0;
-   x     -> float2int:0;
-
-   {add,sub,mul,div,max,min,sqrt,int2float,float2int}       -> out:0..8;
-}
-
-module TestDiffDelays(x,y,z){
-   FloatMul mul;
-   FloatMul mul2;
-#
-   {x,y} -> mul:0..1;
-
-   {mul,z} -> mul2:0..1;
-
-   mul2 -> out:0;
-   y -> out:1;
-}
-
 module VReadToVWrite(){
    VRead #(.AXI_ADDR_W(AXI_ADDR_W)) read;
    VWrite #(.AXI_ADDR_W(AXI_ADDR_W)) write;
@@ -320,234 +275,6 @@ module MemToMem(){
 #
    start -> end;
 }
-
-module SMVMCPU(x,y){
-   SignalMulAdd mul;
-#
-   x -> mul:0;
-   y -> mul:1;
-
-   mul -> out;
-}
-
-module SMVMCOO(){
-   Generator gen;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-
-   mul    -> accum:0;
-   change -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
-}
-
-module SMVMCSR(){
-   Generator gen;
-   TimedFlag row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   //row -> change:0;
-   //row -> change:1;
-
-   mul    -> accum:0;
-   change -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
-}
-
-module SMVMBlock(){
-   Generator gen;
-   IncrementFlag flag;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   SignalMemStorage pos;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-   row -> flag;
-
-   mul    -> accum:0;
-   change -> accum:1;
-   //flag -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
-   //flag -> output:1;
-
-   row  -> pos:0;
-   //change -> pos:1;
-   flag -> pos:1;
-}
-
-module SMVMBlock2(){
-   Generator gen;
-   IncrementFlag flag;
-   LookupTableRead col;
-   LookupTableRead row;
-   LookupTableRead val;
-   LookupTableRead vector;
-   FloatMul mul;
-
-   ChangeDetect #(.AMOUNT(0)) change;
-   ChangeDetect change2;
-   FloatAddAccum accum;
-   SignalMemStorage output;
-   SignalMemStorage pos;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-   row -> flag;
-
-   row -> change2:0;
-   row -> change2:1;
-
-   mul    -> accum:0;
-   change{-4} -> accum:1;
-
-   accum:0 -> output:0;
-   change2{3} -> output:1;
-
-   row  -> pos:0;
-   flag -> pos:1;
-}
-
-module SMVMBlock3(){
-   Generator gen;
-   IncrementFlag flag;
-   LookupTableRead col;
-   LookupTableRead row;
-   LookupTableRead val;
-   LookupTableRead vector;
-   FloatMul mul;
-
-   ChangeDetect #(.AMOUNT(0)) change;
-   ChangeDetect change2;
-   FloatAddAccum accum;
-   SignalMemWrite output;
-   //SignalMemStorage pos;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-   row -> flag;
-
-   row -> change2:0;
-   row -> change2:1;
-
-   mul    -> accum:0;
-   change{-4} -> accum:1;
-
-   accum:0 -> output:0;
-   change2{3} -> output:1;
-}
-
-module SMVMBlockUnit(){
-   TimedFlagRead #(.SIZE_W(16)) flag; // Row
-   LookupTableRead2 #(.SIZE_W(16)) col; // Col
-   LookupTableRead val; // Matrix val
-   LookupTableRead vector; 
-
-   Generator gen;
-   FloatMul mul;
-
-   MyFloatAccum accum;
-   DoneCycle cycler;
-
-   SignalMemWrite output;
-#
-   gen -> val;
-   gen -> col;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   gen{1} -> flag;
-
-   mul      -> accum:0;
-   flag{-2} -> accum:1;
-
-   accum:0 -> output:0;
-   flag    -> output:1;
-}
-
-module SMVMBlock(){
-   SMVMBlockUnit block0;
-   SMVMBlockUnit block1;
-   SMVMBlockUnit block2;
-   SMVMBlockUnit block3;
-#
-}
-
 
 module TripleAdd(x,y,z){
 #
@@ -844,8 +571,6 @@ module M_Stage(w0,w14,w9,w1){
 
    r -> out;
 }
-
-stop;
 
 module M(w){
    M_Stage m0;
@@ -1403,15 +1128,6 @@ module KeySchedule(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,rcon){
    c3 -> out:15;
 }
 
-module FloatTest(x,y){
-   MyFloatAdd unit;   
-#
-   x -> unit:0;
-   y -> unit:1;
-
-   unit -> out;
-}
-
 module KeySchedule256(x[32],rcon){
    FirstLineKey s;
    FourthLineKey q;
@@ -1770,55 +1486,6 @@ module B(x,y){
    add -> out;
 }
 
-module TestFPUDiv(x,y){
-   FloatDiv div;
-#
-   x -> div:0;
-   y -> div:1;
-
-   div -> out;
-}
-
-module TestInstanceLatency(x,y){
-   IntSqrt test;// Test instance
-   Generator gen;
-   Reg reg;
-#
-   // Code that exercises test instance. Set versat_latency to high value, then use VCD to find out when instance is producing valid data
-   x -> test:0;
-   //y -> div:1;
-
-   test -> out;
-
-   // When test instance produces correct value, latency can be measured by looking at output of gen inside VCD file
-   gen -> reg; // gen is only connected to something to force it to output data
-}
-
-module TestSpecificMerge(){
-   Mem input;
-   Mem output;
-   FloatSqrt sqrt1;
-   FloatSqrt sqrt2;
-#
-   input -> sqrt1;
-   sqrt1 -> sqrt2;
-   sqrt2 -> output;
-}
-
-module ComplexCalculateDelay(){
-   VRead v;
-   Mem output;
-   Mem anotherOut;
-   FloatSqrt sqrt;
-#
-   a = v + sqrt;
-
-   v -> sqrt;
-
-   a -> output;
-   v -> anotherOut;
-}
-
 module TestConfigOrder(){
    Mem store;
    Const a1;
@@ -1841,50 +1508,6 @@ module VectorLikeOperation(){
 
    b -> mat;
    d -> writer;
-}
-
-module SimpleFFTCalc(even,odd){
-   FloatAdd adder;
-   FloatSub sub;
-#
-   even -> adder:0;
-   odd -> adder:1;
-
-   even -> sub:0;
-   odd -> sub:1;
-
-   adder -> out:0;
-   sub   -> out:1;
-}
-
-module FFTCalcIfPortion(real,img,rtwid,itwid){
-   FloatMul mul1;
-   FloatMul mul2;
-   FloatMul mul3;
-   FloatMul mul4;
-   FloatAdd adder;
-   FloatSub sub;
-#
-   rtwid -> mul1:0;
-   real -> mul1:1;
-
-   itwid -> mul2:0;
-   img -> mul2:1;
-
-   rtwid -> mul3:0;
-   img -> mul3:1;
-
-   img -> mul4:0;
-   real -> mul4:1;
-
-   mul1 -> sub:0;
-   mul2 -> sub:1;
-
-   mul3 -> adder:0;
-   mul4 -> adder:1;
-
-   sub -> out:0;
-   adder -> out:1;
 }
 
 module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,Ama,Ame,Ami,Amo,Amu,Asa,Ase,Asi,Aso,Asu){

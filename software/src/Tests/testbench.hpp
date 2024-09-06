@@ -125,6 +125,34 @@ Array<T> PushArray(Arena* arena,Byte* mark){
   return res;
 }
 
+template<typename T>
+Array<T> ArrayJoin(Array<T> f,Array<T> s,Arena* out){
+   if(f.data > s.data){
+      Array<T> temp = f;
+      f = s;
+      s = temp;
+   }
+
+   // Arrays are continouos, concatenate them together
+   if(f.data + f.size == s.data){
+      Array<T> result = {};
+      result.data = f.data;
+      result.size = f.size + s.size;
+      return result;
+   }
+
+   Array<T> result = PushArray<T>(out,f.size + s.size);
+   int index = 0;
+   for(T& val : f){
+      result[index++] = val;
+   }
+   for(T& val : s){
+      result[index++] = val;
+   }
+
+   return result;
+}
+
 // Even though we only use an assert based approach for now,
 // we still keep expected and got separated in the case that we eventually need to implement 
 // separated pushExpected pushGot functions.
