@@ -13,7 +13,7 @@ void SingleTest(Arena* arena){
    ACCEL_Comb_M_Stage_sigma_sigma1_const2_constant = 19;
    ACCEL_Comb_M_Stage_sigma_sigma1_const3_constant = 10;
    
-   RunAccelerator(1);
+   RunAccelerator(3);
 
    Assert_Eq((unsigned int) 0xb89ab4ca,(unsigned int) ACCEL_TOP_output_0_currentValue);
 }

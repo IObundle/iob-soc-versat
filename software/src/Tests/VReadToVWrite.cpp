@@ -40,34 +40,18 @@ void SingleTest(Arena* arena){
       input[i] = i + 1;
     }
 
-    printf("%d\n",0);
-  
     int numberItems = SIZE;
     ConfigureSimpleVRead(&con->read,SIZE,input);
-    printf("%d\n",1);
     ConfigureSimpleVWrite(&con->write,SIZE,output);
-    
-    con->write.enableWrite = 0;
-
-    printf("%d\n",1);
   
     RunAccelerator(1);
-
-    printf("%d\n",2);
-    con->read.enableRead = 0;
-
-    RunAccelerator(1);
-
-    printf("%d\n",3);
-    con->write.enableWrite = 1;
-
-    RunAccelerator(1);
-
-    printf("%d\n",4);
 
     ClearCache();
 
-    printf("%d\n",5);
+    con->write.write_enabled = 0;
+    con->read.read_enabled = 0;
+
+    RunAccelerator(2); // Flush accelerator
 
     bool equal = true;     
     for(int i = 0; i < numberItems; i++){

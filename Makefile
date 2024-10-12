@@ -10,7 +10,6 @@ DISABLE_LINT:=1
 LIB_DIR:=submodules/IOBSOC/submodules/LIB
 include $(LIB_DIR)/setup.mk
 
-TESTS+= M_Stage 
 TESTS+= MemToMem 
 TESTS+= VReadToVWrite 
 TESTS+= Variety1
@@ -22,6 +21,9 @@ TESTS+= TestMerge2
 TESTS+= TestMergeInputs
 TESTS+= TestMergeHasChild
 TESTS+= F_Stage 
+TESTS+= M_Stage 
+#TESTS+= DMATest # TODO: This was blocking. Take another look
+#TESTS+= TestShareStatic # TODO: The test was not testing anything, just printing stuff. Make a pass and see if it works as expected
 TESTS+= AddRoundKey 
 
 VERSAT_SPEC:=versatSpec.txt

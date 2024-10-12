@@ -18,7 +18,7 @@ void SingleTest(Arena* arena){
   ACCEL_TOP_end_in0_wr = 1;
   ACCEL_TOP_end_perA = numberItems;
 
-  RunAccelerator(1);
+  RunAccelerator(3);
   
   for(int i = 0; i < numberItems; i++){
     int read = VersatUnitRead(TOP_end_addr,i);

@@ -11,17 +11,8 @@ void SingleTest(Arena* arena){
 
    RunAccelerator(1);
 
-   //Assert_Eq(0,ACCEL_TOP_outputs_0_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_1_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_2_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_3_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_4_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_5_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_6_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_7_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_8_currentValue);
-   //Assert_Eq(0,ACCEL_TOP_outputs_9_currentValue);
-
+   // Probably printing because we never figure out how static and share should actually interact when together.
+   // TODO: See to it
    printf("%d\n",ACCEL_TOP_outputs_0_currentValue);
    printf("%d\n",ACCEL_TOP_outputs_1_currentValue);
    printf("%d\n",ACCEL_TOP_outputs_2_currentValue);
