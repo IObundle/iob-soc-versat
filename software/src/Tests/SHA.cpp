@@ -112,7 +112,6 @@ void InitVersatSHA(){
    }
 
    ConfigureSimpleVRead(&((SHAConfig*) accelConfig)->MemRead,16,nullptr);
-   //ConfigureSimpleVRead(read,16,nullptr); // read address is configured before accelerator run
 
    ACCEL_Constants_mem_iterA = 1;
    ACCEL_Constants_mem_incrA = 1;
@@ -137,24 +136,6 @@ void InitVersatSHA(){
    ACCEL_TOP_Swap_enabled = 1;
 }
 
-#if 0
-unsigned char* GetHexadecimal(const unsigned char* text, int str_size){
-  static unsigned char buffer[2048+1];
-  int i;
-
-  for(i = 0; i< str_size; i++){
-    int ch = (int) ((unsigned char) text[i]);
-
-    buffer[i*2] = GetHexadecimalChar(ch / 16);
-    buffer[i*2+1] = GetHexadecimalChar(ch % 16);
-  }
-
-  buffer[(i)*2] = '\0';
-
-  return buffer;
-}
-#endif
-
 void SingleTest(Arena* arena){
    unsigned char msg_64[] = { 0x5a, 0x86, 0xb7, 0x37, 0xea, 0xea, 0x8e, 0xe9, 0x76, 0xa0, 0xa2, 0x4d, 0xa6, 0x3e, 0x7e, 0xd7, 0xee, 0xfa, 0xd1, 0x8a, 0x10, 0x1c, 0x12, 0x11, 0xe2, 0xb3, 0x65, 0x0c, 0x51, 0x87, 0xc2, 0xa8, 0xa6, 0x50, 0x54, 0x72, 0x08, 0x25, 0x1f, 0x6d, 0x42, 0x37, 0xe6, 0x61, 0xc7, 0xbf, 0x4c, 0x77, 0xf3, 0x35, 0x39, 0x03, 0x94, 0xc3, 0x7f, 0xa1, 0xa9, 0xf9, 0xbe, 0x83, 0x6a, 0xc2, 0x85, 0x09 };
    static const int HASH_SIZE = (256/8);
@@ -171,6 +152,5 @@ void SingleTest(Arena* arena){
    char buffer[2048];
    GetHexadecimal((char*) digest,buffer, HASH_SIZE);
    printf("%*s\n",64,buffer);
-   //Assert_Eq("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa",buffer);
    Assert_Eq("42e61e174fbb3897d6dd6cef3dd2802fe67b331953b06114a65c772859dfc1aa",buffer); 
 }

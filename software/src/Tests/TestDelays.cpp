@@ -1,7 +1,7 @@
 #include "testbench.hpp"
 
 void SingleTest(Arena* arena){
-   RunAccelerator(1);
+   RunAccelerator(2);
 
-   Assert_Eq(15,ACCEL_TOP_output_currentValue);
+   Assert_Eq(15,accelState->TOP_output_currentValue);
 }

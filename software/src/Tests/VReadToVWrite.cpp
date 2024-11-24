@@ -21,7 +21,6 @@ struct CollapseArray<T[N]>{
 #define ADD_BYTE_TO_PTR(PTR,BYTES) ((CollapseArray<decltype(PTR)>::type) (((char*) PTR) + BYTES))
 
 #define SIZE 1234
-//#define SIZE 1536
 
 void SingleTest(Arena* arena){
   int* inputBuffer = (int*) PushBytes(arena,sizeof(int) * SIZE * 2);

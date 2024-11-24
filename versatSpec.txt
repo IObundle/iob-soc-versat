@@ -84,6 +84,15 @@ module TestShare(){
    childs[1]:0..1 -> outputs[2..3];
 }
 
+module TestPartialShare(){
+   share config VRead(~ext_addr){
+      units[2];
+   }
+   Reg outputs[2];
+#
+   units[0..1] -> outputs[0..1];
+}
+
 module TestShareStaticChild() -> 2{
    static TestShareChild shareChild;
 #
@@ -107,6 +116,15 @@ module TestDelays(){
    a = gen{1} + gen{2} + gen{3} + gen{4} + gen{5};
 
    a -> output;
+}
+
+module TestDuty(){
+   Const c;
+   Accum accum;
+   Mem m;
+#
+   c -> accum;
+   accum -> m;
 }
 
 module TestMergeChild1(){
@@ -268,6 +286,33 @@ module VReadToVWrite(){
 #
    read -> write;
 }
+
+module VReadMultipleToVWriteMultiple(){
+   VReadMultiple #(.AXI_ADDR_W(AXI_ADDR_W),.ADDR_W(20)) read;
+   VWriteMultiple #(.AXI_ADDR_W(AXI_ADDR_W)) write;
+#
+   read -> write;
+}
+
+AddressGen VReadLoad VReadMultipleLoad(ext,xWidth,yWidth,imageWidthSize)
+   for y 0..yWidth
+   for x 0..xWidth
+   mem[y * xWidth + x] = ext[y * imageWidthSize + x];
+
+AddressGen VReadOutput VReadMultipleOutput(xWidth,yWidth)
+   for y 0..yWidth
+   for x 0..xWidth
+   addr = y * xWidth + x;
+
+AddressGen VWriteInput VWriteMultipleInput(xWidth,yWidth)
+   for y 0..yWidth
+   for x 0..xWidth
+   addr = y * xWidth + x;
+
+AddressGen VWriteStore VWriteMultipleStore(ext,xWidth,yWidth,imageWidthSize)
+   for y 0..yWidth
+   for x 0..xWidth
+   ext[y * imageWidthSize + x] = mem[y * xWidth + x];
 
 module MemToMem(){
    Mem start;
@@ -2609,3 +2654,47 @@ module CryptoAlgos(){
 merge CryptoAlgos = SHA | AES256 | McEliece;
 */
 
+AddressGen VReadOutput OutputWeights(id,trueX,sizeX,nMacs,inputChannels,outputChannelsPerMac,start,channelIncrement)
+   for x 0..trueX
+   for inC 0..inputChannels
+   for outC 0..outputChannelsPerMac
+   for k 0..9
+   addr = start + id * 9 * nMacs + outC * 9 * nMacs + k;
+
+// There is a problem with the interface for ranges.
+// Right now we have close-close ranges, but maybe close-open would be better
+// 
+/*
+AddressGen Mem test(xMax,yMax,zMax,wMax,aMax)
+   //for a 0..aMax
+   for b 0..aMax
+   for w 0..wMax
+   for z 0..zMax
+   for y 0..yMax
+   for x 0..xMax
+   addr = y * yMax + x;
+
+AddressGen VReadLoad LoadFeatures(ext,xMax,fmSize,yMax)
+   for y 0..yMax
+   for x 0..xMax
+   addr = ext + y * fmSize + x;
+
+AddressGen VReadOutput OutputFeatures(a)
+   for x 0..a
+   addr = x;
+
+AddressGen VWriteInput InputFeatures(a)
+   for x 0..a
+   addr = x;
+
+AddressGen VWriteStore WriteFeatures(a)
+   for x 0..a
+   addr = x;
+*/
+
+module TestAddressGen(){
+   Generator3 gen;
+   Mem output;
+#
+   gen -> output;
+}

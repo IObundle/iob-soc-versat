@@ -1,6 +1,6 @@
 #include "testbench.hpp"
 
-void ConfigureVariety1(Variety1Config* config,int* memory){
+void ConfigureVariety1(volatile Variety1Config* config,int* memory){
    ConfigureSimpleVRead(&config->read,1,memory);
 
    ConfigureSimpleMemory(&config->mem,1,0);
@@ -13,15 +13,13 @@ void ConfigureVariety1(Variety1Config* config,int* memory){
 void SingleTest(Arena* arena){
    int memory = 3;
 
-   ACCEL_TOP_input_0_constant = 5;
-   ACCEL_TOP_input_1_constant = 4;
+   accelConfig->input_0.constant = 5;
+   accelConfig->input_1.constant = 4;
 
-   Variety1_SimpleConfig* accel = (Variety1_SimpleConfig*) accelConfig;
-
-   ConfigureVariety1(&accel->simple,&memory);
+   ConfigureVariety1(&accelConfig->simple,&memory);
 
    RunAccelerator(3);
 
-   Assert_Eq(15,ACCEL_TOP_output_0_currentValue);
+   Assert_Eq(15,accelState->TOP_output_0_currentValue);
 }
 #endif

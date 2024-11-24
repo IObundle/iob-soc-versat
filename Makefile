@@ -16,6 +16,7 @@ TESTS+= Variety1
 TESTS+= TestShare
 TESTS+= TestStatic
 TESTS+= TestDelays
+TESTS+= TestDuty
 TESTS+= TestMerge
 TESTS+= TestMerge2
 TESTS+= TestMergeInputs
@@ -124,7 +125,7 @@ fast-software-emul:
 	cp ./software/src/Tests/$(TEST).cpp ../$(CORE)_V0.70_$(TEST)/software/src/test.cpp
 	cp ./software/src/Tests/testbench.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
 	cp ./software/src/Tests/unitConfiguration.hpp ../$(CORE)_V0.70_$(TEST)/software/src/
-	make -C ../$(CORE)_V0.70_$(TEST) pc-emul-test
+	nix-shell --run "make -C ../$(CORE)_V0.70_$(TEST) pc-emul-test"
 
 fast-test-pc-emul:
 	+nix-shell --run 'parallel ./scripts/fast-pc-emul.sh ::: $(TESTS)'

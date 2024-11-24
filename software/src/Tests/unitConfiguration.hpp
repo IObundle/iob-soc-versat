@@ -16,7 +16,7 @@ static void IntSet(volatile void* buffer,int value,int byteSize){
 }
 
 #ifdef VERSAT_DEFINED_VRead
-static void ConfigureSimpleVReadBare(VReadConfig* inst){
+static void ConfigureSimpleVReadBare(volatile VReadConfig* inst){
    IntSet(inst,0,sizeof(VReadConfig));
 
    // Memory side
@@ -29,7 +29,7 @@ static void ConfigureSimpleVReadBare(VReadConfig* inst){
    inst->output_duty = 1;
 }
 
-static void ConfigureSimpleVReadShallow(VReadConfig* inst, int numberItems,int* memory){
+static void ConfigureSimpleVReadShallow(volatile VReadConfig* inst, int numberItems,int* memory){
    inst->read_enabled = 1;
 
    // Memory side
@@ -43,14 +43,14 @@ static void ConfigureSimpleVReadShallow(VReadConfig* inst, int numberItems,int* 
    inst->output_duty = numberItems;
 }
 
-static void ConfigureSimpleVRead(VReadConfig* inst, int numberItems,int* memory){
+static void ConfigureSimpleVRead(volatile VReadConfig* inst, int numberItems,int* memory){
    ConfigureSimpleVReadBare(inst);
    ConfigureSimpleVReadShallow(inst,numberItems,memory);
 }
 #endif
 
 #ifdef VERSAT_DEFINED_VWrite
-static void ConfigureSimpleVWriteBare(VWriteConfig* inst){
+static void ConfigureSimpleVWriteBare(volatile VWriteConfig* inst){
    IntSet(inst,0,sizeof(VWriteConfig));
 
    inst->write_incr = 1;
@@ -61,7 +61,7 @@ static void ConfigureSimpleVWriteBare(VWriteConfig* inst){
    inst->input_incr = 1;
 }
 
-static void ConfigureSimpleVWriteShallow(VWriteConfig* inst, int numberItems,int* memory){
+static void ConfigureSimpleVWriteShallow(volatile VWriteConfig* inst, int numberItems,int* memory){
    inst->write_enabled = 1;
 
    // Write side
@@ -75,14 +75,14 @@ static void ConfigureSimpleVWriteShallow(VWriteConfig* inst, int numberItems,int
    inst->input_duty = numberItems;
 }
 
-static void ConfigureSimpleVWrite(VWriteConfig* inst, int numberItems,int* memory){
+static void ConfigureSimpleVWrite(volatile VWriteConfig* inst, int numberItems,int* memory){
    ConfigureSimpleVWriteBare(inst);
    ConfigureSimpleVWriteShallow(inst,numberItems,memory);
 }
 #endif
 
 #ifdef VERSAT_DEFINED_Mem
-static void ConfigureSimpleMemory(MemConfig* inst, int amountOfData, int start){
+static void ConfigureSimpleMemory(volatile MemConfig* inst, int amountOfData, int start){
    IntSet(inst,0,sizeof(MemConfig));
 
    inst->iterA = 1;
@@ -92,12 +92,12 @@ static void ConfigureSimpleMemory(MemConfig* inst, int amountOfData, int start){
    inst->startA = start;
 }
 
-static void ConfigureSimpleMemory(MemConfig* inst, int amountOfData, int start,MemAddr addr,int* data){
+static void ConfigureSimpleMemory(volatile MemConfig* inst, int amountOfData, int start,MemAddr addr,int* data){
    ConfigureSimpleMemory(inst,amountOfData,start);
    VersatMemoryCopy(addr.addr,data,amountOfData * sizeof(int));
 }
 
-static void ConfigureSimpleMemory(MemConfig* inst, int amountOfData){
+static void ConfigureSimpleMemory(volatile MemConfig* inst, int amountOfData){
    IntSet(inst,0,sizeof(MemConfig));
 
    inst->iterA = 1;
@@ -107,7 +107,7 @@ static void ConfigureSimpleMemory(MemConfig* inst, int amountOfData){
    //inst->in0_wr = 1;
 }
 
-static void ConfigureMemoryReceive(MemConfig* inst, int amountOfData){
+static void ConfigureMemoryReceive(volatile MemConfig* inst, int amountOfData){
    IntSet(inst,0,sizeof(MemConfig));
 
    inst->iterA = 1;

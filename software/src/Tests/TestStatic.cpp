@@ -1,15 +1,15 @@
 #include "testbench.hpp"
 
 void SingleTest(Arena* arena){
-   ACCEL_TOP_child_0_inside_constant = 1;
-   ACCEL_TOP_child_1_inside_constant = 2;
+   accelConfig->child_0.inside.constant = 1;
+   accelConfig->child_1.inside.constant = 2;
 
-   ACCEL_TestStatic_inside_0_constant = 3;
-   ACCEL_TestStatic_inside_1_constant = 4;
-   ACCEL_TestStaticChild1_child_inside0_constant = 5;
-   ACCEL_TestStaticChild2_inside1_constant = 6;
+   accelStatic->TestStatic_inside_0_constant = 3;
+   accelStatic->TestStatic_inside_1_constant = 4;
+   accelStatic->TestStaticChild1_child_inside0_constant = 5;
+   accelStatic->TestStaticChild2_inside1_constant = 6;
 
    RunAccelerator(3);
 
-   Assert_Eq(32,ACCEL_TOP_output_currentValue);
+   Assert_Eq(32,accelState->TOP_output_currentValue);
 }

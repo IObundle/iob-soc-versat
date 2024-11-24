@@ -75,7 +75,7 @@ class iob_soc_versat(iob_soc):
             GetTestName(),
             VERSAT_EXTRA_UNITS,
             GetBuildDir("iob_soc_versat"),
-            os.path.realpath(cls.setup_dir + "../debug/"),
+            os.path.realpath(os.path.join(cls.setup_dir,"../debug/")),
         )
 
         super()._create_submodules_list(
