@@ -1,0 +1,104 @@
+{
+  "default_args": "-s -b32 -d -u /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src/units -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src -u /home/z/AA/Versat/iob-soc-versat/hardware/src/units -x64",
+  "tests": [
+    {
+      "name": "M_Stage",
+      "finalStage": "SIM_RUN",
+      "tokens": 5651,
+      "hash": 13609067339673684147,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "F_Stage",
+      "finalStage": "SIM_RUN",
+      "tokens": 11793,
+      "hash": 13749177198511550561,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "MemToMem",
+      "finalStage": "SIM_RUN",
+      "tokens": 9863,
+      "hash": 4051329755235266954,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "VReadToVWrite",
+      "finalStage": "SIM_RUN",
+      "tokens": 8678,
+      "hash": 18394182227337659658,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "VReadMultipleToVWriteMultiple",
+      "finalStage": "SIM_RUN",
+      "tokens": 10070,
+      "hash": 8756943179431187567,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "TestShare",
+      "finalStage": "SIM_RUN",
+      "tokens": 4036,
+      "hash": 1191200677657977307,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "TestStatic",
+      "finalStage": "SIM_RUN",
+      "tokens": 3888,
+      "hash": 9174741814680588087,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "TestDelays",
+      "finalStage": "SIM_RUN",
+      "tokens": 2642,
+      "hash": 15890931428686096843,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "TestDuty",
+      "finalStage": "SIM_RUN",
+      "tokens": 6282,
+      "hash": 627428957963652602,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "AddRoundKey",
+      "finalStage": "SIM_RUN",
+      "tokens": 18245,
+      "hash": 15785295711699750811,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "TestMerge",
+      "finalStage": "SIM_RUN",
+      "tokens": 3631,
+      "hash": 14305621460659209064,
+      "stage": "NOT_WORKING"
+    },
+    {
+      "name": "TestMerge2",
+      "finalStage": "SIM_RUN",
+      "tokens": 8347,
+      "hash": 10331302059758418266,
+      "stage": "NOT_WORKING"
+    },
+    {
+      "name": "TestMergeInputs",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "TestMergeHasChild",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "SimpleExample",
+      "finalStage": "SIM_RUN",
+      "tokens": 2642,
+      "hash": 15681203636361478856,
+      "stage": "NOT_WORKING"
+    }
+  ]
+}
