@@ -268,7 +268,6 @@ merge TestDoubleMerge1 = TestDoubleMerge10 | TestDoubleMerge11;
 
 merge TestDoubleMerge = TestDoubleMerge0 | TestDoubleMerge1;
 
-/*
 module TestMergeStruct(){
    TestDoubleMerge0 d0;
    Const c;
@@ -278,7 +277,13 @@ module TestMergeStruct(){
 }
 
 merge TestMergeAfterStruct = TestMergeStruct | TestDoubleMerge1;
-*/
+
+module TestMergeAfterStruct2(){
+   TestMergeAfterStruct t1;
+   TestMergeAfterStruct t2;
+#
+   
+}
 
 module VReadToVWrite(){
    VRead #(.AXI_ADDR_W(AXI_ADDR_W),.ADDR_W(20)) read;
@@ -293,26 +298,6 @@ module VReadMultipleToVWriteMultiple(){
 #
    read -> write;
 }
-
-AddressGen VReadLoad VReadMultipleLoad(ext,xWidth,yWidth,imageWidthSize)
-   for y 0..yWidth
-   for x 0..xWidth
-   mem[y * xWidth + x] = ext[y * imageWidthSize + x];
-
-AddressGen VReadOutput VReadMultipleOutput(xWidth,yWidth)
-   for y 0..yWidth
-   for x 0..xWidth
-   addr = y * xWidth + x;
-
-AddressGen VWriteInput VWriteMultipleInput(xWidth,yWidth)
-   for y 0..yWidth
-   for x 0..xWidth
-   addr = y * xWidth + x;
-
-AddressGen VWriteStore VWriteMultipleStore(ext,xWidth,yWidth,imageWidthSize)
-   for y 0..yWidth
-   for x 0..xWidth
-   ext[y * imageWidthSize + x] = mem[y * xWidth + x];
 
 module MemToMem(){
    Mem start;
@@ -2648,11 +2633,43 @@ module CryptoAlgos(){
 #
 }
 
-//merge GoodCryptoAlgos = SHA | McEliece | FullAES;
+AddressGen VReadOutput OutputFeatures(sizeX,outputChannels,inputChannelsDividedByNumMacs,tileWidthWithInputChannels,inputChannels,startInputChannel,nMacs)
+   for pixelX 0..sizeX
+   for outC 0..outputChannels
+   for inC 0..inputChannelsDividedByNumMacs
+   for kernelY 0..3
+   for kernelX 0..3 
+   addr = kernelY * tileWidthWithInputChannels + kernelX * inputChannels + startInputChannel + inC * nMacs + pixelX * inputChannels;
 
-/*
-merge CryptoAlgos = SHA | AES256 | McEliece;
-*/
+AddressGen VReadLoad VReadMultipleLoad(ext,xWidth,yWidth,imageWidthSize)
+   for y 0..yWidth
+   for x 0..xWidth
+   mem[y * xWidth + x] = ext[y * imageWidthSize + x];
+
+AddressGen VReadOutput VReadMultipleOutput(xWidth,yWidth)
+   for y 0..yWidth
+   for x 0..xWidth
+   addr = y * xWidth + x;
+
+AddressGen VWriteInput VWriteMultipleInput(xWidth,yWidth)
+   for y 0..yWidth
+   for x 0..xWidth
+   addr = y * xWidth + x;
+
+AddressGen VWriteStore VWriteMultipleStore(ext,xWidth,yWidth,imageWidthSize)
+   for y 0..yWidth
+   for x 0..xWidth
+   ext[y * imageWidthSize + x] = mem[y * xWidth + x];
+
+AddressGen VReadLoad LoadWeights(ext,kernelSize)
+   for x 0..kernelSize
+   mem[x] = ext[x];
+
+AddressGen Mem TestDuty(ext,kernelSize)
+   for x 0..kernelSize // For kernelSize == 8, this must give 0,0,0,0,1,1,1,1
+   addr = x / 4;       // Period == kernelSize, duty is 4.
+
+// Duty is period divided by the literal divisor?
 
 AddressGen VReadOutput OutputWeights(id,trueX,sizeX,nMacs,inputChannels,outputChannelsPerMac,start,channelIncrement)
    for x 0..trueX
@@ -2661,9 +2678,17 @@ AddressGen VReadOutput OutputWeights(id,trueX,sizeX,nMacs,inputChannels,outputCh
    for k 0..9
    addr = start + id * 9 * nMacs + outC * 9 * nMacs + k;
 
-// There is a problem with the interface for ranges.
-// Right now we have close-close ranges, but maybe close-open would be better
-// 
+module TestAddressGen(){
+   Generator3 gen;
+   Mem output;
+#
+   gen -> output;
+}
+
+module Test(){
+#
+   }
+
 /*
 AddressGen Mem test(xMax,yMax,zMax,wMax,aMax)
    //for a 0..aMax
@@ -2692,9 +2717,8 @@ AddressGen VWriteStore WriteFeatures(a)
    addr = x;
 */
 
-module TestAddressGen(){
-   Generator3 gen;
-   Mem output;
-#
-   gen -> output;
-}
+//merge GoodCryptoAlgos = SHA | McEliece | FullAES;
+
+/*
+merge CryptoAlgos = SHA | AES256 | McEliece;
+*/

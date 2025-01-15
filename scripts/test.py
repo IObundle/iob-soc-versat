@@ -257,6 +257,8 @@ if __name__ == "__main__":
    command = sys.argv[1]
    jsonfilePath = sys.argv[2]
 
+   doUpdate = (command != "run-only") 
+
    if(command == "reset"):
       with open(jsonfilePath,"r") as file:
          try:
@@ -341,5 +343,6 @@ if __name__ == "__main__":
          testInfoJson['tests'][result.index]['hash'] = result.hashVal
          testInfoJson['tests'][result.index]['stage'] = stage.name
 
-   with open(jsonfilePath,"w") as file:
-      json.dump(testInfoJson,file,cls=MyJsonEncoder,indent=2)
+   if doUpdate:
+      with open(jsonfilePath,"w") as file:
+         json.dump(testInfoJson,file,cls=MyJsonEncoder,indent=2)

@@ -13,11 +13,11 @@ void SingleTest(Arena* arena){
   // Input reads 4 in 4 with a stride of 4;
   // Output writes 4 in 4 with a stride of 2;
 
-  Configure_VReadMultipleLoad(&accelConfig->read,(iptr) input,4,4,8 * sizeof(int));
+  Configure_VReadMultipleLoad(&accelConfig->read,(iptr) input,4,4,8);
   Configure_VReadMultipleOutput(&accelConfig->read,4,4);
   accelConfig->read.read_enabled = 1;
 
-  Configure_VWriteMultipleStore(&accelConfig->write,(iptr) outputBuffer,4,4,6 * sizeof(int));
+  Configure_VWriteMultipleStore(&accelConfig->write,(iptr) outputBuffer,4,4,6);
   Configure_VWriteMultipleInput(&accelConfig->write,4,4);
   accelConfig->write.write_enabled = 1;
 

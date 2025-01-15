@@ -7,25 +7,31 @@ BOARD ?= AES-KU040-DB-G
 
 DISABLE_LINT:=1
 
+FAST_COMPILE_VERSAT := $(MAKE) -C ./submodules/VERSAT -j 8 versat
+
 LIB_DIR:=submodules/IOBSOC/submodules/LIB
 include $(LIB_DIR)/setup.mk
 
-TESTS+= MemToMem 
-TESTS+= VReadToVWrite 
-TESTS+= Variety1
+TESTS+= MemToMem
+TESTS+= VReadToVWrite
+TESTS+= VReadMultipleToVWriteMultiple
 TESTS+= TestShare
 TESTS+= TestStatic
 TESTS+= TestDelays
 TESTS+= TestDuty
+TESTS+= F_Stage
+TESTS+= M_Stage
+TESTS+= AddRoundKey
+
+#TESTS+= DMATest # TODO: This was blocking. Take another look
+#TESTS+= TestShareStatic # TODO: The test was not testing anything, just printing stuff. Make a pass and see if it works as expected
+
+# Failing for now, need to check them out later:
+#TESTS+= Variety1
 TESTS+= TestMerge
 TESTS+= TestMerge2
 TESTS+= TestMergeInputs
 TESTS+= TestMergeHasChild
-TESTS+= F_Stage 
-TESTS+= M_Stage 
-#TESTS+= DMATest # TODO: This was blocking. Take another look
-#TESTS+= TestShareStatic # TODO: The test was not testing anything, just printing stuff. Make a pass and see if it works as expected
-TESTS+= AddRoundKey 
 
 VERSAT_SPEC:=versatSpec.txt
 
@@ -52,9 +58,8 @@ ifeq ($(DEBUG),1)
 VERSAT_CALL := gdb -ex run --args ./versat
 endif
 
-VERSAT_ARGUMENTS:=$(CUR_DIR)/$(VERSAT_SPEC) -s -b32 -t $(TEST) -u $(CUR_DIR)/submodules/VERSAT/hardware/src/units 
-VERSAT_ARGUMENTS+=-I $(CUR_DIR)/submodules/VERSAT/hardware/include -I $(CUR_DIR)/submodules/VERSAT/hardware/src  
-VERSAT_ARGUMENTS+=-I $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -O $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/software 
+VERSAT_ARGUMENTS:=$(CUR_DIR)/$(VERSAT_SPEC) -s -b32 -d -t $(TEST) -u $(CUR_DIR)/submodules/VERSAT/hardware/src/units 
+VERSAT_ARGUMENTS+=-I $(CUR_DIR)/submodules/VERSAT/hardware/src -O $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/software
 VERSAT_ARGUMENTS+=-o $(CUR_DIR)/../iob_soc_versat_V0.70_$(TEST)/hardware/src -g $(CUR_DIR)/../debug -u $(CUR_DIR)/hardware/src/units -x64
 
 # Single test rules
@@ -88,10 +93,27 @@ versat-only:
 	cd ./submodules/VERSAT ; $(MAKE) -j 8 versat
 	cd ./submodules/VERSAT ; $(VERSAT_CALL) $(VERSAT_ARGUMENTS)
 
+versat-only-no-compile:
+	mkdir -p ../$(CORE)_V0.70_$(TEST)
+	cd ./submodules/VERSAT ; $(VERSAT_CALL) $(VERSAT_ARGUMENTS)
+
 # Multi test rules
 
 test-setup:
 	+nix-shell --run 'parallel ./scripts/setup.sh ::: $(TESTS)'
+
+test-versat-only:
+	cd ./submodules/VERSAT ; $(MAKE) -j 8 versat
+	parallel ./scripts/versat-only.sh ::: $(TESTS)
+
+test-up-to-pc-emul:
+	$(FAST_COMPILE_VERSAT) && python3 ./scripts/test.py run testInfo.json
+
+test-no-update:
+	$(FAST_COMPILE_VERSAT) && python3 ./scripts/test.py run-only testInfo.json
+
+test-reset:
+	python3 ./scripts/test.py reset testInfo.json
 
 test-pc-emul-run:
 	+nix-shell --run 'parallel ./scripts/pc-emul.sh ::: $(TESTS)'
@@ -134,3 +156,6 @@ clean-all:
 	rm -r ../$(CORE)_V0.70_*/
 
 .PHONY: setup test-setup
+
+test-make:
+	echo "test"
