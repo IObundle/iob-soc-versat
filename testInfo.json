@@ -99,6 +99,98 @@
       "tokens": 2642,
       "hash": 15681203636361478856,
       "stage": "NOT_WORKING"
+    },
+    {
+      "name": "AES256WithIterative",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "CryptoAlgos",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "DebugReadMem",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "DMATest",
+      "finalStage": "NOT_WORKING - Makefile is timeoutting",
+      "tokens": -1,
+      "hash": -1,
+      "stage": "NOT_WORKING"
+    },
+    {
+      "name": "FullAES",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "GoodCryptoAlgos",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "LookupTable",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "SHA",
+      "finalStage": "SIM_RUN",
+      "tokens": 16378,
+      "hash": 16714168449892835724,
+      "stage": "NOT_WORKING"
+    },
+    {
+      "name": "SimpleShareConfig",
+      "finalStage": "SIM_RUN",
+      "tokens": 4801,
+      "hash": 4096967453174630915,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "TestAddressGen",
+      "finalStage": "SIM_RUN",
+      "tokens": 8142,
+      "hash": 16927647642969313992,
+      "stage": "NOT_WORKING"
+    },
+    {
+      "name": "TestDoubleMerge",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "TestGenerator",
+      "finalStage": "SIM_RUN",
+      "tokens": 8142,
+      "hash": 18378400554717413564,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "TestMergeDelay",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "Variety1",
+      "finalStage": "SIM_RUN",
+      "tokens": 12196,
+      "hash": 7048410122756753987,
+      "stage": "NOT_WORKING"
+    },
+    {
+      "name": "Variety2",
+      "finalStage": "SIM_RUN",
+      "tokens": 15584,
+      "hash": 3109016152435091151,
+      "stage": "NOT_WORKING"
+    },
+    {
+      "name": "VarietyMerge",
+      "finalStage": "SIM_RUN"
+    },
+    {
+      "name": "VectorLikeOperation",
+      "finalStage": "SIM_RUN",
+      "tokens": 12031,
+      "hash": 336243826285913686,
+      "stage": "NOT_WORKING"
     }
   ]
 }
