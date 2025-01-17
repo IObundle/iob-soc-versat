@@ -114,7 +114,7 @@
     },
     {
       "name": "DMATest",
-      "finalStage": "NOT_WORKING - Makefile is timeoutting",
+      "finalStage": "DISABLED - Makefile is timeoutting",
       "tokens": -1,
       "hash": -1,
       "stage": "NOT_WORKING"

@@ -1,12 +1,15 @@
 import multiprocessing
 from multiprocessing.pool import ThreadPool as ThreadPool
 import subprocess as sp
+import threading
 import sys
 import json
 import os
 import codecs
+import queue
+import random
 from dataclasses import dataclass,fields
-from enum import Enum
+from enum import Enum,auto
 
 SIMULATE = False
 
@@ -23,31 +26,25 @@ SIMULATE = False
 # Need to provide some form of progress reporting on the terminal
 #   Could be something as simple as a print that uses \r to update and that displays how many tests are running, how many compiled correctly, how many passed pc-emul and so on.
 # Maybe useful to group tests that are similar into groups and take groups into account when outputting stuff.
-# Need to change the way we are parallelizing the tests. I first want to run all the hash/tokenizer checks before starting a single pc-emul run.
-#   At the same time, I do not want to prevent threads from starting to run pc-emul because they are waiting for a hash computation to finish (same thing with sim-run waiting for pc-emul)
-#     Before progressing further, need to change Pool to a work based architecture.
-#     Besides, using the Pool appears to not solve the problem of left over python executables 
 #     
 # Can easily add per test information. Something like custom timeouts for commands and stuff like that.
+# Can also start saving some info regarding the tests itself, like the average amount of time spend per versat and stuff like that.
 #
 # For things like architecture change at the hardware level, it should be something that is done for all the tests at the same time.
 #   Our maybe it is better if we do it by group. Things like AXI DATA_W changing does not affect config share and stuff like that, so no point in running those tests for those cases. We want to run the VRead/VWrite tests and stuff like that
 #
 # Need to catch the exceptions by timeout and report to the user that a timeout occured (and at what stage).
 #
-# Check if we can run sim-run without 
+# Check if we can run sim-run without doing a make clean first
 #
-# Can start saving the average amount of time that a test took to run and then use that information to change the order to run the fastest tests first (with more )
-#
-# Add proper parsing so we can embed comments into the tests
-#
+
 # Order of these are important. Assuming that failing sim-run means that passed pc-emul 
-# TODO: Maybe make enum, depending on what python enums offer us
 class Stage(Enum):
-   NOT_WORKING = 0
-   PC_EMUL = 1
-   SIM_RUN = 2
-   FPGA_RUN = 3
+   DISABLED = auto()
+   NOT_WORKING = auto()
+   PC_EMUL = auto()
+   SIM_RUN = auto()
+   FPGA_RUN = auto()
 
 COLOR_BASE   = '\33[0m'
 COLOR_RED    = '\33[31m'
@@ -73,11 +70,14 @@ class JsonContent:
 
       self.__dict__ = jsonElem
 
+def DefaultStage():
+   return Stage.NOT_WORKING
+
 @dataclass
 class TestInfo:
    name: str
    finalStage: Stage
-   stage: Stage = Stage.NOT_WORKING
+   stage: Stage = DefaultStage()
    tokens: int = 0
    hashVal: int = 0
 
@@ -224,16 +224,26 @@ def PerformTest(test,stage):
       # Not implemented yet, 
       return 0,0,0
 
+   print(f"Error, PerformTest called with: {stage}. Fix this")
+
+class WorkState(Enum):
+   INITIAL = auto()
+   PROCESS = auto()
+   FINISH = auto()
+
 @dataclass
-class OneTest:
+class ThreadWork:
    test: dict
    index: int
-   cached: bool
-   bestStageReached: Stage
+   cached: bool = False
    error: bool = False
+   versatFailed: bool = False
    tokens: int = 0
    hashVal: int = 0
-
+   workStage: WorkState = WorkState.INITIAL
+   stageToProcess: Stage = Stage.PC_EMUL
+   lastStageReached: Stage = Stage.NOT_WORKING
+   
 def GetOrDefault(d,name,default):
    if name in d:
       return d[name]
@@ -241,31 +251,85 @@ def GetOrDefault(d,name,default):
       d[name] = default
       return default
 
+def GetTestFinalStage(test):
+   try:
+      content = test['finalStage']
+      splitted = content.split(" ")
+      return Stage[splitted[0]]
+   except:
+      return DefaultStage()
+
+def AdvanceOneTest(test):
+   index = test.index
+   test = testWithIndex[1]
+   name = test['name']
+
+   stage = Stage[test.get('stage',DefaultStage().name)]
+   finalStage = GetTestFinalStage(test)
+
+def PrintResult(result,firstColumnSize):
+   def GeneratePad(word,amount,padding = '.'):
+      return padding * (amount - len(word))
+
+   test = result.test
+   name = test['name']
+
+   finalStage = GetTestFinalStage(test)
+   stage = result.lastStageReached
+
+   testName = name
+   isError = result.error
+   versatFail = "VERSAT_FAIL"
+   failing = "FAIL"
+   partial = f"PARTIAL"
+   partialVal = ""
+   ok = "OK"
+   disabled = "DISABLED"
+   cached = "(cached)" if result.cached else ""
+
+   condition = ok
+
+   color = COLOR_GREEN
+   if(finalStage == Stage.DISABLED):
+      condition = disabled
+      color = COLOR_YELLOW
+      isError = False
+   elif(stage == Stage.NOT_WORKING):
+      condition = failing
+      color = COLOR_RED
+   elif(stage != finalStage):
+      color = COLOR_YELLOW
+      condition = partial
+      partialVal = f"[{stage.name}/{finalStage.name}]"
+
+   if(isError):
+      color = COLOR_RED
+      partialVal = ""
+      condition = versatFail
+
+   firstPad = GeneratePad(testName,firstColumnSize)
+   secondPad = GeneratePad(condition,1)
+   print(f"{testName}{firstPad}{secondPad}{color}{condition}{COLOR_BASE}{partialVal}{cached}")
+
+# This does everything. We want to do stuff as we go along.
 def ProcessOneTest(testWithIndex):
    index = testWithIndex[0]
    test = testWithIndex[1]
    name = test['name']
 
-   testTempDir = TempDir(name)
+   stage = Stage[test.get('stage',DefaultStage().name)]
+   finalStage = GetTestFinalStage(test)
 
-   stage = Stage.NOT_WORKING
-   finalStage = Stage.NOT_WORKING
-   try:
-      stage = Stage[test.get('stage',"NOT_WORKING")]
-      finalStage = Stage[test.get('finalStage',"NOT_WORKING")]
-   except Exception as e:
-      print("Error on Process One Test, probably a comment embedded in a enum section")
-      print("Need to properly parse stuff, otherwise no problem")
-      stage = Stage.NOT_WORKING
-      finalStage = Stage.NOT_WORKING
+   if(SIMULATE):
+      return OneTest(test,index,random.choice([True,False]),random.choice(list(Stage)),random.choice([True,False]))
 
-   # TODO: Maybe make a distinction between not working or disabled?
-   #       Do we run Versat for not working or is this return good?
-   if(finalStage == Stage.NOT_WORKING):
+   if(finalStage == Stage.DISABLED):
       return OneTest(test,index,False,stage,True)
 
+   testTempDir = TempDir(name)
+
    versatResult = RunVersat(name,testTempDir,testInfoJson["default_args"])
-   if(versatResult.error or SIMULATE):
+   if(versatResult.error):
       return OneTest(test,index,False,stage,True)
 
    tokenAmount,hashVal = ComputeFilesTokenSizeAndHash(versatResult.filepaths)
@@ -274,27 +338,92 @@ def ProcessOneTest(testWithIndex):
    testHashVal = test.get('hash',0)
 
    if(tokenAmount == testTokens and hashVal == testHashVal):
-      return OneTest(test,index,True,stage)
+      return OneTest(test,index,True,stage,False,testTokens,testHashVal)
 
    previousReachedStage = stage
    testLastStage = finalStage
-   bestStageReached = Stage.NOT_WORKING
+   lastStageReached = DefaultStage()
 
    tokens = 0
    hashVal = 0
 
-   for stageNumber in range(1,testLastStage.value + 1):
+   for stageNumber in range(Stage.PC_EMUL.val,testLastStage.value + 1):
       stage = Stage(stageNumber)
       returnCode,tokens,hashVal = PerformTest(test['name'],stage)
       passed = (returnCode == 0)
 
       if(passed):
-         bestStageReached = stage
-
-      if(not passed):
+         lastStageReached = stage
+      else:
          break
 
-   return OneTest(test,index,False,bestStageReached,False,tokens,hashVal)
+   return OneTest(test,index,False,lastStageReached,False,tokens,hashVal)
+
+def ProcessWork(work):
+   test = work.test
+   name = test['name']
+
+   finalStage = GetTestFinalStage(test)
+
+   if(work.workStage == WorkState.INITIAL):
+      if(finalStage == Stage.DISABLED):
+         work.workStage = WorkState.FINISH
+         work.lastStageReached = finalStage
+         return work
+
+      testTempDir = TempDir(name)
+
+      versatResult = RunVersat(name,testTempDir,testInfoJson["default_args"])
+      if(versatResult.error):
+         work.error = True
+         work.versatFailed = True
+         work.workStage = WorkState.FINISH
+         return work
+
+      tokenAmount,hashVal = ComputeFilesTokenSizeAndHash(versatResult.filepaths)
+      testTokens = test.get('tokens',0)
+      testHashVal = test.get('hash',0)
+
+      work.tokens = tokenAmount
+      work.hashVal = hashVal
+
+      if(tokenAmount == testTokens and hashVal == testHashVal):
+         work.cached = True
+         work.lastStageReached = Stage[test.get('stage')]
+         work.workStage = WorkState.FINISH
+         return work
+
+      work.workStage = WorkState.PROCESS
+      work.stageToProcess = Stage.PC_EMUL
+      return work
+   elif(work.workStage == WorkState.PROCESS):
+      stage = Stage(work.stageToProcess)
+      returnCode,tokens,hashVal = PerformTest(test['name'],stage)
+      passed = (returnCode == 0)
+
+      if(passed):
+         work.lastStageReached = stage
+         
+         if(work.lastStageReached == finalStage):
+            work.workStage = WorkState.FINISH
+         else:
+            work.stageToProcess = Stage(work.stageToProcess.value + 1)
+      else:
+         work.error = True
+
+      return work
+
+def ThreadMain(workQueue,resultQueue,index):
+   while(True):
+      work = workQueue.get()
+      
+      if(work == "Exit"):
+         break
+      else:
+         #print(work)
+         result = ProcessWork(work)
+         #print(result)
+         resultQueue.put(result)
 
 if __name__ == "__main__":
    testInfoJson = None
@@ -324,19 +453,20 @@ if __name__ == "__main__":
       sys.exit(0)
 
    # Put any check to the data above this line. # From this point assume data is correct
-   print("Gonna start running tests")
 
    if(command == "reset"):
       for i in range(0,len(testInfoJson['tests'])):
          testInfoJson['tests'][i] = {
             'name' : testInfoJson['tests'][i]['name'],
-            'finalStage' : testInfoJson['tests'][i].get('finalStage',Stage.NOT_WORKING)
+            'finalStage' : testInfoJson['tests'][i].get('finalStage',DefaultStage().name)
          }
 
       with open(jsonfilePath,"w") as file:
          json.dump(testInfoJson,file,cls=MyJsonEncoder,indent=2)
 
       sys.exit(0)
+
+   print("Gonna start running tests")
 
    # TODO: Pool waits until everything completes before producing output. Not a big fan.
    #       Rewrite to a work module that produces output as soon as possible.
@@ -345,79 +475,53 @@ if __name__ == "__main__":
 
    # Threads seem as fast as processes, maybe if we add more python logic this changes but for now keep threads. Processes was leaving some processes hanging, threads seem fine
    #with multiprocessing.Pool(16) as p:
-   with ThreadPool(16) as p:
-      testResults = p.map(ProcessOneTest,enumerate(testInfoJson['tests']))
 
-   def GeneratePad(word,amount,padding = '.'):
-      return padding * (amount - len(word))
+   amountOfThreads = 8
 
-   testsOutput = []
-   # We want output as fast as possible, so the report part of this code should move to the multiprocessing
-   for index,result in enumerate(testResults):
-      test = result.test
-      name = test['name']
+   workQueue = queue.Queue()
+   resultQueue = queue.Queue()
+   threadList = [threading.Thread(target=ThreadMain,args=[workQueue,resultQueue,x],daemon=True) for x in range(amountOfThreads)]
+   for thread in threadList:
+      thread.start()
 
-      finalStage = Stage.NOT_WORKING
-      try:
-         finalStage = Stage[test.get('finalStage',"NOT_WORKING")]
-      except Exception as e:
-         print("Error on Process One Test, probably a comment embedded in a enum section")
-         print("Need to properly parse stuff, otherwise no problem")
-         finalStage = Stage.NOT_WORKING
+   amountOfWork = 0
+   for index,test in enumerate(testInfoJson['tests']):
+      work = ThreadWork(test,index)
 
-      stage = result.bestStageReached
+      amountOfWork += 1
+      workQueue.put(work)
 
-      padding = ('.' if index % 2 == 0 else '-')
+   maxNameLength = max([len(test['name']) for test in testInfoJson['tests']]) + 1
 
-      testName = name
-      versatFail = "VERSAT_FAIL"
-      failing = "FAIL"
-      partial = "PARTIAL"
-      ok = "OK"
-      disabled = "DISABLED"
-      cached = "(cached)" if result.cached else ""
+   while(amountOfWork > 0):
+      result = resultQueue.get()
 
-      condition = ok
+      #sys.exit()
 
-      color = COLOR_GREEN
-      if(finalStage == Stage.NOT_WORKING):
-         condition = disabled
-         color = COLOR_GREEN
-      elif(stage == Stage.NOT_WORKING):
-         condition = failing
-         color = COLOR_RED
-      elif(stage != finalStage):
-         color = COLOR_YELLOW
-         condition = partial
+      amountOfWork -= 1
+      if(result.workStage == WorkState.FINISH):
+         PrintResult(result,maxNameLength)
 
-      if(result.error):
-         color = COLOR_RED
-         testsOutput.append((testName,versatFail,cached,color))
+         if(not result.error and not SIMULATE):
+            testInfoJson['tests'][result.index]['tokens'] = result.tokens
+            testInfoJson['tests'][result.index]['hash'] = result.hashVal
+            testInfoJson['tests'][result.index]['stage'] = result.lastStageReached.name
+
       else:
-         testsOutput.append((testName,condition,cached,color))
+         amountOfWork += 1
+         workQueue.put(result)
 
-   firstColumnSize = max([len(x[0]) for x in testsOutput]) + 1
-   secondColumnSize = max([len(x[1]) for x in testsOutput])
+   # Since we are exitting soon, we could skip this, but for now lets see if we can catch some bugs this way
+   for x in range(amountOfThreads):
+      workQueue.put("Exit")
 
-   for output in testsOutput:
-      first = output[0]
-      second = output[1]
-      cached = output[2]
-      color = output[3]
+   for thread in threadList:
+      thread.join() 
 
-      firstPad = GeneratePad(first,firstColumnSize)
-      secondPad = GeneratePad(second,secondColumnSize) 
-
-      print(f"{first}{firstPad}{secondPad}{color}{second}{COLOR_BASE}{cached}")
+   sys.exit()
 
    if(SIMULATE):
       sys.exit(0)
-
-   for result in testResults:
-      if(not result.error and not result.cached and not SIMULATE):
-         testInfoJson['tests'][result.index]['tokens'] = result.tokens
-         testInfoJson['tests'][result.index]['hash'] = result.hashVal
-         testInfoJson['tests'][result.index]['stage'] = stage.name
 
    if doUpdate:
       with open(jsonfilePath,"w") as file:
