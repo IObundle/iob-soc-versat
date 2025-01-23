@@ -1,14 +1,12 @@
-import multiprocessing
-from multiprocessing.pool import ThreadPool as ThreadPool
 import subprocess as sp
 import threading
 import sys
 import json
-import os
 import codecs
 import queue
-import random
-from dataclasses import dataclass,fields
+import time
+import traceback
+from dataclasses import dataclass
 from enum import Enum,auto
 
 SIMULATE = False
@@ -20,13 +18,11 @@ SIMULATE = False
 ##############
 
 # TODO:
+# Refactor commands if adding more commands. Maybe add argparse and work from there.
 # Save the text/output of the tests that fail. The stdout from running the tests and stuff
-# Add the .cpp file to the tokenizer and hasher otherwise we run the risk of having false results for tests that only have software problems.
 # Add some commands to the tool that allow us to force stuff, like forcing the tokens/hash of a bad test case and stuff like that.
-# Need to provide some form of progress reporting on the terminal
-#   Could be something as simple as a print that uses \r to update and that displays how many tests are running, how many compiled correctly, how many passed pc-emul and so on.
 # Maybe useful to group tests that are similar into groups and take groups into account when outputting stuff.
-#     
+#  Only consider this if we start having a huge amount of tests.
 # Can easily add per test information. Something like custom timeouts for commands and stuff like that.
 # Can also start saving some info regarding the tests itself, like the average amount of time spend per versat and stuff like that.
 #
@@ -35,16 +31,52 @@ SIMULATE = False
 #
 # Need to catch the exceptions by timeout and report to the user that a timeout occured (and at what stage).
 #
-# Check if we can run sim-run without doing a make clean first
+# Check if we can run sim-run without doing a clean first
 #
+# The tests right now run from make which causes nix-shell to get called all the time.
+#    It's better to just have the one time nix-shell call when starting the test.py 
 
-# Order of these are important. Assuming that failing sim-run means that passed pc-emul 
+# Order of these are important. Assuming that failing sim-run means that it passed pc-emul 
 class Stage(Enum):
    DISABLED = auto()
+   TEMP_DISABLED = auto()
    NOT_WORKING = auto()
    PC_EMUL = auto()
    SIM_RUN = auto()
    FPGA_RUN = auto()
+
+class ErrorType(Enum):
+   NONE = auto()
+   EXCEPT = auto()
+   TIMEOUT = auto()
+   PROGRAM_ERROR = auto()
+
+class ErrorSource(Enum):
+   NO_SOURCE = auto()
+   VERSAT = auto()
+   HASHER = auto()
+   MAKEFILE = auto()
+
+@dataclass
+class Error():
+   error: ErrorType = ErrorType.NONE
+   source: ErrorSource = ErrorSource.NO_SOURCE
+
+def IsError(errorType):
+   if(type(errorType) == Error):
+      return IsError(errorType.error)
+
+   assert(type(errorType) == ErrorType) 
+   res = (errorType != ErrorType.NONE)
+   return res
+
+def DefaultStage():
+   return Stage.NOT_WORKING
+
+def IsStageDisabled(stage):
+   assert(type(stage) == Stage) 
+   res = (stage == Stage.DISABLED or stage == Stage.TEMP_DISABLED)
+   return res
 
 COLOR_BASE   = '\33[0m'
 COLOR_RED    = '\33[31m'
@@ -55,53 +87,12 @@ COLOR_MAGENTA= '\33[35m'
 COLOR_CYAN   = '\33[36m'
 COLOR_WHITE  = '\33[37m'
 
-@dataclass
-class JsonContent:
-   default_args: str = ""
-   tests : list = None
-
-   def __init__(self,jsonElem):
-      fieldNames = [x.name for x in fields(self)]
-
-      for name in jsonElem:
-         if not name in fieldNames:
-            print(f"Error, Json contains a none used keyword: {name}")
-            sys.exit(0)
-
-      self.__dict__ = jsonElem
-
-def DefaultStage():
-   return Stage.NOT_WORKING
-
-@dataclass
-class TestInfo:
-   name: str
-   finalStage: Stage
-   stage: Stage = DefaultStage()
-   tokens: int = 0
-   hashVal: int = 0
-
-   def __init__(self,jsonElem):
-      fieldNames = [x.name for x in fields(self)]
-
-      for name in jsonElem:
-         if not name in fieldNames:
-            print(f"Error, Json contains a none used keyword: {name}")
-            sys.exit(0)
-
-      self.__dict__ = jsonElem
-
 class MyJsonEncoder(json.JSONEncoder):
    def default(self,o):
       if(type(o) == Stage):
          return o.name
       else:
          return super().default(o)
-
-@dataclass
-class VersatResult:
-   error: bool
-   filepaths: list
 
 def FindAndParseFilepathList(content):
    # Probably bottleneck
@@ -136,21 +127,22 @@ def RunVersat(testName,testFolder,versatExtra):
    result = None
    try:
       result = sp.run(args,capture_output=True,timeout=10) # Maybe a bit low for merge based tests, eventually add timeout 'option' to the test itself
+   except TimeoutExpired as t:
+      return Error(ErrorType.TIMEOUT,ErrorSource.VERSAT),[]      
    except Exception as e:
       print(f"Except on calling Versat:{e}") # This should not happen
-      return VersatResult(True,[])
+      return Error(ErrorType.EXCEPT,ErrorSource.VERSAT),[]
 
    returnCode = result.returncode
-   #errorOutput = codecs.getdecoder("unicode_escape")(result.stderr)[0]
    output = codecs.getdecoder("unicode_escape")(result.stdout)[0]
 
    if(returnCode != 0):
-      return VersatResult(True,[])
+      return Error(ErrorType.PROGRAM_ERROR,ErrorSource.VERSAT),[]
 
    filePathList = FindAndParseFilepathList(output)
 
    # Parse result.
-   return VersatResult(False,filePathList)
+   return Error(),filePathList
 
 # TODO: Put this in an actual temp folder
 def TempDir(testName):
@@ -162,67 +154,60 @@ def ComputeFilesTokenSizeAndHash(files):
    result = None
    try:
       result = sp.run(args,capture_output=True,timeout=5)
+   except TimeoutExpired as t:
+      return Error(ErrorType.TIMEOUT,ErrorSource.HASHER),-1,-1
    except Exception as e:
       print(f"Except on ComputeHash:{e}")
-      return -1,-1
+      return Error(ErrorType.EXCEPT,ErrorSource.HASHER),-1,-1
 
    returnCode = result.returncode
    output = codecs.getdecoder("unicode_escape")(result.stdout)[0]
-   #errorOutput = codecs.getdecoder("unicode_escape")(result.stderr)[0]
+   errorOutput = codecs.getdecoder("unicode_escape")(result.stderr)[0]
 
    if(returnCode == 0):
       amountOfTokens,hashVal = [int(x) for x in output.split(":")]
 
-      return (amountOfTokens,hashVal)
+      return Error(),amountOfTokens,hashVal
    else:
-      return -1,-1
+      return Error(ErrorType.PROGRAM_ERROR,ErrorSource.HASHER),-1,-1
 
 # Probably do not want to use makefile, but for now...
 def RunMakefile(target,testName):
    result = None
    try:
-      args = ["make",target,f"TEST={testName}"]
+      command = " ".join(["make",target,f"TEST={testName}"])
 
-      command = f"make clean pc-emul-run TEST={testName}"
       result = sp.run(command,capture_output=True,shell=True,timeout=60) # 60
-   # TODO: Add proper error propragation information so we know we time outted.
-   #except subprocess.TimeoutExpired as t:
-   #   return -1,""
+   except TimeoutExpired as t:
+      return Error(ErrorType.TIMEOUT,ErrorSource.MAKEFILE) 
    except Exception as e:
       print(f"Except on calling makefile:{e}")
-      return -1,""
+      return Error(ErrorType.EXCEPT,ErrorSource.MAKEFILE)
 
    returnCode = result.returncode
    errorOutput = codecs.getdecoder("utf-8")(result.stderr)[0]
-   #output = codecs.getdecoder("utf-8")(result.stdout)[0]
 
-   return returnCode,errorOutput
+   return Error()
 
 # Need to not only do the test but also get the list of the files generated from versat in order to perform the comparation
 def PerformTest(test,stage):
+   # This function was previously taking the output from the makefile and checking the files using the hasher.
+   # This was done because there might be changes from the sim-run and the pc-emul files (stuff like 32bit vs 64 bit addresses and stuff like that)
+   # (Although must of the changes right now are "abstracted" inside the verilator makefile, so the hardware is the same (or should be the same))
+   # Regardless. If we eventually start making pc-emul and sim-run different, we need to start calculating the hash for each type (pc-emul vs sim-run)
+   # Only handle this case when we need it.
+
    if stage == Stage.PC_EMUL:
-      returnCode,output = RunMakefile("pc-emul-run",test)
+      error = RunMakefile("pc-emul-run",test)
 
-      if(returnCode != 0):
-         return returnCode,0,0
-
-      filepathList = FindAndParseFilepathList(output)
-      tokens,hashVal = ComputeFilesTokenSizeAndHash(filepathList)
-
-      return returnCode,tokens,hashVal
+      return error
    if stage == Stage.SIM_RUN:
-      returnCode,output = RunMakefile("sim-run",test)
+      error = RunMakefile("sim-run",test)
 
-      if(returnCode != 0):
-         return returnCode,0,0
-
-      filepathList = FindAndParseFilepathList(output)
-      tokens,hashVal = ComputeFilesTokenSizeAndHash(filepathList)
-
-      return returnCode,tokens,hashVal
+      return error
    if stage == Stage.FPGA_RUN:
       # Not implemented yet, 
-      return 0,0,0
+      return Error()
 
    print(f"Error, PerformTest called with: {stage}. Fix this")
 
@@ -236,21 +221,13 @@ class ThreadWork:
    test: dict
    index: int
    cached: bool = False
-   error: bool = False
-   versatFailed: bool = False
+   error: Error = Error()
    tokens: int = 0
    hashVal: int = 0
    workStage: WorkState = WorkState.INITIAL
    stageToProcess: Stage = Stage.PC_EMUL
    lastStageReached: Stage = Stage.NOT_WORKING
    
-def GetOrDefault(d,name,default):
-   if name in d:
-      return d[name]
-   else:
-      d[name] = default
-      return default
-
 def GetTestFinalStage(test):
    try:
       content = test['finalStage']
@@ -258,14 +235,6 @@ def GetTestFinalStage(test):
       return Stage[splitted[0]]
    except:
       return DefaultStage()
-
-def AdvanceOneTest(test):
-   index = test.index
-   test = testWithIndex[1]
-   name = test['name']
-
-   stage = Stage[test.get('stage',DefaultStage().name)]
-   finalStage = GetTestFinalStage(test)
 
 def PrintResult(result,firstColumnSize):
    def GeneratePad(word,amount,padding = '.'):
@@ -278,8 +247,7 @@ def PrintResult(result,firstColumnSize):
    stage = result.lastStageReached
 
    testName = name
-   isError = result.error
-   versatFail = "VERSAT_FAIL"
+   isError = IsError(result.error)
    failing = "FAIL"
    partial = f"PARTIAL"
    partialVal = ""
@@ -290,7 +258,7 @@ def PrintResult(result,firstColumnSize):
    condition = ok
 
    color = COLOR_GREEN
-   if(finalStage == Stage.DISABLED):
+   if(IsStageDisabled(finalStage)):
       condition = disabled
       color = COLOR_YELLOW
       isError = False
@@ -305,59 +273,15 @@ def PrintResult(result,firstColumnSize):
    if(isError):
       color = COLOR_RED
       partialVal = ""
-      condition = versatFail
+      condition = f"{result.error.error.name}:{result.error.source.name}"
 
    firstPad = GeneratePad(testName,firstColumnSize)
    secondPad = GeneratePad(condition,1)
    print(f"{testName}{firstPad}{secondPad}{color}{condition}{COLOR_BASE}{partialVal}{cached}")
 
-# This does everything. We want to do stuff as we go along.
-def ProcessOneTest(testWithIndex):
-   index = testWithIndex[0]
-   test = testWithIndex[1]
+def CppLocation(test):
    name = test['name']
-
-   stage = Stage[test.get('stage',DefaultStage().name)]
-   finalStage = GetTestFinalStage(test)
-
-   if(SIMULATE):
-      return OneTest(test,index,random.choice([True,False]),random.choice(list(Stage)),random.choice([True,False]))
-
-   if(finalStage == Stage.DISABLED):
-      return OneTest(test,index,False,stage,True)
-
-   testTempDir = TempDir(name)
-
-   versatResult = RunVersat(name,testTempDir,testInfoJson["default_args"])
-   if(versatResult.error):
-      return OneTest(test,index,False,stage,True)
-
-   tokenAmount,hashVal = ComputeFilesTokenSizeAndHash(versatResult.filepaths)
-
-   testTokens = test.get('tokens',0)
-   testHashVal = test.get('hash',0)
-
-   if(tokenAmount == testTokens and hashVal == testHashVal):
-      return OneTest(test,index,True,stage,False,testTokens,testHashVal)
-
-   previousReachedStage = stage
-   testLastStage = finalStage
-   lastStageReached = DefaultStage()
-
-   tokens = 0
-   hashVal = 0
-
-   for stageNumber in range(Stage.PC_EMUL.val,testLastStage.value + 1):
-      stage = Stage(stageNumber)
-      returnCode,tokens,hashVal = PerformTest(test['name'],stage)
-      passed = (returnCode == 0)
-
-      if(passed):
-         lastStageReached = stage
-      else:
-         break
-
-   return OneTest(test,index,False,lastStageReached,False,tokens,hashVal)
+   return f"./software/src/Tests/{name}.cpp"   
 
 def ProcessWork(work):
    test = work.test
@@ -366,21 +290,25 @@ def ProcessWork(work):
    finalStage = GetTestFinalStage(test)
 
    if(work.workStage == WorkState.INITIAL):
-      if(finalStage == Stage.DISABLED):
-         work.workStage = WorkState.FINISH
-         work.lastStageReached = finalStage
-         return work
+      assert not IsStageDisabled(finalStage)
 
       testTempDir = TempDir(name)
 
-      versatResult = RunVersat(name,testTempDir,testInfoJson["default_args"])
-      if(versatResult.error):
-         work.error = True
+      versatError,filepaths = RunVersat(name,testTempDir,testInfoJson["default_args"])
+      if(IsError(versatError)):
+         work.error = versatError
          work.versatFailed = True
          work.workStage = WorkState.FINISH
          return work
 
-      tokenAmount,hashVal = ComputeFilesTokenSizeAndHash(versatResult.filepaths)
+      sourceLocation = CppLocation(test)
+      filepathsToHash = filepaths + [sourceLocation]
+      hashError,tokenAmount,hashVal = ComputeFilesTokenSizeAndHash(filepathsToHash)
+      if(IsError(hashError)):
+         work.error = hashError
+         work.errorSource = ErrorSource.HASHER
+         return work
+
       testTokens = test.get('tokens',0)
       testHashVal = test.get('hash',0)
 
@@ -397,9 +325,9 @@ def ProcessWork(work):
       work.stageToProcess = Stage.PC_EMUL
       return work
    elif(work.workStage == WorkState.PROCESS):
-      stage = Stage(work.stageToProcess)
-      returnCode,tokens,hashVal = PerformTest(test['name'],stage)
-      passed = (returnCode == 0)
+      stage = work.stageToProcess
+      error = PerformTest(test['name'],stage)
+      passed = (not IsError(error))
 
       if(passed):
          work.lastStageReached = stage
@@ -409,21 +337,80 @@ def ProcessWork(work):
          else:
             work.stageToProcess = Stage(work.stageToProcess.value + 1)
       else:
-         work.error = True
+         work.error = error
 
       return work
 
 def ThreadMain(workQueue,resultQueue,index):
-   while(True):
-      work = workQueue.get()
-      
-      if(work == "Exit"):
-         break
+   try:
+      while(True):
+         work = workQueue.get()
+         
+         if(work == "Exit"):
+            break
+         else:
+            result = ProcessWork(work)
+            resultQueue.put(result)
+            workQueue.task_done()
+
+   except Exception as e:
+      print(f"Exception reached ThreadMain:")
+      traceback.print_exception(e)
+
+def RunTests(testInfoJson):
+   amountOfThreads = 8
+   amountOfTests = len(testInfoJson['tests'])
+
+   workQueue = queue.Queue()
+   resultQueue = queue.Queue()
+   threadList = [threading.Thread(target=ThreadMain,args=[workQueue,resultQueue,x],daemon=True) for x in range(amountOfThreads)]
+   for thread in threadList:
+      thread.start()
+
+   maxNameLength = max([len(test['name']) for test in testInfoJson['tests']]) + 1
+
+   amountOfWork = 0
+   for index,test in enumerate(testInfoJson['tests']):
+      work = ThreadWork(test,index)
+
+      finalStage = GetTestFinalStage(test)
+      if(IsStageDisabled(finalStage)):
+         PrintResult(work,maxNameLength)
+         continue
+
+      amountOfWork += 1
+      workQueue.put(work)
+
+   resultList = []
+
+   # Block until all threads finish processing 
+   #workQueue.join()
+
+   while(amountOfWork > 0):
+      try:
+         result = resultQueue.get(True,1)
+      except queue.Empty as e:
+         time.sleep(1)
+         continue
+
+      amountOfWork -= 1
+
+      if(IsError(result.error) or result.workStage == WorkState.FINISH):
+         PrintResult(result,maxNameLength)
+
+         resultList.append(result)
       else:
-         #print(work)
-         result = ProcessWork(work)
-         #print(result)
-         resultQueue.put(result)
+         amountOfWork += 1
+         workQueue.put(result)
+
+   # For now, we do not wait for threads to exit. We just keep them waiting for work forever
+   #for x in range(amountOfThreads):
+   #   workQueue.put("Exit")
+
+   #for thread in threadList:
+   #   thread.join() 
+
+   return resultList
 
 if __name__ == "__main__":
    testInfoJson = None
@@ -468,60 +455,36 @@ if __name__ == "__main__":
 
    print("Gonna start running tests")
 
-   # TODO: Pool waits until everything completes before producing output. Not a big fan.
-   #       Rewrite to a work module that produces output as soon as possible.
-   #       The writting of the json can be the last thing done, just the output to the terminal is the thing that needs to occur fast
-   testResults = None
+   resultList = None
+   if(command == "run" or command == "run-only" or command == "disable-failed"):
+      resultList = RunTests(testInfoJson)
 
-   # Threads seem as fast as processes, maybe if we add more python logic this changes but for now keep threads. Processes was leaving some processes hanging, threads seem fine
-   #with multiprocessing.Pool(16) as p:
+      if(command == 'run'):
+         for result in resultList:
+            if(not IsError(result.error) and not SIMULATE):
+               testInfoJson['tests'][result.index]['tokens'] = result.tokens
+               testInfoJson['tests'][result.index]['hash'] = result.hashVal
+               testInfoJson['tests'][result.index]['stage'] = result.lastStageReached.name
 
-   amountOfThreads = 8
+   if(command == "reenable"):
+      for index,test in enumerate(testInfoJson['tests']):
+         finalStage = test['finalStage']
+         splitted = finalStage.split(" ")
+         if(splitted[0] == "TEMP_DISABLED"):
+            trueStage = splitted[2].split(":")[1]
+            testInfoJson['tests'][index]['finalStage'] = trueStage
 
-   workQueue = queue.Queue()
-   resultQueue = queue.Queue()
-   threadList = [threading.Thread(target=ThreadMain,args=[workQueue,resultQueue,x],daemon=True) for x in range(amountOfThreads)]
-   for thread in threadList:
-      thread.start()
+   if(command == "disable-failed"):
+      doUpdate = True
+      for result in resultList:
+         if(IsError(result.error)):
+            finalStage = GetTestFinalStage(result.test)
+            testInfoJson['tests'][result.index]['finalStage'] = f"TEMP_DISABLED - WAS:{finalStage.name}"
 
-   amountOfWork = 0
-   for index,test in enumerate(testInfoJson['tests']):
-      work = ThreadWork(test,index)
+   #sys.exit()
 
-      amountOfWork += 1
-      workQueue.put(work)
-
-   maxNameLength = max([len(test['name']) for test in testInfoJson['tests']]) + 1
-
-   while(amountOfWork > 0):
-      result = resultQueue.get()
-
-      #sys.exit()
-
-      amountOfWork -= 1
-      if(result.workStage == WorkState.FINISH):
-         PrintResult(result,maxNameLength)
-
-         if(not result.error and not SIMULATE):
-            testInfoJson['tests'][result.index]['tokens'] = result.tokens
-            testInfoJson['tests'][result.index]['hash'] = result.hashVal
-            testInfoJson['tests'][result.index]['stage'] = result.lastStageReached.name
-
-      else:
-         amountOfWork += 1
-         workQueue.put(result)
-
-   # Since we are exitting soon, we could skip this, but for now lets see if we can catch some bugs this way
-   for x in range(amountOfThreads):
-      workQueue.put("Exit")
-
-   for thread in threadList:
-      thread.join() 
-
-   sys.exit()
-
-   if(SIMULATE):
-      sys.exit(0)
+   #if(SIMULATE):
+   #   sys.exit(0)
 
    if doUpdate:
       with open(jsonfilePath,"w") as file:
