@@ -72,6 +72,9 @@ setup_pc:
 pc-emul-run:
 	+nix-shell --run 'make setup_pc && make -C ../$(CORE)_V0.70_$(TEST)/ pc-emul-run'
 
+no-nix-pc-emul-run:
+	make setup_pc && make -C ../$(CORE)_V0.70_$(TEST)/ pc-emul-run
+
 fpga-run:
 	nix-shell --run 'make clean setup INIT_MEM=$(INIT_MEM) USE_EXTMEM=$(USE_EXTMEM) && make -C ../$(CORE)_V0.70_$(TEST)/ fpga-fw-build BOARD=$(BOARD)'
 	make -C ../$(CORE)_V0.70_$(TEST)/ fpga-run BOARD=$(BOARD)
@@ -81,6 +84,9 @@ sim-build:
 
 sim-run:
 	+nix-shell --run 'make setup INIT_MEM=1 USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-run SIMULATOR=$(SIMULATOR) VCD=$(VCD)'
+
+no-nix-sim-run:
+	make setup INIT_MEM=1 USE_EXTMEM=$(USE_EXTMEM) TEST=$(TEST) && make -C ../$(CORE)_V0.70_$(TEST)/ sim-run SIMULATOR=$(SIMULATOR) VCD=$(VCD)
 
 fpga-run-only:
 	cp ./software/src/Tests/$(TEST).cpp ../$(CORE)_V0.70_$(TEST)/software/src/test.cpp
@@ -106,7 +112,16 @@ test-versat-only:
 	cd ./submodules/VERSAT ; $(MAKE) -j 8 versat
 	parallel ./scripts/versat-only.sh ::: $(TESTS)
 
-test-up-to-pc-emul:
+test-simulate:
+	python3 ./scripts/test.py simulate testInfo.json
+
+test-disable-failed:
+	$(FAST_COMPILE_VERSAT) && python3 ./scripts/test.py disable-failed testInfo.json
+
+test-reenable:
+	$(FAST_COMPILE_VERSAT) && python3 ./scripts/test.py reenable testInfo.json
+
+test-update:
 	$(FAST_COMPILE_VERSAT) && python3 ./scripts/test.py run testInfo.json
 
 test-no-update:
