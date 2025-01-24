@@ -129,7 +129,7 @@
     },
     {
       "name": "GoodCryptoAlgos",
-      "finalStage": "SIM_RUN",
+      "finalStage": "DISABLED",
       "tokens": 0,
       "hash": 0,
       "stage": "TEMP_DISABLED"
@@ -137,9 +137,9 @@
     {
       "name": "LookupTable",
       "finalStage": "SIM_RUN",
-      "tokens": 0,
-      "hash": 0,
-      "stage": "TEMP_DISABLED"
+      "tokens": 3996,
+      "hash": 12258420307142071322,
+      "stage": "SIM_RUN"
     },
     {
       "name": "SHA",
