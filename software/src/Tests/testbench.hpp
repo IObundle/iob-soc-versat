@@ -543,10 +543,12 @@ extern "C" int RunTest(int versatBase){
   bool error = differentIndexes || differentSizes || differentValues;
 
   if(!error){
+    printf("TEST_RESULT:TEST_PASSED\n");
     printf("OK (%d samples)\n",gotIndex);
     return TEST_PASSED;
   }
 
+  printf("TEST_RESULT:TEST_FAILED\n");
   printf("Error ");
   if(expectedArena.used == 0 || gotArena.used == 0){
     printf("(0 samples)\n");

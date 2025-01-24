@@ -73,6 +73,9 @@ versat-only:
 test-disable-failed:
 	$(FAST_COMPILE_VERSAT) && python3 ./scripts/test.py disable-failed testInfo.json
 
+test-disable-all:
+	python3 ./scripts/test.py disable-all testInfo.json
+
 test-reenable:
 	$(FAST_COMPILE_VERSAT) && python3 ./scripts/test.py reenable testInfo.json
 

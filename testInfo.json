@@ -4,205 +4,157 @@
     {
       "name": "M_Stage",
       "finalStage": "SIM_RUN",
-      "tokens": 5755,
-      "hash": 10023979697944981744,
+      "tokens": 5844,
+      "hash": 11243680383519437706,
       "stage": "SIM_RUN"
     },
     {
       "name": "F_Stage",
       "finalStage": "SIM_RUN",
-      "tokens": 12058,
-      "hash": 16461894100411358964,
+      "tokens": 12147,
+      "hash": 17537477260377659512,
       "stage": "SIM_RUN"
     },
     {
       "name": "MemToMem",
       "finalStage": "SIM_RUN",
-      "tokens": 10006,
-      "hash": 12968005236711187509,
+      "tokens": 10095,
+      "hash": 11881159782903293794,
       "stage": "SIM_RUN"
     },
     {
       "name": "VReadToVWrite",
       "finalStage": "SIM_RUN",
-      "tokens": 9075,
-      "hash": 10785710434159507855,
-      "stage": "SIM_RUN"
+      "tokens": 9190,
+      "hash": 3489619002587807934,
+      "stage": "PC_EMUL"
     },
     {
       "name": "VReadMultipleToVWriteMultiple",
       "finalStage": "SIM_RUN",
-      "tokens": 10214,
-      "hash": 7407394178229474654,
+      "tokens": 10329,
+      "hash": 14055539009775741761,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestShare",
       "finalStage": "SIM_RUN",
-      "tokens": 4252,
-      "hash": 9040922325260839259,
+      "tokens": 4341,
+      "hash": 7665699572525641276,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestStatic",
       "finalStage": "SIM_RUN",
-      "tokens": 3955,
-      "hash": 8466061117830936869,
+      "tokens": 4044,
+      "hash": 7091122581868640934,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestDelays",
       "finalStage": "SIM_RUN",
-      "tokens": 2667,
-      "hash": 10084081100492428329,
+      "tokens": 2756,
+      "hash": 11305193421559044031,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestDuty",
       "finalStage": "SIM_RUN",
-      "tokens": 6370,
-      "hash": 4894902589049108254,
+      "tokens": 6459,
+      "hash": 6123743384862569646,
       "stage": "SIM_RUN"
     },
     {
       "name": "AddRoundKey",
       "finalStage": "SIM_RUN",
-      "tokens": 18323,
-      "hash": 865233202433845009,
+      "tokens": 18412,
+      "hash": 1951231623724950632,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMerge",
-      "finalStage": "SIM_RUN",
-      "tokens": 3707,
-      "hash": 11516825640104079421,
-      "stage": "SIM_RUN"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "TestMerge2",
-      "finalStage": "SIM_RUN",
-      "tokens": 8359,
-      "hash": 16326638475355287002,
-      "stage": "SIM_RUN"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "TestMergeInputs",
-      "finalStage": "SIM_RUN",
-      "tokens": 3500,
-      "hash": 2068399236746517893,
-      "stage": "SIM_RUN"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "TestMergeHasChild",
-      "finalStage": "SIM_RUN",
-      "tokens": 13568,
-      "hash": 6883330534231268198,
-      "stage": "SIM_RUN"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "SimpleExample",
       "finalStage": "SIM_RUN",
-      "tokens": 2692,
-      "hash": 14235463220894659260,
+      "tokens": 2781,
+      "hash": 15175795601554583789,
       "stage": "SIM_RUN"
     },
     {
       "name": "CryptoAlgos",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN",
-      "tokens": 0,
-      "hash": 0,
-      "stage": "TEMP_DISABLED"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "DMATest",
-      "finalStage": "DISABLED - Makefile is timeoutting",
-      "tokens": 0,
-      "hash": 0,
-      "stage": "DISABLED"
+      "finalStage": "DISABLED"
     },
     {
       "name": "FullAES",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN",
-      "tokens": 0,
-      "hash": 0,
-      "stage": "TEMP_DISABLED"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "GoodCryptoAlgos",
-      "finalStage": "DISABLED",
-      "tokens": 0,
-      "hash": 0,
-      "stage": "TEMP_DISABLED"
+      "finalStage": "DISABLED"
     },
     {
       "name": "LookupTable",
-      "finalStage": "SIM_RUN",
-      "tokens": 3996,
-      "hash": 12258420307142071322,
-      "stage": "SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "SHA",
-      "finalStage": "SIM_RUN",
-      "tokens": 17827,
-      "hash": 2800556507235761444,
-      "stage": "SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "SimpleShareConfig",
       "finalStage": "SIM_RUN",
-      "tokens": 4813,
-      "hash": 6136345247193505411,
+      "tokens": 4902,
+      "hash": 4773088467694590246,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestAddressGen",
-      "finalStage": "SIM_RUN",
-      "tokens": 8238,
-      "hash": 486888068698549337,
-      "stage": "SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "TestDoubleMerge",
-      "finalStage": "SIM_RUN",
-      "tokens": 0,
-      "hash": 0,
-      "stage": "TEMP_DISABLED"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "TestGenerator",
       "finalStage": "SIM_RUN",
-      "tokens": 8351,
-      "hash": 18042493762574780747,
+      "tokens": 8440,
+      "hash": 17110889854971955872,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeDelay",
-      "finalStage": "SIM_RUN",
-      "tokens": 0,
-      "hash": 0,
-      "stage": "TEMP_DISABLED"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "Variety1",
-      "finalStage": "SIM_RUN",
-      "tokens": 12298,
-      "hash": 10963818897376788187,
-      "stage": "SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "Variety2",
-      "finalStage": "SIM_RUN",
-      "tokens": 15695,
-      "hash": 7920061715964653287,
-      "stage": "SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "VectorLikeOperation",
-      "finalStage": "SIM_RUN",
-      "tokens": 14144,
-      "hash": 11931406457905586916,
-      "stage": "SIM_RUN"
+      "finalStage": "SIM_RUN"
     }
   ]
 }
