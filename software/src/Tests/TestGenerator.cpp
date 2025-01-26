@@ -30,7 +30,7 @@ void SingleTest(Arena* arena){
    accelConfig->gen.iterations2 = 2;
 #endif
 
-   RunAccelerator(1);
+   RunAccelerator(3);
 
    for(int i = 0; i < loopSize; i++){
       printf("%d,",VersatUnitRead(TOP_mem_addr,i));

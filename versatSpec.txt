@@ -204,9 +204,6 @@ module TestMergeDelay2(){
    mem{5} -> output;
 }
 
-// Currently disabled since the generated accelerator uses the same name for different ports
-// and the fpga tools complain even when these are not used as top modules
-
 merge TestMergeDelay = TestMergeDelay1 | TestMergeDelay2;
 
 module TestMergeLargeDelay1(){
@@ -2377,8 +2374,6 @@ module SimpleCGRA(){
    l3:0..3 -> loop:0..3;
 }
 
-// Some bug in which the Simple version delay is not matching the actual positions.
-// Maybe due to the way we implement the Simple version 
 module Variety1(x,y){
    VRead read;
    Mem mem;
@@ -2687,8 +2682,7 @@ module Test(){
 #
    }
 
-/*
-AddressGen Mem test(xMax,yMax,zMax,wMax,aMax)
+AddressGen Mem TestAddressGen(xMax,yMax,zMax,wMax,aMax)
    //for a 0..aMax
    for b 0..aMax
    for w 0..wMax
@@ -2696,6 +2690,8 @@ AddressGen Mem test(xMax,yMax,zMax,wMax,aMax)
    for y 0..yMax
    for x 0..xMax
    addr = y * yMax + x;
+
+/*
 
 AddressGen VReadLoad LoadFeatures(ext,xMax,fmSize,yMax)
    for y 0..yMax

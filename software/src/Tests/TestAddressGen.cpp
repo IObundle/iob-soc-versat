@@ -1,3 +1,4 @@
+#define ADDRESS_GEN_TestAddressGen
 #include "testbench.hpp"
 
 void SingleTest(Arena* arena){
@@ -7,8 +8,8 @@ void SingleTest(Arena* arena){
    int wMax = 2;
    int aMax = 2;
 
-   Configure(&accelConfig->gen,xMax,yMax,zMax,wMax,aMax);
-   int loopSize = LoopSize(0,xMax,yMax,zMax,wMax,aMax);
+   Configure_TestAddressGen(&accelConfig->gen,xMax,yMax,zMax,wMax,aMax);
+   int loopSize = LoopSize_TestAddressGen(0,xMax,yMax,zMax,wMax,aMax);
 
    ConfigureMemoryReceive(&accelConfig->output,loopSize);
 

@@ -4,94 +4,106 @@
     {
       "name": "M_Stage",
       "finalStage": "SIM_RUN",
-      "tokens": 5844,
-      "hash": 11243680383519437706,
+      "tokens": 10336,
+      "hash": 12013791534137710729,
       "stage": "SIM_RUN"
     },
     {
       "name": "F_Stage",
       "finalStage": "SIM_RUN",
-      "tokens": 12147,
-      "hash": 17537477260377659512,
+      "tokens": 18671,
+      "hash": 16627647656640090112,
       "stage": "SIM_RUN"
     },
     {
       "name": "MemToMem",
       "finalStage": "SIM_RUN",
-      "tokens": 10095,
-      "hash": 11881159782903293794,
+      "tokens": 21182,
+      "hash": 17667364297641495812,
       "stage": "SIM_RUN"
     },
     {
       "name": "VReadToVWrite",
       "finalStage": "SIM_RUN",
-      "tokens": 9190,
-      "hash": 3489619002587807934,
+      "tokens": 18220,
+      "hash": 17284938619077411080,
       "stage": "PC_EMUL"
     },
     {
       "name": "VReadMultipleToVWriteMultiple",
       "finalStage": "SIM_RUN",
-      "tokens": 10329,
-      "hash": 14055539009775741761,
+      "tokens": 20187,
+      "hash": 16024399713666660352,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestShare",
       "finalStage": "SIM_RUN",
-      "tokens": 4341,
-      "hash": 7665699572525641276,
+      "tokens": 8941,
+      "hash": 17200009736685703338,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestStatic",
       "finalStage": "SIM_RUN",
-      "tokens": 4044,
-      "hash": 7091122581868640934,
+      "tokens": 8108,
+      "hash": 9852563080719776790,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestDelays",
       "finalStage": "SIM_RUN",
-      "tokens": 2756,
-      "hash": 11305193421559044031,
+      "tokens": 6560,
+      "hash": 7113319947529164647,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestDuty",
       "finalStage": "SIM_RUN",
-      "tokens": 6459,
-      "hash": 6123743384862569646,
+      "tokens": 14071,
+      "hash": 1467947055252528509,
       "stage": "SIM_RUN"
     },
     {
       "name": "AddRoundKey",
       "finalStage": "SIM_RUN",
-      "tokens": 18412,
-      "hash": 1951231623724950632,
+      "tokens": 29056,
+      "hash": 4906832221537202860,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMerge",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 8121,
+      "hash": 13732824778707987680,
+      "stage": "SIM_RUN"
     },
     {
       "name": "TestMerge2",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 16902,
+      "hash": 7327342809536149625,
+      "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeInputs",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 7850,
+      "hash": 12016260357847720191,
+      "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeHasChild",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 26997,
+      "hash": 15728768568663306820,
+      "stage": "SIM_RUN"
     },
     {
       "name": "SimpleExample",
       "finalStage": "SIM_RUN",
-      "tokens": 2781,
-      "hash": 15175795601554583789,
+      "tokens": 6709,
+      "hash": 7133753889143431315,
       "stage": "SIM_RUN"
     },
     {
@@ -112,7 +124,10 @@
     },
     {
       "name": "LookupTable",
-      "finalStage": "SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 7294,
+      "hash": 3807747609480335598,
+      "stage": "SIM_RUN"
     },
     {
       "name": "SHA",
@@ -121,40 +136,49 @@
     {
       "name": "SimpleShareConfig",
       "finalStage": "SIM_RUN",
-      "tokens": 4902,
-      "hash": 4773088467694590246,
+      "tokens": 9646,
+      "hash": 14244369005287858771,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestAddressGen",
-      "finalStage": "SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 17418,
+      "hash": 10704269389081740741,
+      "stage": "SIM_RUN"
     },
     {
       "name": "TestDoubleMerge",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "TestGenerator",
       "finalStage": "SIM_RUN",
-      "tokens": 8440,
-      "hash": 17110889854971955872,
+      "tokens": 17528,
+      "hash": 4701573157782795077,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeDelay",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "PC_EMUL",
+      "comment": "The test does nothing, so far, we only care if this compiles",
+      "tokens": 16234,
+      "hash": 5450830815779108026,
+      "stage": "PC_EMUL"
     },
     {
       "name": "Variety1",
-      "finalStage": "SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 23349,
+      "hash": 10095502580060447719,
+      "stage": "SIM_RUN"
     },
     {
       "name": "Variety2",
-      "finalStage": "SIM_RUN"
-    },
-    {
-      "name": "VectorLikeOperation",
-      "finalStage": "SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 29336,
+      "hash": 18425837180114967034,
+      "stage": "SIM_RUN"
     }
   ]
 }

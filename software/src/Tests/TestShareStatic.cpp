@@ -9,7 +9,7 @@ void SingleTest(Arena* arena){
    ACCEL_TestShareStaticChild_shareChild_x_0_constant = 5;
    ACCEL_TestShareStaticChild_shareChild_y_0_constant = 6;
 
-   RunAccelerator(1);
+   RunAccelerator(3);
 
    // Probably printing because we never figure out how static and share should actually interact when together.
    // TODO: See to it

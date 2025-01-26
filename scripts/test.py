@@ -13,15 +13,6 @@ from enum import Enum,auto
 
 SIMULATE = False
 
-# How to start making this better.
-# There should exist an enum for Test progress. Test progress should be the thing saved in testInfo.json
-# If we check cache and it is correct, then we take the test progress from the testInfo.json
-# Otherwise we progress through the steps.
-# We then save the last step reached without an error to the json.
-# This should simplify the rest of the code and should have been the approach from the beginning.
-# We still keep the workQueue and resultQueue. We just streamline the test to just be state machine like.
-# Timeout errors should not be saved. 
-
 ##############
 # TODO: Add a brief description here of what we are doing
 # Bunch of stuff that was supposed to be on Json, but since it does not support comments, put it here.
@@ -29,6 +20,7 @@ SIMULATE = False
 ##############
 
 # TODO:
+# The code is a bit complex for no good reason. Maybe simplify a bit if have time. Seems to work fine though
 # Refactor commands if adding more commands. Maybe add argparse and work from there.
 # Save the text/output of the tests that fail. The stdout from running the tests and stuff
 # Add some commands to the tool that allow us to force stuff, like forcing the tokens/hash of a bad test case and stuff like that.
@@ -237,7 +229,6 @@ def PerformTest(test,stage):
 
    if stage == Stage.PC_EMUL:
       error,output = RunMakefile("clean pc-emul-run",test)
-
       SaveOutput(test,"pc-emul",output)
 
       if(IsError(error)):
