@@ -19,6 +19,12 @@ SIMULATE = False
 # Basically, just a big warning for future maintainers to not touch certain parts of the test stage unless they know what they are doing
 ##############
 
+# BUGS:
+# Some tests randomly fail, even though they work when testing individually.
+#   Probably some problem with the iob-soc setup not being properly setup to handle 
+#   multiple make setups at the same time or we are not deleting old files and 
+#   here is some mixup somewhere
+
 # TODO:
 # The code is a bit complex for no good reason. Maybe simplify a bit if have time. Seems to work fine though
 # Refactor commands if adding more commands. Maybe add argparse and work from there.

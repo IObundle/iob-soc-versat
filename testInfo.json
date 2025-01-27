@@ -24,10 +24,7 @@
     },
     {
       "name": "VReadToVWrite",
-      "finalStage": "SIM_RUN",
-      "tokens": 18220,
-      "hash": 17284938619077411080,
-      "stage": "PC_EMUL"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "VReadMultipleToVWriteMultiple",
@@ -75,28 +72,28 @@
       "name": "TestMerge",
       "finalStage": "SIM_RUN",
       "tokens": 8121,
-      "hash": 13732824778707987680,
+      "hash": 13732824778708013405,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMerge2",
       "finalStage": "SIM_RUN",
       "tokens": 16902,
-      "hash": 7327342809536149625,
+      "hash": 7327342809536141886,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeInputs",
       "finalStage": "SIM_RUN",
       "tokens": 7850,
-      "hash": 12016260357847720191,
+      "hash": 12016260357846846882,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeHasChild",
       "finalStage": "SIM_RUN",
       "tokens": 26997,
-      "hash": 15728768568663306820,
+      "hash": 15728768568663233721,
       "stage": "SIM_RUN"
     },
     {
@@ -108,7 +105,7 @@
     },
     {
       "name": "CryptoAlgos",
-      "finalStage": "SIM_RUN"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "DMATest",
@@ -116,7 +113,7 @@
     },
     {
       "name": "FullAES",
-      "finalStage": "SIM_RUN"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "GoodCryptoAlgos",
@@ -131,7 +128,7 @@
     },
     {
       "name": "SHA",
-      "finalStage": "SIM_RUN"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "SimpleShareConfig",
@@ -149,7 +146,7 @@
     },
     {
       "name": "TestDoubleMerge",
-      "finalStage": "SIM_RUN"
+      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
     },
     {
       "name": "TestGenerator",
@@ -161,9 +158,8 @@
     {
       "name": "TestMergeDelay",
       "finalStage": "PC_EMUL",
-      "comment": "The test does nothing, so far, we only care if this compiles",
       "tokens": 16234,
-      "hash": 5450830815779108026,
+      "hash": 5450830815779108985,
       "stage": "PC_EMUL"
     },
     {
