@@ -4,108 +4,111 @@
     {
       "name": "M_Stage",
       "finalStage": "SIM_RUN",
-      "tokens": 10336,
-      "hash": 12013791534137710729,
+      "tokens": 10193,
+      "hash": 4282541465651011565,
       "stage": "SIM_RUN"
     },
     {
       "name": "F_Stage",
       "finalStage": "SIM_RUN",
-      "tokens": 18671,
-      "hash": 16627647656640090112,
+      "tokens": 18359,
+      "hash": 2214166881107628412,
       "stage": "SIM_RUN"
     },
     {
       "name": "MemToMem",
       "finalStage": "SIM_RUN",
-      "tokens": 21182,
-      "hash": 17667364297641495812,
+      "tokens": 20480,
+      "hash": 15094153654448659014,
       "stage": "SIM_RUN"
     },
     {
       "name": "VReadToVWrite",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 17726,
+      "hash": 14289840505789818496,
+      "stage": "PC_EMUL"
     },
     {
       "name": "VReadMultipleToVWriteMultiple",
       "finalStage": "SIM_RUN",
-      "tokens": 20187,
-      "hash": 16024399713666660352,
+      "tokens": 19589,
+      "hash": 9840189720142255406,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestShare",
       "finalStage": "SIM_RUN",
-      "tokens": 8941,
-      "hash": 17200009736685703338,
+      "tokens": 8785,
+      "hash": 17200929701225868458,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestStatic",
       "finalStage": "SIM_RUN",
-      "tokens": 8108,
-      "hash": 9852563080719776790,
+      "tokens": 8043,
+      "hash": 3027597901866011146,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestDelays",
       "finalStage": "SIM_RUN",
-      "tokens": 6560,
-      "hash": 7113319947529164647,
+      "tokens": 6534,
+      "hash": 13613750323482238053,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestDuty",
       "finalStage": "SIM_RUN",
-      "tokens": 14071,
-      "hash": 1467947055252528509,
+      "tokens": 13694,
+      "hash": 10026362567286933279,
       "stage": "SIM_RUN"
     },
     {
       "name": "AddRoundKey",
       "finalStage": "SIM_RUN",
-      "tokens": 29056,
-      "hash": 4906832221537202860,
+      "tokens": 28432,
+      "hash": 4907517662289261044,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMerge",
       "finalStage": "SIM_RUN",
-      "tokens": 8121,
-      "hash": 13732824778708013405,
+      "tokens": 8072,
+      "hash": 9788251941677509456,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMerge2",
       "finalStage": "SIM_RUN",
-      "tokens": 16902,
-      "hash": 7327342809536141886,
+      "tokens": 16483,
+      "hash": 16453726909049246533,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeInputs",
       "finalStage": "SIM_RUN",
-      "tokens": 7850,
-      "hash": 12016260357846846882,
+      "tokens": 7804,
+      "hash": 16141513048980807626,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeHasChild",
       "finalStage": "SIM_RUN",
-      "tokens": 26997,
-      "hash": 15728768568663233721,
+      "tokens": 26144,
+      "hash": 5515436243617995307,
       "stage": "SIM_RUN"
     },
     {
       "name": "SimpleExample",
       "finalStage": "SIM_RUN",
-      "tokens": 6709,
-      "hash": 7133753889143431315,
+      "tokens": 6670,
+      "hash": 16271038008831168077,
       "stage": "SIM_RUN"
     },
     {
       "name": "CryptoAlgos",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "DMATest",
@@ -113,7 +116,7 @@
     },
     {
       "name": "FullAES",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "GoodCryptoAlgos",
@@ -122,58 +125,61 @@
     {
       "name": "LookupTable",
       "finalStage": "SIM_RUN",
-      "tokens": 7294,
-      "hash": 3807747609480335598,
+      "tokens": 7242,
+      "hash": 3807769445581428690,
       "stage": "SIM_RUN"
     },
     {
       "name": "SHA",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN"
     },
     {
       "name": "SimpleShareConfig",
       "finalStage": "SIM_RUN",
-      "tokens": 9646,
-      "hash": 14244369005287858771,
+      "tokens": 9542,
+      "hash": 14244564545840744291,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestAddressGen",
       "finalStage": "SIM_RUN",
-      "tokens": 17418,
-      "hash": 10704269389081740741,
+      "tokens": 16885,
+      "hash": 10607078661982730049,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestDoubleMerge",
-      "finalStage": "TEMP_DISABLED - WAS:SIM_RUN"
+      "finalStage": "SIM_RUN",
+      "tokens": 30898,
+      "hash": 10828506738487764593,
+      "stage": "SIM_RUN"
     },
     {
       "name": "TestGenerator",
       "finalStage": "SIM_RUN",
-      "tokens": 17528,
-      "hash": 4701573157782795077,
+      "tokens": 16995,
+      "hash": 12031923670051608053,
       "stage": "SIM_RUN"
     },
     {
       "name": "TestMergeDelay",
       "finalStage": "PC_EMUL",
-      "tokens": 16234,
-      "hash": 5450830815779108985,
+      "tokens": 15860,
+      "hash": 10523432475721761334,
       "stage": "PC_EMUL"
     },
     {
       "name": "Variety1",
       "finalStage": "SIM_RUN",
-      "tokens": 23349,
-      "hash": 10095502580060447719,
+      "tokens": 22686,
+      "hash": 6359973890811580791,
       "stage": "SIM_RUN"
     },
     {
       "name": "Variety2",
       "finalStage": "SIM_RUN",
-      "tokens": 29336,
-      "hash": 18425837180114967034,
+      "tokens": 28461,
+      "hash": 11614073856527260766,
       "stage": "SIM_RUN"
     }
   ]

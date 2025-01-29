@@ -245,8 +245,10 @@ def PerformTest(test,stage):
          return Error()
       else:
          return Error(ErrorType.TEST_FAILED,ErrorSource.PC_EMUL)
-   if stage == Stage.SIM_RUN:
-      error,output = RunMakefile("clean sim-run",test,240)
+   if stage == Stage.SIM_RUN: 
+      # Adding clean to the sim-run rule was provoking some weird race condition,
+      # even though the pc-emul-run command should have finished by then
+      error,output = RunMakefile("sim-run",test,240)
       SaveOutput(test,"sim-run",output)
 
       if(IsError(error)):

@@ -13,9 +13,9 @@ void SingleTest(Arena* arena){
    int memory = 2;
    int* output = (int*) malloc(sizeof(int));
 
-   ACCEL_TOP_input_0_constant = 5;
-   ACCEL_TOP_input_1_constant = 4;
-   ACCEL_TOP_input_2_constant = 3;
+   accelConfig->input_0.constant = 5;
+   accelConfig->input_1.constant = 4;
+   accelConfig->input_2.constant = 3;
    ConfigureVariety2(&accelConfig->simple,output,&memory);
 
    RunAccelerator(3);

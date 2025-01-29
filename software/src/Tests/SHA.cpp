@@ -24,7 +24,7 @@ static void store_bigendian_32(uint8_t *x, uint32_t u) {
 
 static size_t versat_crypto_hashblocks_sha256(const uint8_t *in, size_t inlen) {
    while (inlen >= 64) {
-      ACCEL_TOP_MemRead_ext_addr = (iptr) in;
+      accelConfig->MemRead.ext_addr = (iptr) in;
 
       // Loads data + performs work
       RunAccelerator(1);
@@ -133,7 +133,7 @@ void InitVersatSHA(){
       VersatUnitWrite(TOP_cMem3_mem_addr,ii,kConstants[3][ii]);
    }
 
-   ACCEL_TOP_Swap_enabled = 1;
+   accelConfig->Swap.enabled = 1;
 }
 
 void SingleTest(Arena* arena){
