@@ -32,8 +32,8 @@
     {
       "name": "EXAMPLE_SHA",
       "finalStage": "SIM_RUN",
-      "tokens": 26950,
-      "hash": 45199027258879482,
+      "tokens": 27294,
+      "hash": 45205916686822086,
       "stage": "SIM_RUN"
     },
     {
@@ -92,6 +92,13 @@
       "finalStage": "SIM_RUN",
       "tokens": 6506,
       "hash": 13789387839272312388,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "DELAYS_Variable",
+      "finalStage": "SIM_RUN",
+      "tokens": 6548,
+      "hash": 10447205858965714115,
       "stage": "SIM_RUN"
     },
     {

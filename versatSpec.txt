@@ -109,6 +109,15 @@ module CONFIG_ShareStatic(){
    {testShare[0]:0..2,testShare[1]:0..2,testStatic[0]:0..1,testStatic[1]:0..1} -> outputs[0..9];
 }
 
+module DELAYS_Variable(){
+   Const constant;
+   Buffer buf;
+   Reg output;
+#
+   constant -> buf;
+   buf -> output;
+}
+
 module DELAYS_AddedDelays(){
    Counter gen;
    Reg output;
