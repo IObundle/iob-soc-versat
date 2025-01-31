@@ -1,8 +1,8 @@
 #include "testbench.hpp"
 
 void SingleTest(Arena* arena){
-   TestDoubleMerge_SimpleConfig* config = (TestDoubleMerge_SimpleConfig*) accelConfig;
-   TestDoubleMerge_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
+   MERGE_TwoLevels_SimpleConfig* config = (MERGE_TwoLevels_SimpleConfig*) accelConfig;
+   MERGE_TwoLevels_SimpleAddr addr = ACCELERATOR_TOP_ADDR_INIT;
 
    ActivateMergedAccelerator(MergeType_TestDoubleMerge0_TestDoubleMerge00);
 

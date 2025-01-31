@@ -25,7 +25,5 @@ void SingleTest(Arena* arena){
 
   for(int i = 0; i < 22; i++){
     Assert_Eq(expectedOutput[i],outputBuffer[i]);
-    //printf("%d ",outputBuffer[i]);
   }
-  //printf("\n");
 }

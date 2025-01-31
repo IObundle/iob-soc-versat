@@ -423,10 +423,12 @@ static void Assert_Eq(const char* str1,const char* str2,const char* marker = "")
 }
 
 // ClearCache is very important otherwise sim-run might read past values
-static void ClearCache(){
+// Just pass a pointer that has enough size so that this function runs fine.
+// No writes are perform so any memory buffer is good enough
+static void ClearCache(void* ptr){
 #ifndef PC
-  int size = 1024 * 32;
-  char* m = (char*) malloc(size); // Should not use malloc but some random fixed ptr in embedded. No use calling malloc since we can always read at any point in memory without worrying about memory protection.
+  int size = 1024 * 64;
+  char* m = (char*) ptr; // Should not use malloc but some random fixed ptr in embedded. No use calling malloc since we can always read at any point in memory without worrying about memory protection.
 
   // volatile and asm are used to make sure that gcc does not optimize away this loop that appears to do nothing
   volatile int val = 0;
@@ -434,7 +436,6 @@ static void ClearCache(){
     val += m[i];
     __asm__ volatile("" : "+g" (val) : :);
   }
-  free(m);
 #endif
 }
 

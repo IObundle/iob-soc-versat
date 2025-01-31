@@ -111,7 +111,7 @@ void InitVersatSHA(){
       return;
    }
 
-   ConfigureSimpleVRead(&((SHAConfig*) accelConfig)->MemRead,16,nullptr);
+   ConfigureSimpleVRead(&((EXAMPLE_SHAConfig*) accelConfig)->MemRead,16,nullptr);
 
    ACCEL_Constants_mem_iterA = 1;
    ACCEL_Constants_mem_incrA = 1;

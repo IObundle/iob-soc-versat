@@ -1,6 +1,6 @@
 #include "testbench.hpp"
 
-void ConfigureVariety1(volatile Variety1Config* config,int* memory){
+void ConfigureVariety1(volatile EXAMPLE_Variety1Config* config,int* memory){
    ConfigureSimpleVRead(&config->read,1,memory);
 
    ConfigureSimpleMemory(&config->mem,1,0);
@@ -9,7 +9,6 @@ void ConfigureVariety1(volatile Variety1Config* config,int* memory){
    config->constant.constant = 1;
 }
 
-#ifndef UNIT_VARIETY_1
 void SingleTest(Arena* arena){
    int memory = 3;
 
@@ -22,4 +21,3 @@ void SingleTest(Arena* arena){
 
    Assert_Eq(15,accelState->TOP_output_0_currentValue);
 }
-#endif

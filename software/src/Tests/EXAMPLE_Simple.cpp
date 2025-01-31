@@ -6,7 +6,5 @@ void SingleTest(Arena* arena){
 
    RunAccelerator(3);
 
-   printf("Result: %d\n",accelState->TOP_result_currentValue);
-
    Assert_Eq(15,accelState->TOP_result_currentValue);
 }

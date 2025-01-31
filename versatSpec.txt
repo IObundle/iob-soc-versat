@@ -1,4 +1,4 @@
-module SimpleExample(){
+module EXAMPLE_Simple(){
   Const a;
   Const b;
   Reg result;
@@ -48,7 +48,7 @@ module TestStaticChild1() -> 3{
    {child:0..1,inside} -> out:0..2;
 }
 
-module TestStatic(){
+module CONFIG_SimpleStatic(){
    static Const inside[2]; // inside[0] and inside[1] should be different static instances. Changing one should not affect the other.
    TestStaticChild1 child[2]; // child[0] and child[1] should only differ in the third output.
    Reg output;
@@ -73,7 +73,7 @@ module TestShareChild() -> 2{
    {a,b} -> out:0..1;
 }
 
-module TestShare(){
+module CONFIG_SimpleShare(){
    share config TestShareChild{
       childs[2];
    }
@@ -99,7 +99,7 @@ module TestShareStaticChild() -> 2{
    shareChild:0..1 -> out:0..1;
 }
 
-module TestShareStatic(){
+module CONFIG_ShareStatic(){
    share config TestStaticChild1 {
       testShare[2]; // Should only share the Const inside
    }
@@ -109,22 +109,13 @@ module TestShareStatic(){
    {testShare[0]:0..2,testShare[1]:0..2,testStatic[0]:0..1,testStatic[1]:0..1} -> outputs[0..9];
 }
 
-module TestDelays(){
+module DELAYS_AddedDelays(){
    Counter gen;
    Reg output;
 #
    a = gen{1} + gen{2} + gen{3} + gen{4} + gen{5};
 
    a -> output;
-}
-
-module TestDuty(){
-   Const c;
-   Accum accum;
-   Mem m;
-#
-   c -> accum;
-   accum -> m;
 }
 
 module TestMergeChild1(){
@@ -145,7 +136,7 @@ module TestMergeChild2(){
    x -> output;
 }
 
-merge TestMerge = TestMergeChild1:w | TestMergeChild2:z{
+merge MERGE_Simple = TestMergeChild1:w | TestMergeChild2:z{
    w.x - z.a;
    w.y - z.b;
    w.output - z.output;
@@ -160,8 +151,6 @@ module TestMergeWithBlankChild1(){
    a -> output2;
 }
 
-merge TestMerge2 = TestMergeWithBlankChild1 | TestMergeChild1;
-
 module TestMergeInputs1(x,y){
 #
    a = x + y;
@@ -174,19 +163,17 @@ module TestMergeInputs2(a,b){
    x -> out;
 }
 
-merge TestMergeInputs = TestMergeInputs1 | TestMergeInputs2;
+merge MERGE_Inputs = TestMergeInputs1 | TestMergeInputs2;
 
-// merge TestTwoMerge = TestMerge2 | TestMergeInputs;
-
-module TestMergeHasChild(){
-   TestMerge2 m[2];
+module MERGE_SameTypeChildren(){
+   MERGE_TwoLevels m[2];
 #
 }
 
 module TestHasMultipleMerged(){
-   TestMerge child0;          // TestMergeChild1 or TestMergeChild2
-   TestMerge2 child1;         // TestMergeWithBlankChild1 or TestMergeChild1
-   TestMergeHasChild child2;  // TestMergeWithBlankChild1_TestMergeWithBlankChild1 or TestMergeChild1_TestMergeWithBlankChild1 or TestMergeWithBlankChild1_TestMergeChild1 or TestMergeChild1_TestMergeChild1
+   MERGE_Simple child0;
+   MERGE_TwoLevels child1;
+   MERGE_SameTypeChildren child2;
 #
 }
 
@@ -204,7 +191,7 @@ module TestMergeDelay2(){
    mem{5} -> output;
 }
 
-merge TestMergeDelay = TestMergeDelay1 | TestMergeDelay2;
+merge MERGE_Delays = TestMergeDelay1 | TestMergeDelay2;
 
 module TestMergeLargeDelay1(){
    Const x;
@@ -261,7 +248,7 @@ module TestDoubleMerge11(){
 merge TestDoubleMerge0 = TestDoubleMerge00 | TestDoubleMerge01;
 merge TestDoubleMerge1 = TestDoubleMerge10 | TestDoubleMerge11;
 
-merge TestDoubleMerge = TestDoubleMerge0 | TestDoubleMerge1;
+merge MERGE_TwoLevels = TestDoubleMerge0 | TestDoubleMerge1;
 
 module TestMergeStruct(){
    TestDoubleMerge0 d0;
@@ -280,21 +267,21 @@ module TestMergeAfterStruct2(){
    
 }
 
-module VReadToVWrite(){
+module DATABUS_SimpleTransfer(){
    VRead #(.AXI_ADDR_W(AXI_ADDR_W),.ADDR_W(20)) read;
    VWrite #(.AXI_ADDR_W(AXI_ADDR_W)) write;
 #
    read -> write;
 }
 
-module VReadMultipleToVWriteMultiple(){
+module DATABUS_MultipleTransfers(){
    VReadMultiple #(.AXI_ADDR_W(AXI_ADDR_W),.ADDR_W(20)) read;
    VWriteMultiple #(.AXI_ADDR_W(AXI_ADDR_W)) write;
 #
    read -> write;
 }
 
-module MemToMem(){
+module MEM_SimpleTransfer(){
    Mem start;
    Mem end;
 #
@@ -365,24 +352,6 @@ module StaticMuladd(x,y){
    mul -> out;
 }
 
-module SimpleShareConfig(){
-   share config Const {
-      a1;
-      a2;
-   }
-   share config Const{
-      b1;
-      b2;
-   }
-#
-   a = a1 + a2;
-   b = b1 + b2;
-   c = a1 + b1;
-   d = a2 + b2;
-
-   {a,b,c,d} -> out:0..3;
-}
-
 module StaticConst(){
    static Const var;
 #
@@ -401,6 +370,24 @@ module ComplexStatic(){
    SimpleStatic s1;
 #
    s1 -> out;
+}
+
+module SimpleShareConfig(){
+   share config Const {
+      a1;
+      a2;
+   }
+   share config Const{
+      b1;
+      b2;
+   }
+#
+   a = a1 + a2;
+   b = b1 + b2;
+   c = a1 + b1;
+   d = a2 + b2;
+
+   {a,b,c,d} -> out:0..3;
 }
 
 module ComplexShareConfig(){ // 6 config, 1 static - flatten should have 5 configs
@@ -581,6 +568,20 @@ module Comb_M_Stage(w0,w14,w9,w1){
   
    res = sigma:0 + w0 + sigma:1 + w9;
    res -> out;
+}
+
+module EXAMPLE_M_Stage(w0,w14,w9,w1){
+   Comb_M_Stage comb;
+   PipelineRegister r;
+#
+   w0 -> comb:0;
+   w14 -> comb:1;
+   w9 -> comb:2;
+   w1 -> comb:3;
+
+   comb -> r;
+
+   r -> out;
 }
 
 module M_Stage(w0,w14,w9,w1){
@@ -796,6 +797,17 @@ module Comb_F_Stage (a,b,c,d,e,f,g,h,k,w){
    g  -> out:7;
 }
 
+module EXAMPLE_F_Stage(a,b,c,d,e,f,g,h,k,w){
+   Comb_F_Stage f_stage;
+   PipelineRegister d[8];
+#
+   {a,b,c,d,e,f,g,h,k,w} -> f_stage:0..9;
+
+   f_stage:0..7 -> d[0..7];
+
+   d[0..7] -> out:0..7;
+}
+
 module F_Stage(a,b,c,d,e,f,g,h,k,w){
    Comb_F_Stage f_stage;
    PipelineRegister d[8];
@@ -907,6 +919,14 @@ module ShaSingleState(in){
    reg -> out;
 }
 
+module GRAPH_SimpleLoop(in){
+   Reg reg;
+#
+   a = reg + in;
+   a -> reg;
+   reg -> out;
+}
+
 // Simple grouping of state so it appears better on the graphs
 module ShaState(x[8]){
    ShaSingleState s[8];
@@ -921,7 +941,7 @@ module Constants(){
    mem -> out:0;
 }
 
-module SHA(){
+module EXAMPLE_SHA(){
    VRead MemRead;
    SwapEndian Swap;
    xunitF F0;
@@ -1057,6 +1077,28 @@ module InvMixColumns(x[16]){
    d[1]:0..3 -> {out:4,out:5,out:6,out:7};
    d[2]:0..3 -> {out:8,out:9,out:10,out:11};
    d[3]:0..3 -> {out:12,out:13,out:14,out:15};
+}
+
+module EXAMPLE_AddRoundKey(x[16],y[16]){
+#
+   a[0] = x[0] ^ y[0];
+   a[1] = x[1] ^ y[1];
+   a[2] = x[2] ^ y[2];
+   a[3] = x[3] ^ y[3];
+   a[4] = x[4] ^ y[4];
+   a[5] = x[5] ^ y[5];
+   a[6] = x[6] ^ y[6];
+   a[7] = x[7] ^ y[7];
+   a[8] = x[8] ^ y[8];
+   a[9] = x[9] ^ y[9];
+   a[10] = x[10] ^ y[10];
+   a[11] = x[11] ^ y[11];
+   a[12] = x[12] ^ y[12];
+   a[13] = x[13] ^ y[13];
+   a[14] = x[14] ^ y[14];
+   a[15] = x[15] ^ y[15];
+
+   a[0..15] -> out:0..15;
 }
 
 module AddRoundKey(x[16],y[16]){
@@ -1239,7 +1281,16 @@ module FixedAverage(){
    average -> output;
 }
 
-module TestGenerator(){
+module UNIT_LookupTable(){
+   Const input[2];
+   Reg output[2];
+   LookupTable table;
+#
+   input[0..1] -> table:0..1;
+   table:0..1 -> output[0..1];
+}
+
+module UNIT_Generator(){
    Generator3 gen;
    Mem mem;
 #
@@ -2374,7 +2425,7 @@ module SimpleCGRA(){
    l3:0..3 -> loop:0..3;
 }
 
-module Variety1(x,y){
+module EXAMPLE_Variety1(x,y){
    VRead read;
    Mem mem;
    Const constant;
@@ -2386,12 +2437,12 @@ module Variety1(x,y){
    c -> out;
 }
 
-module Variety2(x,y,z){
-   VRead read; // Same name as variety1
-   Mem memButDiffName;
+module EXAMPLE_Variety2(x,y,z){
+   VRead read;
+   Mem mem;
    VWrite write;
 #
-   total = x + y + z + read + memButDiffName;
+   total = x + y + z + read + mem;
    total -> write;
 }
 
@@ -2671,7 +2722,7 @@ AddressGen VReadOutput OutputWeights(id,trueX,sizeX,nMacs,inputChannels,outputCh
    for k 0..9
    addr = start + id * 9 * nMacs + outC * 9 * nMacs + k;
 
-module TestAddressGen(){
+module ADDRESS_GEN_Simple(){
    Generator3 gen;
    Mem output;
 #

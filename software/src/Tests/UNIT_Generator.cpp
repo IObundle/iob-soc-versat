@@ -17,19 +17,6 @@ void SingleTest(Arena* arena){
 
    Configure(&accelConfig->gen,10);
 
-#if 0
-   accelConfig->gen.duty = ~0;
-   accelConfig->gen.start = 0;
-   accelConfig->gen.incr = 1;
-   accelConfig->gen.period = 3;
-   accelConfig->gen.shift = 8;
-   accelConfig->gen.iterations = 3;
-   accelConfig->gen.incr2 = 1;
-   accelConfig->gen.period2 = 2;
-   accelConfig->gen.shift2 = 9;
-   accelConfig->gen.iterations2 = 2;
-#endif
-
    RunAccelerator(3);
 
    for(int i = 0; i < loopSize; i++){

@@ -7,8 +7,8 @@ void SingleTest(Arena* arena){
    iptr indexA = 0;
    iptr indexB = 4;
 
-   VersatUnitWrite(TOP_simple_addr,addrA,0xf0);
-   VersatUnitWrite(TOP_simple_addr,addrB,0xf4);
+   VersatUnitWrite(TOP_table_addr,addrA,0xf0);
+   VersatUnitWrite(TOP_table_addr,addrB,0xf4);
 
    accelConfig->input_0.constant = indexA;
    accelConfig->input_1.constant = indexB;

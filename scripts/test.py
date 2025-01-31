@@ -140,7 +140,9 @@ def RunVersat(testName,testFolder,versatExtra):
    try:
       result = sp.run(args,capture_output=True,timeout=10) # Maybe a bit low for merge based tests, eventually add timeout 'option' to the test itself
    except sp.TimeoutExpired as t:
-      return Error(ErrorType.TIMEOUT,ErrorSource.VERSAT),[],""
+      output = "" if t.stdout == None else codecs.getdecoder("utf-8")(t.stdout)[0]
+      errorOutput = "" if t.stderr == None else codecs.getdecoder("utf-8")(t.stderr)[0]
+      return Error(ErrorType.TIMEOUT,ErrorSource.VERSAT),[],output + errorOutput
    except Exception as e:
       print(f"Except on calling Versat:{e}") # This should not happen
       return Error(ErrorType.EXCEPT,ErrorSource.VERSAT),[],""
@@ -193,7 +195,10 @@ def RunMakefile(target,testName,timeout=60):
 
       result = sp.run(command,capture_output=True,shell=True,timeout=timeout) # 60
    except sp.TimeoutExpired as t:
-      return Error(ErrorType.TIMEOUT,ErrorSource.MAKEFILE),""
+      output = "" if t.stdout == None else codecs.getdecoder("utf-8")(t.stdout)[0]
+      errorOutput = "" if t.stdout == None else codecs.getdecoder("utf-8")(t.stderr)[0]
+
+      return Error(ErrorType.TIMEOUT,ErrorSource.MAKEFILE),output + errorOutput
    except Exception as e:
       print(f"Except on calling makefile:{e}")
       return Error(ErrorType.EXCEPT,ErrorSource.MAKEFILE),""
@@ -246,8 +251,11 @@ def PerformTest(test,stage):
       else:
          return Error(ErrorType.TEST_FAILED,ErrorSource.PC_EMUL)
    if stage == Stage.SIM_RUN: 
-      # Adding clean to the sim-run rule was provoking some weird race condition,
-      # even though the pc-emul-run command should have finished by then
+      # Something weird happens if we clean and sim-run in same makefile call
+      # Since this test already takes a well, adding a few sleeps does not change much
+      time.sleep(1)
+      error,output = RunMakefile("clean",test,10)
+      time.sleep(1)
       error,output = RunMakefile("sim-run",test,240)
       SaveOutput(test,"sim-run",output)
 
@@ -293,6 +301,10 @@ def GetTestFinalStage(test):
    except:
       return DefaultStage()
 
+def HasComment(test):
+   res = "comment" in test
+   return res
+
 def PrintResult(result,firstColumnSize):
    def GeneratePad(word,amount,padding = '.'):
       return padding * (amount - len(word))
@@ -304,6 +316,7 @@ def PrintResult(result,firstColumnSize):
    stage = result.lastStageReached
 
    testName = name
+   comments = "[has comments]" if HasComment(test) else ""
    failing = "FAIL"
    partial = f"PARTIAL"
    partialVal = ""
@@ -344,7 +357,7 @@ def PrintResult(result,firstColumnSize):
 
    firstPad = GeneratePad(testName,firstColumnSize)
    secondPad = GeneratePad(condition,1)
-   print(f"{testName}{firstPad}{secondPad}{color}{condition}{COLOR_BASE}{partialVal}{cached}")
+   print(f"{testName}{firstPad}{secondPad}{color}{condition}{COLOR_BASE}{partialVal}{cached}{comments}")
 
 def CppLocation(test):
    name = test['name']
@@ -532,10 +545,17 @@ if __name__ == "__main__":
 
    if(command == "reset"):
       for i in range(0,len(testInfoJson['tests'])):
-         testInfoJson['tests'][i] = {
-            'name' : testInfoJson['tests'][i]['name'],
-            'finalStage' : testInfoJson['tests'][i].get('finalStage',DefaultStage().name)
-         }
+         if 'tokens' in testInfoJson['tests'][i]:
+            del testInfoJson['tests'][i]['tokens']
+         if 'hash' in testInfoJson['tests'][i]:
+            del testInfoJson['tests'][i]['hash']
+         if 'stage' in testInfoJson['tests'][i]:
+            del testInfoJson['tests'][i]['stage']
+
+         #testInfoJson['tests'][i] = {
+         #   'name' : testInfoJson['tests'][i]['name'],
+         #   'finalStage' : testInfoJson['tests'][i].get('finalStage',DefaultStage().name)
+         #}
 
       with open(jsonfilePath,"w") as file:
          json.dump(testInfoJson,file,cls=MyJsonEncoder,indent=2)
