@@ -26,7 +26,7 @@ ifeq ($(USE_EXTMEM),1)
 SETUP_ARGS += USE_EXTMEM
 endif
 
-TEST?=SimpleExample
+TEST?=EXAMPLE_Simple
 SETUP_ARGS+=TEST="$(TEST)"
 
 VERSAT_CALL := ./versat

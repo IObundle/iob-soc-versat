@@ -301,9 +301,9 @@ def GetTestFinalStage(test):
    except:
       return DefaultStage()
 
-def HasComment(test):
-   res = "comment" in test
-   return res
+def GetComment(test):
+   content = test['comment'] if "comment" in test else None
+   return content
 
 def PrintResult(result,firstColumnSize):
    def GeneratePad(word,amount,padding = '.'):
@@ -316,7 +316,8 @@ def PrintResult(result,firstColumnSize):
    stage = result.lastStageReached
 
    testName = name
-   comments = "[has comments]" if HasComment(test) else ""
+   actualComment = GetComment(test)
+   comments = f" - {actualComment}" if actualComment else ""
    failing = "FAIL"
    partial = f"PARTIAL"
    partialVal = ""

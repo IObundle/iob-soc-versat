@@ -82,9 +82,8 @@
     {
       "name": "CONFIG_ShareStatic",
       "finalStage": "SIM_RUN",
-      "comment": "This test does not contain a single assert. Still need to finish this",
-      "tokens": 12885,
-      "hash": 11207454507439647330,
+      "tokens": 12965,
+      "hash": 17825328910645938905,
       "stage": "SIM_RUN"
     },
     {
@@ -118,7 +117,7 @@
     {
       "name": "MERGE_SameTypeChildren",
       "finalStage": "SIM_RUN",
-      "comment": "The software does not actually do anything. Kinda Versat test, but eventually put something here",
+      "comment": "Nothing tested in software. Mainly to see if Versat works and produces valid Verilog",
       "tokens": 47421,
       "hash": 13306990690692948480,
       "stage": "SIM_RUN"
@@ -154,9 +153,8 @@
     {
       "name": "MERGE_Delays",
       "finalStage": "PC_EMUL",
-      "comment": "The software does not actually do anything. Kinda Versat test, but eventually put something here",
-      "tokens": 15832,
-      "hash": 6416001383682307398,
+      "tokens": 15888,
+      "hash": 3914349877994203102,
       "stage": "PC_EMUL"
     },
     {
