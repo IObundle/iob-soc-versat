@@ -1,7 +1,5 @@
 First of all, I should have a single test for any thing.
 Any small thing should be one test.
 Any combination possible should be another.
-Tests should start by the most important thing that they test.
-Config_XXX should primarely test configs and stuff like that.
-Stuff like M_Stage and the likes could be part of an Example_XXX type of test.
-Some organization, please.
+Need merge tests for 2,3,4 types.
+Need complex merge tests for 2,3,4 types.
