@@ -1,0 +1,5 @@
+First of all, I should have a single test for any thing.
+Any small thing should be one test.
+Any combination possible should be another.
+Need merge tests for 2,3,4 types.
+Need complex merge tests for 2,3,4 types.

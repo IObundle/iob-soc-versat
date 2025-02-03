@@ -75,7 +75,7 @@ class iob_soc_versat(iob_soc):
             GetTestName(),
             VERSAT_EXTRA_UNITS,
             GetBuildDir("iob_soc_versat"),
-            os.path.realpath(cls.setup_dir + "../debug/"),
+            os.path.realpath(os.path.join(cls.setup_dir,"../debug/")),
         )
 
         super()._create_submodules_list(
@@ -125,11 +125,6 @@ class iob_soc_versat(iob_soc):
             f"{cls.build_dir}/software/src/",
         )
 
-        shutil.copy(
-            f"{cls.build_dir}/software/src/Tests/simpleTest.hpp",
-            f"{cls.build_dir}/software/src/",
-        )
-
         shutil.copytree(
             f"{cls.setup_dir}/hardware/src/units",
             f"{cls.build_dir}/hardware/src",
@@ -163,6 +158,16 @@ class iob_soc_versat(iob_soc):
                     "min": "0",
                     "max": "1",
                     "descr": "Versat AXI implies External memory",
+                }
+            )
+            confs.append(
+                {
+                    "name": "AXI_DATA_W",
+                    "type": "P",
+                    "val": "32",
+                    "min": "0",
+                    "max": "32",
+                    "descr": "Versat AXI datapath size",
                 }
             )
 

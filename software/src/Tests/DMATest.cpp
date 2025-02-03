@@ -10,6 +10,7 @@ void SingleTest(Arena* arena){
       bufferToCopy[i] = i;
    }
 
+   // This does not work in pc-emul.
    VersatMemoryCopy((void*) TOP_mem_addr,bufferToCopy,sizeof(int) * SIZE);
    VersatMemoryCopy(outputBuffer,(void*) TOP_mem_addr,sizeof(int) * SIZE);
 

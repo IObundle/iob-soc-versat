@@ -1,0 +1,192 @@
+{
+  "default_args": "-s -b32 -d -u /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src/units -I /home/z/AA/Versat/iob-soc-versat/submodules/VERSAT/hardware/src -u /home/z/AA/Versat/iob-soc-versat/hardware/src/units -x64",
+  "tests": [
+    {
+      "name": "EXAMPLE_M_Stage",
+      "finalStage": "SIM_RUN",
+      "tokens": 10193,
+      "hash": 5155393194433634626,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "EXAMPLE_F_Stage",
+      "finalStage": "SIM_RUN",
+      "tokens": 18359,
+      "hash": 13025545292436603046,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "EXAMPLE_AddRoundKey",
+      "finalStage": "SIM_RUN",
+      "tokens": 28432,
+      "hash": 4701984001132886315,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "EXAMPLE_Simple",
+      "finalStage": "SIM_RUN",
+      "tokens": 6631,
+      "hash": 15816035691106978846,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "EXAMPLE_SHA",
+      "finalStage": "SIM_RUN",
+      "tokens": 27294,
+      "hash": 45205916686822086,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "EXAMPLE_Variety1",
+      "finalStage": "SIM_RUN",
+      "tokens": 22681,
+      "hash": 7553190625041449487,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "MEM_SimpleTransfer",
+      "finalStage": "SIM_RUN",
+      "tokens": 20452,
+      "hash": 16981614239005698810,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "DATABUS_SimpleTransfer",
+      "finalStage": "SIM_RUN",
+      "coment": "This test could do more, by testing for unaligned transfers as well. We also need to test different AXI widths",
+      "tokens": 17584,
+      "hash": 3011609002727691931,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "DATABUS_MultipleTransfers",
+      "finalStage": "SIM_RUN",
+      "tokens": 19561,
+      "hash": 13949616180534814522,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "CONFIG_SimpleShare",
+      "finalStage": "SIM_RUN",
+      "tokens": 8757,
+      "hash": 11070717201778339956,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "CONFIG_SimpleStatic",
+      "finalStage": "SIM_RUN",
+      "tokens": 8015,
+      "hash": 9158436395632333893,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "CONFIG_ShareStatic",
+      "finalStage": "SIM_RUN",
+      "tokens": 12965,
+      "hash": 17825328910645938905,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "DELAYS_AddedDelays",
+      "finalStage": "SIM_RUN",
+      "tokens": 6506,
+      "hash": 13789387839272312388,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "DELAYS_Variable",
+      "finalStage": "SIM_RUN",
+      "tokens": 6548,
+      "hash": 10447205858965714115,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "MERGE_Simple",
+      "finalStage": "SIM_RUN",
+      "tokens": 8044,
+      "hash": 15137823296079025159,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "MERGE_Inputs",
+      "finalStage": "SIM_RUN",
+      "tokens": 7804,
+      "hash": 4194557135724236012,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "MERGE_SameTypeChildren",
+      "finalStage": "SIM_RUN",
+      "comment": "Nothing tested in software. Mainly to see if Versat works and produces valid Verilog",
+      "tokens": 47421,
+      "hash": 13306990690692948480,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "UNIT_LookupTable",
+      "finalStage": "SIM_RUN",
+      "tokens": 8385,
+      "hash": 7479019619694011210,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "ADDRESS_GEN_Simple",
+      "finalStage": "SIM_RUN",
+      "tokens": 16857,
+      "hash": 7919997026785407329,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "MERGE_TwoLevels",
+      "finalStage": "SIM_RUN",
+      "tokens": 30898,
+      "hash": 8593060926002228692,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "UNIT_Generator",
+      "finalStage": "SIM_RUN",
+      "tokens": 16891,
+      "hash": 14117707971787260280,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "MERGE_Delays",
+      "finalStage": "PC_EMUL",
+      "tokens": 15888,
+      "hash": 3914349877994203102,
+      "stage": "PC_EMUL"
+    },
+    {
+      "name": "EXAMPLE_Variety2",
+      "finalStage": "SIM_RUN",
+      "tokens": 28456,
+      "hash": 1017915124791282152,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "GRAPH_SimpleLoop",
+      "finalStage": "SIM_RUN",
+      "tokens": 7417,
+      "hash": 5246058923845423434,
+      "stage": "SIM_RUN"
+    },
+    {
+      "name": "CryptoAlgos",
+      "finalStage": "DISABLED"
+    },
+    {
+      "name": "DMATest",
+      "finalStage": "DISABLED",
+      "comment": "Current test should work in sim-run but will not work in pc-emul. Needs a proper look at"
+    },
+    {
+      "name": "FullAES",
+      "finalStage": "DISABLED"
+    },
+    {
+      "name": "GoodCryptoAlgos",
+      "finalStage": "DISABLED"
+    }
+  ]
+}

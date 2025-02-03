@@ -1,4 +1,4 @@
-module SimpleExample(){
+module EXAMPLE_Simple(){
   Const a;
   Const b;
   Reg result;
@@ -48,7 +48,7 @@ module TestStaticChild1() -> 3{
    {child:0..1,inside} -> out:0..2;
 }
 
-module TestStatic(){
+module CONFIG_SimpleStatic(){
    static Const inside[2]; // inside[0] and inside[1] should be different static instances. Changing one should not affect the other.
    TestStaticChild1 child[2]; // child[0] and child[1] should only differ in the third output.
    Reg output;
@@ -73,7 +73,7 @@ module TestShareChild() -> 2{
    {a,b} -> out:0..1;
 }
 
-module TestShare(){
+module CONFIG_SimpleShare(){
    share config TestShareChild{
       childs[2];
    }
@@ -84,13 +84,22 @@ module TestShare(){
    childs[1]:0..1 -> outputs[2..3];
 }
 
+module TestPartialShare(){
+   share config VRead(~ext_addr){
+      units[2];
+   }
+   Reg outputs[2];
+#
+   units[0..1] -> outputs[0..1];
+}
+
 module TestShareStaticChild() -> 2{
    static TestShareChild shareChild;
 #
    shareChild:0..1 -> out:0..1;
 }
 
-module TestShareStatic(){
+module CONFIG_ShareStatic(){
    share config TestStaticChild1 {
       testShare[2]; // Should only share the Const inside
    }
@@ -100,7 +109,16 @@ module TestShareStatic(){
    {testShare[0]:0..2,testShare[1]:0..2,testStatic[0]:0..1,testStatic[1]:0..1} -> outputs[0..9];
 }
 
-module TestDelays(){
+module DELAYS_Variable(){
+   Const constant;
+   Buffer buf;
+   Reg output;
+#
+   constant -> buf;
+   buf -> output;
+}
+
+module DELAYS_AddedDelays(){
    Counter gen;
    Reg output;
 #
@@ -127,7 +145,7 @@ module TestMergeChild2(){
    x -> output;
 }
 
-merge TestMerge = TestMergeChild1:w | TestMergeChild2:z{
+merge MERGE_Simple = TestMergeChild1:w | TestMergeChild2:z{
    w.x - z.a;
    w.y - z.b;
    w.output - z.output;
@@ -142,8 +160,6 @@ module TestMergeWithBlankChild1(){
    a -> output2;
 }
 
-merge TestMerge2 = TestMergeWithBlankChild1 | TestMergeChild1;
-
 module TestMergeInputs1(x,y){
 #
    a = x + y;
@@ -156,19 +172,17 @@ module TestMergeInputs2(a,b){
    x -> out;
 }
 
-merge TestMergeInputs = TestMergeInputs1 | TestMergeInputs2;
+merge MERGE_Inputs = TestMergeInputs1 | TestMergeInputs2;
 
-// merge TestTwoMerge = TestMerge2 | TestMergeInputs;
-
-module TestMergeHasChild(){
-   TestMerge2 m[2];
+module MERGE_SameTypeChildren(){
+   MERGE_TwoLevels m[2];
 #
 }
 
 module TestHasMultipleMerged(){
-   TestMerge child0;          // TestMergeChild1 or TestMergeChild2
-   TestMerge2 child1;         // TestMergeWithBlankChild1 or TestMergeChild1
-   TestMergeHasChild child2;  // TestMergeWithBlankChild1_TestMergeWithBlankChild1 or TestMergeChild1_TestMergeWithBlankChild1 or TestMergeWithBlankChild1_TestMergeChild1 or TestMergeChild1_TestMergeChild1
+   MERGE_Simple child0;
+   MERGE_TwoLevels child1;
+   MERGE_SameTypeChildren child2;
 #
 }
 
@@ -186,11 +200,7 @@ module TestMergeDelay2(){
    mem{5} -> output;
 }
 
-/*
-// Currently disabled since the generated accelerator uses the same name for different ports
-// and the fpga tools complain even when these are not used as top modules
-
-merge TestMergeDelay = TestMergeDelay1 | TestMergeDelay2;
+merge MERGE_Delays = TestMergeDelay1 | TestMergeDelay2;
 
 module TestMergeLargeDelay1(){
    Const x;
@@ -211,7 +221,6 @@ module TestMergeLargeDelay2(){
 }
 
 merge TestMergeLargeDelay = TestMergeLargeDelay1 | TestMergeLargeDelay2;
-*/
 
 module TestDoubleMerge00(){
    Const x00;
@@ -248,9 +257,8 @@ module TestDoubleMerge11(){
 merge TestDoubleMerge0 = TestDoubleMerge00 | TestDoubleMerge01;
 merge TestDoubleMerge1 = TestDoubleMerge10 | TestDoubleMerge11;
 
-merge TestDoubleMerge = TestDoubleMerge0 | TestDoubleMerge1;
+merge MERGE_TwoLevels = TestDoubleMerge0 | TestDoubleMerge1;
 
-/*
 module TestMergeStruct(){
    TestDoubleMerge0 d0;
    Const c;
@@ -260,286 +268,34 @@ module TestMergeStruct(){
 }
 
 merge TestMergeAfterStruct = TestMergeStruct | TestDoubleMerge1;
-*/
 
-module FloatTest(x,y,z){
-   FloatAdd  add;
-   FloatSub  sub;
-   FloatMul  mul;
-   FloatDiv  div;
-   FloatMax  max;
-   FloatMin  min;
-   FloatSqrt sqrt;
-   Int2Float int2float;
-   Float2Int float2int;
+module TestMergeAfterStruct2(){
+   TestMergeAfterStruct t1;
+   TestMergeAfterStruct t2;
 #
-   {x,y} -> add:0..1;
-   {x,y} -> sub:0..1;
-   {x,y} -> mul:0..1;
-   {x,y} -> div:0..1;
-
-   {x,y} -> max:0..1;
-   {x,y} -> min:0..1;
-   x     -> sqrt:0;
-   z     -> int2float:0;
-   x     -> float2int:0;
-
-   {add,sub,mul,div,max,min,sqrt,int2float,float2int}       -> out:0..8;
+   
 }
 
-module TestDiffDelays(x,y,z){
-   FloatMul mul;
-   FloatMul mul2;
-#
-   {x,y} -> mul:0..1;
-
-   {mul,z} -> mul2:0..1;
-
-   mul2 -> out:0;
-   y -> out:1;
-}
-
-module VReadToVWrite(){
-   VRead #(.AXI_ADDR_W(AXI_ADDR_W)) read;
+module DATABUS_SimpleTransfer(){
+   VRead #(.AXI_ADDR_W(AXI_ADDR_W),.ADDR_W(20)) read;
    VWrite #(.AXI_ADDR_W(AXI_ADDR_W)) write;
 #
    read -> write;
 }
 
-module MemToMem(){
+module DATABUS_MultipleTransfers(){
+   VReadMultiple #(.AXI_ADDR_W(AXI_ADDR_W),.ADDR_W(20)) read;
+   VWriteMultiple #(.AXI_ADDR_W(AXI_ADDR_W)) write;
+#
+   read -> write;
+}
+
+module MEM_SimpleTransfer(){
    Mem start;
    Mem end;
 #
    start -> end;
 }
-
-module SMVMCPU(x,y){
-   SignalMulAdd mul;
-#
-   x -> mul:0;
-   y -> mul:1;
-
-   mul -> out;
-}
-
-module SMVMCOO(){
-   Generator gen;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-
-   mul    -> accum:0;
-   change -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
-}
-
-module SMVMCSR(){
-   Generator gen;
-   TimedFlag row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   //row -> change:0;
-   //row -> change:1;
-
-   mul    -> accum:0;
-   change -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
-}
-
-module SMVMBlock(){
-   Generator gen;
-   IncrementFlag flag;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) col;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) row;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) val;
-   LookupTableRead #(.AXI_ADDR_W(AXI_ADDR_W)) vector;
-   Mul mul;
-
-   ChangeDetect change;
-   SignalAccum accum;
-   SignalMemStorage output;
-   SignalMemStorage pos;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-   row -> flag;
-
-   mul    -> accum:0;
-   change -> accum:1;
-   //flag -> accum:1;
-
-   accum:0 -> output:0;
-   accum:1 -> output:1;
-   //flag -> output:1;
-
-   row  -> pos:0;
-   //change -> pos:1;
-   flag -> pos:1;
-}
-
-module SMVMBlock2(){
-   Generator gen;
-   IncrementFlag flag;
-   LookupTableRead col;
-   LookupTableRead row;
-   LookupTableRead val;
-   LookupTableRead vector;
-   FloatMul mul;
-
-   ChangeDetect #(.AMOUNT(0)) change;
-   ChangeDetect change2;
-   FloatAddAccum accum;
-   SignalMemStorage output;
-   SignalMemStorage pos;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-   row -> flag;
-
-   row -> change2:0;
-   row -> change2:1;
-
-   mul    -> accum:0;
-   change{-4} -> accum:1;
-
-   accum:0 -> output:0;
-   change2{3} -> output:1;
-
-   row  -> pos:0;
-   flag -> pos:1;
-}
-
-module SMVMBlock3(){
-   Generator gen;
-   IncrementFlag flag;
-   LookupTableRead col;
-   LookupTableRead row;
-   LookupTableRead val;
-   LookupTableRead vector;
-   FloatMul mul;
-
-   ChangeDetect #(.AMOUNT(0)) change;
-   ChangeDetect change2;
-   FloatAddAccum accum;
-   SignalMemWrite output;
-   //SignalMemStorage pos;
-   DoneCycle cycler;
-#
-   gen -> val;
-   gen -> col;
-   gen -> row;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   row -> change:0;
-   row -> change:1;
-   row -> flag;
-
-   row -> change2:0;
-   row -> change2:1;
-
-   mul    -> accum:0;
-   change{-4} -> accum:1;
-
-   accum:0 -> output:0;
-   change2{3} -> output:1;
-}
-
-module SMVMBlockUnit(){
-   TimedFlagRead #(.SIZE_W(16)) flag; // Row
-   LookupTableRead2 #(.SIZE_W(16)) col; // Col
-   LookupTableRead val; // Matrix val
-   LookupTableRead vector; 
-
-   Generator gen;
-   FloatMul mul;
-
-   MyFloatAccum accum;
-   DoneCycle cycler;
-
-   SignalMemWrite output;
-#
-   gen -> val;
-   gen -> col;
-   col -> vector;
-
-   val    -> mul:0;
-   vector -> mul:1;
-
-   gen{1} -> flag;
-
-   mul      -> accum:0;
-   flag{-2} -> accum:1;
-
-   accum:0 -> output:0;
-   flag    -> output:1;
-}
-
-module SMVMBlock(){
-   SMVMBlockUnit block0;
-   SMVMBlockUnit block1;
-   SMVMBlockUnit block2;
-   SMVMBlockUnit block3;
-#
-}
-
 
 module TripleAdd(x,y,z){
 #
@@ -605,24 +361,6 @@ module StaticMuladd(x,y){
    mul -> out;
 }
 
-module SimpleShareConfig(){
-   share config Const {
-      a1;
-      a2;
-   }
-   share config Const{
-      b1;
-      b2;
-   }
-#
-   a = a1 + a2;
-   b = b1 + b2;
-   c = a1 + b1;
-   d = a2 + b2;
-
-   {a,b,c,d} -> out:0..3;
-}
-
 module StaticConst(){
    static Const var;
 #
@@ -641,6 +379,24 @@ module ComplexStatic(){
    SimpleStatic s1;
 #
    s1 -> out;
+}
+
+module SimpleShareConfig(){
+   share config Const {
+      a1;
+      a2;
+   }
+   share config Const{
+      b1;
+      b2;
+   }
+#
+   a = a1 + a2;
+   b = b1 + b2;
+   c = a1 + b1;
+   d = a2 + b2;
+
+   {a,b,c,d} -> out:0..3;
 }
 
 module ComplexShareConfig(){ // 6 config, 1 static - flatten should have 5 configs
@@ -821,6 +577,20 @@ module Comb_M_Stage(w0,w14,w9,w1){
   
    res = sigma:0 + w0 + sigma:1 + w9;
    res -> out;
+}
+
+module EXAMPLE_M_Stage(w0,w14,w9,w1){
+   Comb_M_Stage comb;
+   PipelineRegister r;
+#
+   w0 -> comb:0;
+   w14 -> comb:1;
+   w9 -> comb:2;
+   w1 -> comb:3;
+
+   comb -> r;
+
+   r -> out;
 }
 
 module M_Stage(w0,w14,w9,w1){
@@ -1009,7 +779,7 @@ module T_Stage(a,b,c,e,f,g,h,k,w){
    t2 -> out:1;
 }
 
-module Comb_F_Stage(a,b,c,d,e,f,g,h,k,w){
+module Comb_F_Stage (a,b,c,d,e,f,g,h,k,w){
    static T_Stage t;
 #
    a -> t:0;
@@ -1034,6 +804,17 @@ module Comb_F_Stage(a,b,c,d,e,f,g,h,k,w){
    e  -> out:5;
    f  -> out:6;
    g  -> out:7;
+}
+
+module EXAMPLE_F_Stage(a,b,c,d,e,f,g,h,k,w){
+   Comb_F_Stage f_stage;
+   PipelineRegister d[8];
+#
+   {a,b,c,d,e,f,g,h,k,w} -> f_stage:0..9;
+
+   f_stage:0..7 -> d[0..7];
+
+   d[0..7] -> out:0..7;
 }
 
 module F_Stage(a,b,c,d,e,f,g,h,k,w){
@@ -1147,6 +928,14 @@ module ShaSingleState(in){
    reg -> out;
 }
 
+module GRAPH_SimpleLoop(in){
+   Reg reg;
+#
+   a = reg + in;
+   a -> reg;
+   reg -> out;
+}
+
 // Simple grouping of state so it appears better on the graphs
 module ShaState(x[8]){
    ShaSingleState s[8];
@@ -1161,7 +950,7 @@ module Constants(){
    mem -> out:0;
 }
 
-module SHA(){
+module EXAMPLE_SHA(){
    VRead MemRead;
    SwapEndian Swap;
    xunitF F0;
@@ -1299,6 +1088,28 @@ module InvMixColumns(x[16]){
    d[3]:0..3 -> {out:12,out:13,out:14,out:15};
 }
 
+module EXAMPLE_AddRoundKey(x[16],y[16]){
+#
+   a[0] = x[0] ^ y[0];
+   a[1] = x[1] ^ y[1];
+   a[2] = x[2] ^ y[2];
+   a[3] = x[3] ^ y[3];
+   a[4] = x[4] ^ y[4];
+   a[5] = x[5] ^ y[5];
+   a[6] = x[6] ^ y[6];
+   a[7] = x[7] ^ y[7];
+   a[8] = x[8] ^ y[8];
+   a[9] = x[9] ^ y[9];
+   a[10] = x[10] ^ y[10];
+   a[11] = x[11] ^ y[11];
+   a[12] = x[12] ^ y[12];
+   a[13] = x[13] ^ y[13];
+   a[14] = x[14] ^ y[14];
+   a[15] = x[15] ^ y[15];
+
+   a[0..15] -> out:0..15;
+}
+
 module AddRoundKey(x[16],y[16]){
 #
    a[0] = x[0] ^ y[0];
@@ -1393,15 +1204,6 @@ module KeySchedule(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,xa,xb,xc,xd,xe,xf,rcon){
    c3 -> out:15;
 }
 
-module FloatTest(x,y){
-   MyFloatAdd unit;   
-#
-   x -> unit:0;
-   y -> unit:1;
-
-   unit -> out;
-}
-
 module KeySchedule256(x[32],rcon){
    FirstLineKey s;
    FourthLineKey q;
@@ -1488,8 +1290,17 @@ module FixedAverage(){
    average -> output;
 }
 
-module TestGenerator(){
-   Generator gen;
+module UNIT_LookupTable(){
+   Const input[2];
+   Reg output[2];
+   LookupTable table;
+#
+   input[0..1] -> table:0..1;
+   table:0..1 -> output[0..1];
+}
+
+module UNIT_Generator(){
+   Generator3 gen;
    Mem mem;
 #
    gen -> mem;
@@ -1760,55 +1571,6 @@ module B(x,y){
    add -> out;
 }
 
-module TestFPUDiv(x,y){
-   FloatDiv div;
-#
-   x -> div:0;
-   y -> div:1;
-
-   div -> out;
-}
-
-module TestInstanceLatency(x,y){
-   IntSqrt test;// Test instance
-   Generator gen;
-   Reg reg;
-#
-   // Code that exercises test instance. Set versat_latency to high value, then use VCD to find out when instance is producing valid data
-   x -> test:0;
-   //y -> div:1;
-
-   test -> out;
-
-   // When test instance produces correct value, latency can be measured by looking at output of gen inside VCD file
-   gen -> reg; // gen is only connected to something to force it to output data
-}
-
-module TestSpecificMerge(){
-   Mem input;
-   Mem output;
-   FloatSqrt sqrt1;
-   FloatSqrt sqrt2;
-#
-   input -> sqrt1;
-   sqrt1 -> sqrt2;
-   sqrt2 -> output;
-}
-
-module ComplexCalculateDelay(){
-   VRead v;
-   Mem output;
-   Mem anotherOut;
-   FloatSqrt sqrt;
-#
-   a = v + sqrt;
-
-   v -> sqrt;
-
-   a -> output;
-   v -> anotherOut;
-}
-
 module TestConfigOrder(){
    Mem store;
    Const a1;
@@ -1831,50 +1593,6 @@ module VectorLikeOperation(){
 
    b -> mat;
    d -> writer;
-}
-
-module SimpleFFTCalc(even,odd){
-   FloatAdd adder;
-   FloatSub sub;
-#
-   even -> adder:0;
-   odd -> adder:1;
-
-   even -> sub:0;
-   odd -> sub:1;
-
-   adder -> out:0;
-   sub   -> out:1;
-}
-
-module FFTCalcIfPortion(real,img,rtwid,itwid){
-   FloatMul mul1;
-   FloatMul mul2;
-   FloatMul mul3;
-   FloatMul mul4;
-   FloatAdd adder;
-   FloatSub sub;
-#
-   rtwid -> mul1:0;
-   real -> mul1:1;
-
-   itwid -> mul2:0;
-   img -> mul2:1;
-
-   rtwid -> mul3:0;
-   img -> mul3:1;
-
-   img -> mul4:0;
-   real -> mul4:1;
-
-   mul1 -> sub:0;
-   mul2 -> sub:1;
-
-   mul3 -> adder:0;
-   mul4 -> adder:1;
-
-   sub -> out:0;
-   adder -> out:1;
 }
 
 module KeccakF1600(Aba,Abe,Abi,Abo,Abu,Aga,Age,Agi,Ago,Agu,Aka,Ake,Aki,Ako,Aku,Ama,Ame,Ami,Amo,Amu,Asa,Ase,Asi,Aso,Asu){
@@ -2716,9 +2434,7 @@ module SimpleCGRA(){
    l3:0..3 -> loop:0..3;
 }
 
-// Some bug in which the Simple version delay is not matching the actual positions.
-// Maybe due to the way we implement the Simple version 
-module Variety1(x,y){
+module EXAMPLE_Variety1(x,y){
    VRead read;
    Mem mem;
    Const constant;
@@ -2730,39 +2446,19 @@ module Variety1(x,y){
    c -> out;
 }
 
-module Variety2(x,y,z){
-   VRead read; // Same name as variety1
-   Mem memButDiffName;
+module EXAMPLE_Variety2(x,y,z){
+   VRead read;
+   Mem mem;
    VWrite write;
 #
-   total = x + y + z + read + memButDiffName;
+   total = x + y + z + read + mem;
    total -> write;
 }
-
-/*
-module ReadWriteAES256(){
-   VRead cypher;
-   VRead key;
-   VWrite results;
-   Merge m;
-   // Simple aes;
-   AES256WithIterative aes;
-#
-   cypher{0..15} -> aes:0..15;
-   key{0..31} -> aes:16..47;
-
-   aes:0..15 -> m:0..15;
-
-   m -> results;
-}
-*/
 
 module DMATest(){
    Mem mem;   
 #
 }
-
-// merge SHA_AES = SHA | ReadWriteAES256 | VectorLikeOperation;
 
 module Simple(x[16],k[32]){
 #
@@ -2990,113 +2686,93 @@ module CryptoAlgos(){
 #
 }
 
-//merge GoodCryptoAlgos = SHA | McEliece | FullAES;
+AddressGen VReadOutput OutputFeatures(sizeX,outputChannels,inputChannelsDividedByNumMacs,tileWidthWithInputChannels,inputChannels,startInputChannel,nMacs)
+   for pixelX 0..sizeX
+   for outC 0..outputChannels
+   for inC 0..inputChannelsDividedByNumMacs
+   for kernelY 0..3
+   for kernelX 0..3 
+   addr = kernelY * tileWidthWithInputChannels + kernelX * inputChannels + startInputChannel + inC * nMacs + pixelX * inputChannels;
 
-module TestDebugReadMem(){
-   DebugReadMem read;
+AddressGen VReadLoad VReadMultipleLoad(ext,xWidth,yWidth,imageWidthSize)
+   for y 0..yWidth
+   for x 0..xWidth
+   mem[y * xWidth + x] = ext[y * imageWidthSize + x];
+
+AddressGen VReadOutput VReadMultipleOutput(xWidth,yWidth)
+   for y 0..yWidth
+   for x 0..xWidth
+   addr = y * xWidth + x;
+
+AddressGen VWriteInput VWriteMultipleInput(xWidth,yWidth)
+   for y 0..yWidth
+   for x 0..xWidth
+   addr = y * xWidth + x;
+
+AddressGen VWriteStore VWriteMultipleStore(ext,xWidth,yWidth,imageWidthSize)
+   for y 0..yWidth
+   for x 0..xWidth
+   ext[y * imageWidthSize + x] = mem[y * xWidth + x];
+
+AddressGen VReadLoad LoadWeights(ext,kernelSize)
+   for x 0..kernelSize
+   mem[x] = ext[x];
+
+AddressGen Mem TestDuty(ext,kernelSize)
+   for x 0..kernelSize // For kernelSize == 8, this must give 0,0,0,0,1,1,1,1
+   addr = x / 4;       // Period == kernelSize, duty is 4.
+
+// Duty is period divided by the literal divisor?
+
+AddressGen VReadOutput OutputWeights(id,trueX,sizeX,nMacs,inputChannels,outputChannelsPerMac,start,channelIncrement)
+   for x 0..trueX
+   for inC 0..inputChannels
+   for outC 0..outputChannelsPerMac
+   for k 0..9
+   addr = start + id * 9 * nMacs + outC * 9 * nMacs + k;
+
+module ADDRESS_GEN_Simple(){
+   Generator3 gen;
+   Mem output;
 #
+   gen -> output;
 }
+
+module Test(){
+#
+   }
+
+AddressGen Mem TestAddressGen(xMax,yMax,zMax,wMax,aMax)
+   //for a 0..aMax
+   for b 0..aMax
+   for w 0..wMax
+   for z 0..zMax
+   for y 0..yMax
+   for x 0..xMax
+   addr = y * yMax + x;
+
+/*
+
+AddressGen VReadLoad LoadFeatures(ext,xMax,fmSize,yMax)
+   for y 0..yMax
+   for x 0..xMax
+   addr = ext + y * fmSize + x;
+
+AddressGen VReadOutput OutputFeatures(a)
+   for x 0..a
+   addr = x;
+
+AddressGen VWriteInput InputFeatures(a)
+   for x 0..a
+   addr = x;
+
+AddressGen VWriteStore WriteFeatures(a)
+   for x 0..a
+   addr = x;
+*/
+
+//merge GoodCryptoAlgos = SHA | McEliece | FullAES;
 
 /*
 merge CryptoAlgos = SHA | AES256 | McEliece;
 */
-
-/*
-module AES256WithRound(x[16]){
-   share config RegFile{
-      bank[32];
-   }
-
-   AES256Path path;
-
-   AddRoundKey firstKey;
-   MainRound round0;
-   SBoxGroup subBytes;
-   ShiftRows shiftRows;
-   AddRoundKey lastKey;
-#
-   x[0..3]   -> {firstKey:0,firstKey:4,firstKey:8,firstKey:12};
-   x[4..7]   -> {firstKey:1,firstKey:5,firstKey:9,firstKey:13};
-   x[8..11]  -> {firstKey:2,firstKey:6,firstKey:10,firstKey:14};
-   x[12..15] -> {firstKey:3,firstKey:7,firstKey:11,firstKey:15};
-   
-   k[0..3]   -> {firstKey:16,firstKey:20,firstKey:24,firstKey:28};
-   k[4..7]   -> {firstKey:17,firstKey:21,firstKey:25,firstKey:29};
-   k[8..11]  -> {firstKey:18,firstKey:22,firstKey:26,firstKey:30};
-   k[12..15] -> {firstKey:19,firstKey:23,firstKey:27,firstKey:31};
-
-   firstKey:0..15 -> round0:0..15;
-   k[16..19]  -> {round0:16,round0:20,round0:24,round0:28};
-   k[20..23]  -> {round0:17,round0:21,round0:25,round0:29};
-   k[24..27]  -> {round0:18,round0:22,round0:26,round0:30};
-   k[28..31]  -> {round0:19,round0:23,round0:27,round0:31};
-
-   round0:0..15 -> path:0..15;
-
-   k[0..3]   ->  {path:16,path:20,path:24,path:28};
-   k[4..7]   ->  {path:17,path:21,path:25,path:29};
-   k[8..11]  ->  {path:18,path:22,path:26,path:30};
-   k[12..15] ->  {path:19,path:23,path:27,path:31};
-   k[16..19]  -> {path:32,path:36,path:40,path:44};
-   k[20..23]  -> {path:33,path:37,path:41,path:45};
-   k[24..27]  -> {path:34,path:38,path:42,path:46};
-   k[28..31]  -> {path:35,path:39,path:43,path:47};
-
-   rcon[0..5] -> path:48..53;
-   
-   path:16..47 -> key6:0..31;
-   rcon[6] -> key6:32;
-
-   path:0..15 -> subBytes:0..15;
-   subBytes:0..15 -> shiftRows:0..15;
-
-   shiftRows:0..15 -> lastKey:0..15;
-   key6:0..15      -> lastKey:16..31;
-
-   lastKey:0..3   -> {out:0,out:4,out:8,out:12};
-   lastKey:4..7   -> {out:1,out:5,out:9,out:13};
-   lastKey:8..11  -> {out:2,out:6,out:10,out:14};
-   lastKey:12..15 -> {out:3,out:7,out:11,out:15};
-}
-*/
-
-/*
-
-transform Transpose4x4{
-   0..3   ->  {0,4,8,12};
-   4..7   ->  {1,5,9,13};
-   8..11  ->  {2,6,10,14};
-   12..15 ->  {3,7,11,15};
-}
-
-module TestTransform(x[16]){
-#
-   x[0..15] -> Transpose4x4 -> out:0..15;
-}
-
-transform Flood4{
-   0 -> 0;
-   0 -> 1;
-   0 -> 2;
-   0 -> 3;
-}
-
-module TestTransform2(x){
-#
-   x -> Flood4 -> out:0..3;
-
-}
-
-transform Transpose2x2(x[4]){
-   x[0..1]   ->  {out:0,out:2};
-   x[2..3]   ->  {out:1,out:3};
-}
-
-{x[0],x[1],x[2],x[3]} -> {x[0],x[2],x[1],x[3]}; 
-
-module TestTransform(x[16]){
-#
-   x[0..3] -> Transpose2x2 -> out:0..3;
-}
-*/
-
